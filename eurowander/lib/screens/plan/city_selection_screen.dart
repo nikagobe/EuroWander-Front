@@ -16,6 +16,7 @@ class CitySelectionScreen extends StatefulWidget {
   final City? prefillTo;
   final bool isReturn;
   final FlightOffer? firstFlight;
+  final City? outboundDestinationCity;
 
   const CitySelectionScreen({
     super.key,
@@ -23,6 +24,7 @@ class CitySelectionScreen extends StatefulWidget {
     this.prefillTo,
     this.isReturn = false,
     this.firstFlight,
+    this.outboundDestinationCity,
   });
 
   @override
@@ -576,6 +578,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     departureDate: _departureDate!,
                     isReturn: widget.isReturn,
                     firstFlight: widget.firstFlight,
+                    outboundDestinationCity: widget.outboundDestinationCity,
                   ),
                 ),
               );
@@ -785,7 +788,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         shrinkWrap: true,
         padding: const EdgeInsets.symmetric(vertical: 4),
         itemCount: suggestions.length,
-        separatorBuilder: (_, __) => Divider(
+        separatorBuilder: (_, _) => Divider(
           height: 1,
           indent: 12,
           endIndent: 12,

@@ -220,6 +220,7 @@ class ReturnFlightOptionsScreen extends StatelessWidget {
                                     prefillTo: origin,
                                     isReturn: true,
                                     firstFlight: firstFlight,
+                                    outboundDestinationCity: destination,
                                   ),
                                 ),
                               );

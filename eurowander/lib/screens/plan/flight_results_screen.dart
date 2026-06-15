@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/city.dart';
 import '../../models/flight.dart';
 import '../../services/api_service.dart';
+import 'bus_selection_screen.dart';
 import 'trip_confirmation_screen.dart';
 import 'return_flight_options_screen.dart';
 
@@ -17,6 +18,7 @@ class FlightResultsScreen extends StatefulWidget {
   final DateTime departureDate;
   final bool isReturn;
   final FlightOffer? firstFlight;
+  final City? outboundDestinationCity;
 
   const FlightResultsScreen({
     super.key,
@@ -25,6 +27,7 @@ class FlightResultsScreen extends StatefulWidget {
     required this.departureDate,
     this.isReturn = false,
     this.firstFlight,
+    this.outboundDestinationCity,
   });
 
   @override
@@ -124,20 +127,22 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
   }
 
   bool get _hasMapCoordinates {
-    if (_selectedFlight != null) {
-      final leg = _selectedFlight!.legs.first;
-      return leg.departureLat != null && leg.arrivalLat != null;
+    if (_selectedFlight != null && _selectedFlight!.legs.isNotEmpty) {
+      final firstLeg = _selectedFlight!.legs.first;
+      final lastLeg = _selectedFlight!.legs.last;
+      return firstLeg.departureLat != null && lastLeg.arrivalLat != null;
     }
     return widget.origin.coordinates != null && widget.destination.coordinates != null;
   }
 
   (LatLng origin, LatLng dest) get _mapPoints {
-    if (_selectedFlight != null) {
-      final leg = _selectedFlight!.legs.first;
-      if (leg.departureLat != null && leg.arrivalLat != null) {
+    if (_selectedFlight != null && _selectedFlight!.legs.isNotEmpty) {
+      final firstLeg = _selectedFlight!.legs.first;
+      final lastLeg = _selectedFlight!.legs.last;
+      if (firstLeg.departureLat != null && lastLeg.arrivalLat != null) {
         return (
-          LatLng(leg.departureLat!, leg.departureLng!),
-          LatLng(leg.arrivalLat!, leg.arrivalLng!),
+          LatLng(firstLeg.departureLat!, firstLeg.departureLng!),
+          LatLng(lastLeg.arrivalLat!, lastLeg.arrivalLng!),
         );
       }
     }
@@ -150,14 +155,27 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     setState(() {
       _selectedFlight = flight;
     });
-    if (_hasMapCoordinates) {
-      final (origin, dest) = _mapPoints;
-      final centerLat = (origin.latitude + dest.latitude) / 2;
-      final centerLng = (origin.longitude + dest.longitude) / 2;
-      _mapController.move(
-        LatLng(centerLat, centerLng),
-        _calculateZoom(origin, dest),
-      );
+    if (_hasMapCoordinates && flight.legs.isNotEmpty) {
+      // Calculate bounds that include all leg waypoints
+      double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+      for (final leg in flight.legs) {
+        if (leg.departureLat != null) {
+          minLat = min(minLat, leg.departureLat!);
+          maxLat = max(maxLat, leg.departureLat!);
+          minLng = min(minLng, leg.departureLng!);
+          maxLng = max(maxLng, leg.departureLng!);
+        }
+        if (leg.arrivalLat != null) {
+          minLat = min(minLat, leg.arrivalLat!);
+          maxLat = max(maxLat, leg.arrivalLat!);
+          minLng = min(minLng, leg.arrivalLng!);
+          maxLng = max(maxLng, leg.arrivalLng!);
+        }
+      }
+      final centerLat = (minLat + maxLat) / 2;
+      final centerLng = (minLng + maxLng) / 2;
+      final zoom = _calculateZoom(LatLng(minLat, minLng), LatLng(maxLat, maxLng));
+      _mapController.move(LatLng(centerLat, centerLng), zoom);
     }
   }
 
@@ -165,7 +183,143 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     final (originLatLng, destLatLng) = _mapPoints;
     final centerLat = (originLatLng.latitude + destLatLng.latitude) / 2;
     final centerLng = (originLatLng.longitude + destLatLng.longitude) / 2;
-    final arcPoints = _generateArc(originLatLng, destLatLng);
+
+    // Build polylines and markers for all legs
+    final polylines = <Polyline<Object>>[];
+    final markers = <Marker>[];
+    final legColors = [AppTheme.primaryColor, const Color(0xFFE91E63), const Color(0xFF00BCD4), const Color(0xFFFF9800)];
+
+    if (_selectedFlight != null && _selectedFlight!.legs.isNotEmpty) {
+      final legs = _selectedFlight!.legs;
+      for (int i = 0; i < legs.length; i++) {
+        final leg = legs[i];
+        if (leg.departureLat == null || leg.arrivalLat == null) continue;
+        final start = LatLng(leg.departureLat!, leg.departureLng!);
+        final end = LatLng(leg.arrivalLat!, leg.arrivalLng!);
+        final color = legColors[i % legColors.length];
+        polylines.add(
+          Polyline(
+            points: _generateArc(start, end),
+            strokeWidth: 3,
+            color: color,
+            pattern: const StrokePattern.dotted(),
+          ),
+        );
+
+        // Add departure marker for first leg
+        if (i == 0) {
+          markers.add(Marker(
+            point: start,
+            width: 24,
+            height: 24,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)],
+              ),
+            ),
+          ));
+        }
+
+        // Add stopover markers (intermediate airports)
+        if (i < legs.length - 1) {
+          markers.add(Marker(
+            point: end,
+            width: 20,
+            height: 20,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.orange.shade600,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 4)],
+              ),
+              child: const Icon(Icons.circle, size: 6, color: Colors.white),
+            ),
+          ));
+        }
+
+        // Add final arrival marker
+        if (i == legs.length - 1) {
+          markers.add(Marker(
+            point: end,
+            width: 24,
+            height: 24,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.secondaryColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)],
+              ),
+            ),
+          ));
+        }
+      }
+    } else {
+      // Fallback: single arc from origin to destination
+      polylines.add(
+        Polyline(
+          points: _generateArc(originLatLng, destLatLng),
+          strokeWidth: 3,
+          color: AppTheme.primaryColor,
+          pattern: const StrokePattern.dotted(),
+        ),
+      );
+      markers.addAll([
+        Marker(
+          point: originLatLng,
+          width: 24,
+          height: 24,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)],
+            ),
+          ),
+        ),
+        Marker(
+          point: destLatLng,
+          width: 24,
+          height: 24,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.secondaryColor,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 3),
+              boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)],
+            ),
+          ),
+        ),
+      ]);
+    }
+
+    // Calculate zoom to fit all points
+    LatLng zoomOrigin = originLatLng;
+    LatLng zoomDest = destLatLng;
+    if (_selectedFlight != null && _selectedFlight!.legs.length > 1) {
+      double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+      for (final leg in _selectedFlight!.legs) {
+        if (leg.departureLat != null) {
+          minLat = min(minLat, leg.departureLat!);
+          maxLat = max(maxLat, leg.departureLat!);
+          minLng = min(minLng, leg.departureLng!);
+          maxLng = max(maxLng, leg.departureLng!);
+        }
+        if (leg.arrivalLat != null) {
+          minLat = min(minLat, leg.arrivalLat!);
+          maxLat = max(maxLat, leg.arrivalLat!);
+          minLng = min(minLng, leg.arrivalLng!);
+          maxLng = max(maxLng, leg.arrivalLng!);
+        }
+      }
+      zoomOrigin = LatLng(minLat, minLng);
+      zoomDest = LatLng(maxLat, maxLng);
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -185,8 +339,11 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         child: FlutterMap(
           mapController: _mapController,
           options: MapOptions(
-            initialCenter: LatLng(centerLat, centerLng),
-            initialZoom: _calculateZoom(originLatLng, destLatLng),
+            initialCenter: LatLng(
+              (zoomOrigin.latitude + zoomDest.latitude) / 2,
+              (zoomOrigin.longitude + zoomDest.longitude) / 2,
+            ),
+            initialZoom: _calculateZoom(zoomOrigin, zoomDest),
             interactionOptions: const InteractionOptions(
               flags: InteractiveFlag.all,
             ),
@@ -196,56 +353,8 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
               urlTemplate: 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.eurowander.app',
             ),
-            PolylineLayer(
-              polylines: <Polyline<Object>>[
-                Polyline(
-                  points: arcPoints,
-                  strokeWidth: 3,
-                  color: AppTheme.primaryColor,
-                  pattern: const StrokePattern.dotted(),
-                ),
-              ],
-            ),
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: originLatLng,
-                  width: 24,
-                  height: 24,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.primaryColor.withOpacity(0.3),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Marker(
-                  point: destLatLng,
-                  width: 24,
-                  height: 24,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppTheme.secondaryColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppTheme.secondaryColor.withOpacity(0.3),
-                          blurRadius: 6,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            PolylineLayer(polylines: polylines),
+            MarkerLayer(markers: markers),
           ],
         ),
       ),
@@ -571,7 +680,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
       itemCount: _flights.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) => _buildFlightCard(_flights[index]),
     );
   }
@@ -582,17 +691,47 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
       child: GestureDetector(
         onTap: () {
           if (widget.isReturn) {
-            // Return flight selected - go to confirmation
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => TripConfirmationScreen(
-                  origin: widget.origin,
-                  destination: widget.destination,
-                  departureDate: widget.departureDate,
-                  selectedFlight: _selectedFlight!,
+            // Use top-level city info to check if bus transit is needed
+            final outboundArrivalId = widget.firstFlight!.arrivalAirportId.isNotEmpty
+                ? widget.firstFlight!.legs.last.arrivalCityFreebaseId
+                : '';
+            final returnDepartureId = _selectedFlight!.legs.isNotEmpty
+                ? _selectedFlight!.legs.first.departureCityFreebaseId
+                : '';
+            final needsBus = outboundArrivalId.isNotEmpty &&
+                returnDepartureId.isNotEmpty &&
+                outboundArrivalId != returnDepartureId;
+
+            if (needsBus) {
+              // Need bus transit between outbound arrival and return departure
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BusSelectionScreen(
+                    originCityFreebaseId: outboundArrivalId,
+                    departureCityFreebaseId: returnDepartureId,
+                    originCityName: widget.firstFlight!.arrivalCityName.isNotEmpty
+                        ? widget.firstFlight!.arrivalCityName
+                        : widget.firstFlight!.legs.last.arrivalCityName,
+                    departureCityName: _selectedFlight!.departureCityName.isNotEmpty
+                        ? _selectedFlight!.departureCityName
+                        : _selectedFlight!.legs.first.departureCityName,
+                    transitDate: widget.departureDate,
+                    outboundFlight: widget.firstFlight!,
+                    returnFlight: _selectedFlight!,
+                  ),
                 ),
-              ),
-            );
+              );
+            } else {
+              // Same city - go directly to confirmation
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => TripConfirmationScreen(
+                    selectedFlight: widget.firstFlight!,
+                    returnFlight: _selectedFlight!,
+                  ),
+                ),
+              );
+            }
           } else {
             // Outbound flight selected - choose return
             Navigator.of(context).push(
@@ -648,9 +787,8 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
   }
 
   Widget _buildFlightCard(FlightOffer flight) {
-    final leg = flight.legs.first;
-    final depTime = _formatTime(leg.departureTime);
-    final arrTime = _formatTime(leg.arrivalTime);
+    final depTime = _formatTime(flight.departureTime);
+    final arrTime = _formatTime(flight.arrivalTime);
     final durationHrs = flight.totalDuration ~/ 60;
     final durationMins = flight.totalDuration % 60;
     final durationStr = '${durationHrs}h ${durationMins}m';
@@ -686,11 +824,11 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.network(
-                  leg.airlineLogo.isNotEmpty ? leg.airlineLogo : flight.airlineLogo,
+                  flight.airlineLogo,
                   width: 36,
                   height: 36,
                   fit: BoxFit.contain,
-                  errorBuilder: (_, __, ___) => Container(
+                  errorBuilder: (_, _, _) => Container(
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
@@ -706,20 +844,21 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    leg.airline,
+                    flight.airline,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimary,
                     ),
                   ),
-                  Text(
-                    leg.flightNumber,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: AppTheme.textSecondary,
+                  if (flight.legs.isNotEmpty)
+                    Text(
+                      flight.legs.first.flightNumber,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary,
+                      ),
                     ),
-                  ),
                 ],
               ),
               const Spacer(),
@@ -759,13 +898,21 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     ),
                   ),
                   Text(
-                    leg.departureAirport,
+                    flight.departureAirportId,
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: AppTheme.textSecondary,
                     ),
                   ),
+                  if (flight.departureCityName.isNotEmpty)
+                    Text(
+                      flight.departureCityName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary.withOpacity(0.7),
+                      ),
+                    ),
                 ],
               ),
               // Flight line
@@ -800,16 +947,43 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        flight.stops == 0 ? 'Direct' : '${flight.stops} stop(s)',
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: flight.stops == 0
-                              ? Colors.green.shade600
-                              : Colors.orange.shade700,
-                          fontWeight: FontWeight.w500,
+                      if (flight.stops == 0)
+                        Text(
+                          'Direct',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: Colors.green.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        )
+                      else
+                        Tooltip(
+                          message: _buildStopsTooltip(flight),
+                          preferBelow: true,
+                          textStyle: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.white,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade800,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${flight.stops} stop(s)',
+                              style: GoogleFonts.poppins(
+                                fontSize: 11,
+                                color: Colors.orange.shade700,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),
@@ -827,13 +1001,21 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     ),
                   ),
                   Text(
-                    leg.arrivalAirport,
+                    flight.arrivalAirportId,
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
                       color: AppTheme.textSecondary,
                     ),
                   ),
+                  if (flight.arrivalCityName.isNotEmpty)
+                    Text(
+                      flight.arrivalCityName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        color: AppTheme.textSecondary.withOpacity(0.7),
+                      ),
+                    ),
                 ],
               ),
             ],
@@ -842,9 +1024,9 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           // Info chips
           Row(
             children: [
-              if (leg.airplane.isNotEmpty) _buildChip(leg.airplane),
-              if (leg.travelClass.isNotEmpty) _buildChip(leg.travelClass),
-              if (leg.legroom.isNotEmpty) _buildChip(leg.legroom),
+              if (flight.legs.isNotEmpty && flight.legs.first.airplane.isNotEmpty) _buildChip(flight.legs.first.airplane),
+              if (flight.legs.isNotEmpty && flight.legs.first.travelClass.isNotEmpty) _buildChip(flight.legs.first.travelClass),
+              if (flight.legs.isNotEmpty && flight.legs.first.legroom.isNotEmpty) _buildChip(flight.legs.first.legroom),
               const Spacer(),
               if (isSelected)
                 Container(
@@ -865,6 +1047,18 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         ),
       ),
     );
+  }
+
+  String _buildStopsTooltip(FlightOffer flight) {
+    if (flight.legs.length <= 1) return '${flight.stops} stop(s)';
+    // Intermediate stops are the arrival airports of all legs except the last
+    final stops = <String>[];
+    for (int i = 0; i < flight.legs.length - 1; i++) {
+      final leg = flight.legs[i];
+      final city = leg.arrivalCityName.isNotEmpty ? leg.arrivalCityName : leg.arrivalAirport;
+      stops.add('$city (${leg.arrivalAirport})');
+    }
+    return 'Via ${stops.join(', ')}';
   }
 
   Widget _buildChip(String text) {

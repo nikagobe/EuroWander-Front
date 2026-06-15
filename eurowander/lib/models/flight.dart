@@ -7,6 +7,20 @@ class FlightOffer {
   final String bookingToken;
   final int stops;
   final String source;
+  final String? flightId;
+  final bool isPaid;
+  final double? actualPaidAmount;
+  final String? paidCurrency;
+  final String? paidBy;
+  final List<String> eligibleMemberIds;
+  final String departureAirport;
+  final String departureAirportName;
+  final String departureCityName;
+  final String arrivalAirport;
+  final String arrivalAirportName;
+  final String arrivalCityName;
+  final String topDepartureTime;
+  final String topArrivalTime;
 
   FlightOffer({
     required this.legs,
@@ -17,13 +31,27 @@ class FlightOffer {
     required this.bookingToken,
     required this.stops,
     required this.source,
+    this.flightId,
+    this.isPaid = false,
+    this.actualPaidAmount,
+    this.paidCurrency,
+    this.paidBy,
+    this.eligibleMemberIds = const [],
+    this.departureAirport = '',
+    this.departureAirportName = '',
+    this.departureCityName = '',
+    this.arrivalAirport = '',
+    this.arrivalAirportName = '',
+    this.arrivalCityName = '',
+    this.topDepartureTime = '',
+    this.topArrivalTime = '',
   });
 
   String get airline => legs.isNotEmpty ? legs.first.airline : '';
-  String get departureTime => legs.isNotEmpty ? legs.first.departureTime : '';
-  String get arrivalTime => legs.isNotEmpty ? legs.last.arrivalTime : '';
-  String get departureAirportId => legs.isNotEmpty ? legs.first.departureAirport : '';
-  String get arrivalAirportId => legs.isNotEmpty ? legs.last.arrivalAirport : '';
+  String get departureTime => topDepartureTime.isNotEmpty ? topDepartureTime : (legs.isNotEmpty ? legs.first.departureTime : '');
+  String get arrivalTime => topArrivalTime.isNotEmpty ? topArrivalTime : (legs.isNotEmpty ? legs.last.arrivalTime : '');
+  String get departureAirportId => departureAirport.isNotEmpty ? departureAirport : (legs.isNotEmpty ? legs.first.departureAirport : '');
+  String get arrivalAirportId => arrivalAirport.isNotEmpty ? arrivalAirport : (legs.isNotEmpty ? legs.last.arrivalAirport : '');
 
   factory FlightOffer.fromJson(Map<String, dynamic> json) {
     // Handle swagger FlightOfferResponse format (flat legs)
@@ -49,6 +77,23 @@ class FlightOffer {
       bookingToken: json['booking_token'] as String? ?? '',
       stops: (json['stops'] as int?) ?? (parsedLegs.length - 1).clamp(0, 99),
       source: json['source'] as String? ?? '',
+      flightId: json['flight_id'] as String?,
+      isPaid: json['is_paid'] as bool? ?? false,
+      actualPaidAmount: (json['actual_paid_amount'] as num?)?.toDouble(),
+      paidCurrency: json['paid_currency'] as String?,
+      paidBy: json['paid_by'] as String?,
+      eligibleMemberIds: (json['eligible_member_ids'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          [],
+      departureAirport: json['departure_airport'] as String? ?? '',
+      departureAirportName: json['departure_airport_name'] as String? ?? '',
+      departureCityName: json['departure_city_name'] as String? ?? '',
+      arrivalAirport: json['arrival_airport'] as String? ?? '',
+      arrivalAirportName: json['arrival_airport_name'] as String? ?? '',
+      arrivalCityName: json['arrival_city_name'] as String? ?? '',
+      topDepartureTime: json['departure_time'] as String? ?? '',
+      topArrivalTime: json['arrival_time'] as String? ?? '',
     );
   }
 }
@@ -59,11 +104,15 @@ class FlightLeg {
   final String departureTime;
   final double? departureLat;
   final double? departureLng;
+  final String departureCityName;
+  final String departureCityFreebaseId;
   final String arrivalAirportName;
   final String arrivalAirport;
   final String arrivalTime;
   final double? arrivalLat;
   final double? arrivalLng;
+  final String arrivalCityName;
+  final String arrivalCityFreebaseId;
   final int duration;
   final String airplane;
   final String airline;
@@ -78,11 +127,15 @@ class FlightLeg {
     required this.departureTime,
     this.departureLat,
     this.departureLng,
+    this.departureCityName = '',
+    this.departureCityFreebaseId = '',
     required this.arrivalAirportName,
     required this.arrivalAirport,
     required this.arrivalTime,
     this.arrivalLat,
     this.arrivalLng,
+    this.arrivalCityName = '',
+    this.arrivalCityFreebaseId = '',
     required this.duration,
     required this.airplane,
     required this.airline,
@@ -126,11 +179,15 @@ class FlightLeg {
       departureTime: depTime,
       departureLat: (json['departure_lat'] as num?)?.toDouble(),
       departureLng: (json['departure_lng'] as num?)?.toDouble(),
+      departureCityName: json['departure_city_name'] as String? ?? '',
+      departureCityFreebaseId: json['departure_city_freebase_id'] as String? ?? '',
       arrivalAirportName: arrName,
       arrivalAirport: arrId,
       arrivalTime: arrTime,
       arrivalLat: (json['arrival_lat'] as num?)?.toDouble(),
       arrivalLng: (json['arrival_lng'] as num?)?.toDouble(),
+      arrivalCityName: json['arrival_city_name'] as String? ?? '',
+      arrivalCityFreebaseId: json['arrival_city_freebase_id'] as String? ?? '',
       duration: (json['duration'] ?? json['duration_minutes'] ?? 0) as int,
       airplane: json['airplane'] as String? ?? '',
       airline: json['airline'] as String? ?? '',

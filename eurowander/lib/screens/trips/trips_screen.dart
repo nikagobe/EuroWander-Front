@@ -57,7 +57,7 @@ class TripsScreen extends StatelessWidget {
     final dateFormat = DateFormat('MMM dd');
     return ListView.separated(
       itemCount: trips.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final trip = trips[index];
         return Card(
