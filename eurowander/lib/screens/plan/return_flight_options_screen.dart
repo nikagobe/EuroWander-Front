@@ -11,6 +11,7 @@ class ReturnFlightOptionsScreen extends StatelessWidget {
   final City destination;
   final DateTime departureDate;
   final FlightOffer firstFlight;
+  final int adults;
 
   const ReturnFlightOptionsScreen({
     super.key,
@@ -18,6 +19,7 @@ class ReturnFlightOptionsScreen extends StatelessWidget {
     required this.destination,
     required this.departureDate,
     required this.firstFlight,
+    this.adults = 1,
   });
 
   @override
@@ -198,6 +200,7 @@ class ReturnFlightOptionsScreen extends StatelessWidget {
                                     origin: origin,
                                     destination: destination,
                                     outboundDate: departureDate,
+                                    adults: adults,
                                   ),
                                 ),
                               );
@@ -221,6 +224,7 @@ class ReturnFlightOptionsScreen extends StatelessWidget {
                                     isReturn: true,
                                     firstFlight: firstFlight,
                                     outboundDestinationCity: destination,
+                                    adults: adults,
                                   ),
                                 ),
                               );

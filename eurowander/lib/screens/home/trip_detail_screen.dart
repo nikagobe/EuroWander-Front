@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/saved_trip.dart';
+import 'attraction_search_screen.dart';
+import 'restaurant_search_screen.dart';
 import 'trip_documents_screen.dart';
 import 'trip_finances_screen.dart';
 import 'trip_hotels_screen.dart';
@@ -160,22 +162,17 @@ class TripDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  trip.name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ),
-              _buildStatusBadge(trip.status),
-            ],
+          Text(
+            trip.name,
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
           ),
           const SizedBox(height: 8),
+          _buildTripDatesRow(),
+          const SizedBox(height: 6),
           Text(
             'Created ${_formatDateTime(trip.createdAt)}',
             style: GoogleFonts.poppins(
@@ -188,21 +185,38 @@ class TripDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusBadge(String status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: _statusColor(status).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Text(
-        status[0].toUpperCase() + status.substring(1),
-        style: GoogleFonts.poppins(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: _statusColor(status),
+  Widget _buildTripDatesRow() {
+    String? departureDate;
+    String? returnDate;
+
+    if (trip.outboundFlight != null) {
+      try {
+        final dt = DateTime.parse(trip.outboundFlight!.departureTime.replaceAll(' ', 'T'));
+        departureDate = DateFormat('MMM d, yyyy').format(dt);
+      } catch (_) {}
+    }
+    if (trip.returnFlight != null) {
+      try {
+        final dt = DateTime.parse(trip.returnFlight!.arrivalTime.replaceAll(' ', 'T'));
+        returnDate = DateFormat('MMM d, yyyy').format(dt);
+      } catch (_) {}
+    }
+
+    if (departureDate == null && returnDate == null) return const SizedBox.shrink();
+
+    return Row(
+      children: [
+        Icon(Icons.calendar_today_rounded, size: 14, color: AppTheme.primaryColor),
+        const SizedBox(width: 6),
+        Text(
+          returnDate != null ? '$departureDate – $returnDate' : departureDate!,
+          style: GoogleFonts.poppins(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.primaryColor,
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -243,6 +257,32 @@ class TripDetailScreen extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => TripHotelsScreen(trip: trip),
+            ),
+          );
+        },
+      ),
+      _ModuleItem(
+        icon: Icons.attractions_rounded,
+        label: 'Attractions',
+        subtitle: 'Things to do',
+        gradientColors: [const Color(0xFFFF5722), const Color(0xFFFF8A65)],
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AttractionSearchScreen(trip: trip),
+            ),
+          );
+        },
+      ),
+      _ModuleItem(
+        icon: Icons.restaurant_rounded,
+        label: 'Restaurants',
+        subtitle: 'Where to eat',
+        gradientColors: [const Color(0xFF795548), const Color(0xFFA1887F)],
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => RestaurantSearchScreen(trip: trip),
             ),
           );
         },
@@ -357,21 +397,6 @@ class TripDetailScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'planning':
-        return const Color(0xFFFF9800);
-      case 'booked':
-        return const Color(0xFF4CAF50);
-      case 'completed':
-        return AppTheme.primaryColor;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return AppTheme.textSecondary;
-    }
   }
 
   String _formatDateTime(DateTime dt) {

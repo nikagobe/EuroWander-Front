@@ -2,6 +2,8 @@ class FlightOffer {
   final List<FlightLeg> legs;
   final int totalDuration;
   final double price;
+  final double? pricePerPerson;
+  final int adults;
   final String currency;
   final String airlineLogo;
   final String bookingToken;
@@ -26,6 +28,8 @@ class FlightOffer {
     required this.legs,
     required this.totalDuration,
     required this.price,
+    this.pricePerPerson,
+    this.adults = 1,
     required this.currency,
     required this.airlineLogo,
     required this.bookingToken,
@@ -72,6 +76,8 @@ class FlightOffer {
       legs: parsedLegs,
       totalDuration: (json['total_duration_minutes'] ?? json['total_duration'] ?? 0) as int,
       price: (json['price'] as num?)?.toDouble() ?? 0,
+      pricePerPerson: (json['price_per_person'] as num?)?.toDouble(),
+      adults: (json['adults'] as int?) ?? 1,
       currency: json['currency'] as String? ?? 'EUR',
       airlineLogo: json['airline_logo'] as String? ?? '',
       bookingToken: json['booking_token'] as String? ?? '',

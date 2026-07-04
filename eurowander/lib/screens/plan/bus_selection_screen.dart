@@ -15,6 +15,7 @@ class BusSelectionScreen extends StatefulWidget {
   final DateTime transitDate;
   final FlightOffer outboundFlight;
   final FlightOffer returnFlight;
+  final int adults;
 
   const BusSelectionScreen({
     super.key,
@@ -25,6 +26,7 @@ class BusSelectionScreen extends StatefulWidget {
     required this.transitDate,
     required this.outboundFlight,
     required this.returnFlight,
+    this.adults = 1,
   });
 
   @override
@@ -79,6 +81,7 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
         originFreebaseId: widget.originCityFreebaseId,
         destinationFreebaseId: widget.departureCityFreebaseId,
         date: dateStr,
+        adults: widget.adults,
       );
       setState(() {
         _buses = results;
@@ -415,13 +418,26 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  '€${bus.price.toStringAsFixed(2)}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '€${(bus.totalPrice ?? bus.price).toStringAsFixed(2)}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                    if (bus.adults > 1 && bus.pricePerPerson != null)
+                      Text(
+                        '€${bus.pricePerPerson!.toStringAsFixed(2)}/person',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),

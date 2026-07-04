@@ -16,6 +16,7 @@ class FlightResultsScreen extends StatefulWidget {
   final City origin;
   final City destination;
   final DateTime departureDate;
+  final int adults;
   final bool isReturn;
   final FlightOffer? firstFlight;
   final City? outboundDestinationCity;
@@ -25,6 +26,7 @@ class FlightResultsScreen extends StatefulWidget {
     required this.origin,
     required this.destination,
     required this.departureDate,
+    this.adults = 1,
     this.isReturn = false,
     this.firstFlight,
     this.outboundDestinationCity,
@@ -56,6 +58,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         originId: widget.origin.freebaseId,
         destinationId: widget.destination.freebaseId,
         outboundDate: dateStr,
+        adults: widget.adults,
       );
       if (mounted) {
         setState(() {
@@ -466,9 +469,124 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
 
   Widget _buildFullMap() {
     final (originLatLng, destLatLng) = _mapPoints;
-    final centerLat = (originLatLng.latitude + destLatLng.latitude) / 2;
-    final centerLng = (originLatLng.longitude + destLatLng.longitude) / 2;
-    final arcPoints = _generateArc(originLatLng, destLatLng);
+
+    // Build polylines and markers for all legs (multi-leg support)
+    final polylines = <Polyline<Object>>[];
+    final markers = <Marker>[];
+    final legColors = [AppTheme.primaryColor, const Color(0xFFE91E63), const Color(0xFF00BCD4), const Color(0xFFFF9800)];
+
+    LatLng zoomOrigin = originLatLng;
+    LatLng zoomDest = destLatLng;
+
+    if (_selectedFlight != null && _selectedFlight!.legs.isNotEmpty) {
+      final legs = _selectedFlight!.legs;
+      bool hasCoords = false;
+      for (int i = 0; i < legs.length; i++) {
+        final leg = legs[i];
+        if (leg.departureLat == null || leg.arrivalLat == null) continue;
+        hasCoords = true;
+        final start = LatLng(leg.departureLat!, leg.departureLng!);
+        final end = LatLng(leg.arrivalLat!, leg.arrivalLng!);
+        final color = legColors[i % legColors.length];
+        polylines.add(
+          Polyline(
+            points: _generateArc(start, end),
+            strokeWidth: 3,
+            color: color,
+            pattern: const StrokePattern.dotted(),
+          ),
+        );
+
+        if (i == 0) {
+          markers.add(Marker(
+            point: start,
+            width: 28,
+            height: 28,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)],
+              ),
+            ),
+          ));
+        }
+
+        if (i < legs.length - 1) {
+          markers.add(Marker(
+            point: end,
+            width: 22,
+            height: 22,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.orange.shade600,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2.5),
+                boxShadow: [BoxShadow(color: Colors.orange.withOpacity(0.3), blurRadius: 4)],
+              ),
+              child: const Icon(Icons.circle, size: 6, color: Colors.white),
+            ),
+          ));
+        }
+
+        if (i == legs.length - 1) {
+          markers.add(Marker(
+            point: end,
+            width: 28,
+            height: 28,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.secondaryColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 3),
+                boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)],
+              ),
+            ),
+          ));
+        }
+      }
+
+      if (!hasCoords) {
+        // Fallback if legs have no coordinates
+        polylines.add(Polyline(points: _generateArc(originLatLng, destLatLng), strokeWidth: 3, color: AppTheme.primaryColor, pattern: const StrokePattern.dotted()));
+        markers.addAll([
+          Marker(point: originLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)]))),
+          Marker(point: destLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppTheme.secondaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)]))),
+        ]);
+      }
+
+      // Calculate zoom to fit all waypoints
+      if (legs.length > 1 && hasCoords) {
+        double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+        for (final leg in legs) {
+          if (leg.departureLat != null) {
+            minLat = min(minLat, leg.departureLat!);
+            maxLat = max(maxLat, leg.departureLat!);
+            minLng = min(minLng, leg.departureLng!);
+            maxLng = max(maxLng, leg.departureLng!);
+          }
+          if (leg.arrivalLat != null) {
+            minLat = min(minLat, leg.arrivalLat!);
+            maxLat = max(maxLat, leg.arrivalLat!);
+            minLng = min(minLng, leg.arrivalLng!);
+            maxLng = max(maxLng, leg.arrivalLng!);
+          }
+        }
+        zoomOrigin = LatLng(minLat, minLng);
+        zoomDest = LatLng(maxLat, maxLng);
+      }
+    } else {
+      // No flight selected - single arc
+      polylines.add(Polyline(points: _generateArc(originLatLng, destLatLng), strokeWidth: 3, color: AppTheme.primaryColor, pattern: const StrokePattern.dotted()));
+      markers.addAll([
+        Marker(point: originLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)]))),
+        Marker(point: destLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppTheme.secondaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)]))),
+      ]);
+    }
+
+    final centerLat = (zoomOrigin.latitude + zoomDest.latitude) / 2;
+    final centerLng = (zoomOrigin.longitude + zoomDest.longitude) / 2;
 
     return Container(
       decoration: BoxDecoration(
@@ -486,7 +604,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         mapController: _mapController,
         options: MapOptions(
           initialCenter: LatLng(centerLat, centerLng),
-          initialZoom: _calculateZoom(originLatLng, destLatLng),
+          initialZoom: _calculateZoom(zoomOrigin, zoomDest),
           interactionOptions: const InteractionOptions(
             flags: InteractiveFlag.all,
           ),
@@ -496,56 +614,8 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             urlTemplate: 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
             userAgentPackageName: 'com.eurowander.app',
           ),
-          PolylineLayer(
-            polylines: <Polyline<Object>>[
-              Polyline(
-                points: arcPoints,
-                strokeWidth: 3,
-                color: AppTheme.primaryColor,
-                pattern: const StrokePattern.dotted(),
-              ),
-            ],
-          ),
-          MarkerLayer(
-            markers: [
-              Marker(
-                point: originLatLng,
-                width: 28,
-                height: 28,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
-                        blurRadius: 6,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Marker(
-                point: destLatLng,
-                width: 28,
-                height: 28,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppTheme.secondaryColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 3),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.secondaryColor.withOpacity(0.3),
-                        blurRadius: 6,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          PolylineLayer(polylines: polylines),
+          MarkerLayer(markers: markers),
         ],
       ),
     );
@@ -718,6 +788,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     transitDate: widget.departureDate,
                     outboundFlight: widget.firstFlight!,
                     returnFlight: _selectedFlight!,
+                    adults: widget.adults,
                   ),
                 ),
               );
@@ -741,6 +812,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                   destination: widget.destination,
                   departureDate: widget.departureDate,
                   firstFlight: _selectedFlight!,
+                  adults: widget.adults,
                 ),
               ),
             );
@@ -862,22 +934,38 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                 ],
               ),
               const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '€${flight.price.toStringAsFixed(0)}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '€${flight.price.toStringAsFixed(0)}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                  if (flight.adults > 1 && flight.pricePerPerson != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Text(
+                        '€${flight.pricePerPerson!.toStringAsFixed(0)}/person',
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

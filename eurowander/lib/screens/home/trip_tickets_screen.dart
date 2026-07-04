@@ -327,6 +327,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(_formatFlightTime(flight.departureTime), style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                    Text(_formatShortDate(flight.departureTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
                     Text(flight.departureAirportId, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
                     Text(
                       flight.departureAirportName.isNotEmpty ? flight.departureAirportName : firstLeg.departureAirportName,
@@ -354,6 +355,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(_formatFlightTime(flight.arrivalTime), style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                    Text(_formatShortDate(flight.arrivalTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
                     Text(flight.arrivalAirportId, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
                     Text(
                       flight.arrivalAirportName.isNotEmpty ? flight.arrivalAirportName : lastLeg.arrivalAirportName,
@@ -511,6 +513,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(_formatFlightTime(bus.depTime), style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                    Text(_formatShortDate(bus.depTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
                     Text(bus.depName, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ),
@@ -535,6 +538,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(_formatFlightTime(bus.arrTime), style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                    Text(_formatShortDate(bus.arrTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
                     Text(bus.arrName, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary), textAlign: TextAlign.end, maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ),
@@ -648,6 +652,15 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
       return DateFormat('HH:mm').format(dt);
     } catch (_) {
       return dateTimeStr;
+    }
+  }
+
+  String _formatShortDate(String dateTimeStr) {
+    try {
+      final dt = DateTime.parse(dateTimeStr.replaceAll(' ', 'T'));
+      return DateFormat('MMM d').format(dt);
+    } catch (_) {
+      return '';
     }
   }
 

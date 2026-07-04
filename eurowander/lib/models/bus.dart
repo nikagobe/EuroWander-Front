@@ -36,6 +36,9 @@ class BusOffer {
   final int durationMinutes;
   final int changeovers;
   final double price;
+  final double? pricePerPerson;
+  final double? totalPrice;
+  final int adults;
   final String currency;
   final String deeplink;
   final String additionalInfo;
@@ -56,6 +59,9 @@ class BusOffer {
     required this.durationMinutes,
     required this.changeovers,
     required this.price,
+    this.pricePerPerson,
+    this.totalPrice,
+    this.adults = 1,
     required this.currency,
     required this.deeplink,
     required this.additionalInfo,
@@ -78,6 +84,9 @@ class BusOffer {
       durationMinutes: json['duration_minutes'] ?? 0,
       changeovers: json['changeovers'] ?? 0,
       price: (json['price'] ?? 0).toDouble(),
+      pricePerPerson: (json['price_per_person'] as num?)?.toDouble(),
+      totalPrice: (json['total_price'] as num?)?.toDouble(),
+      adults: (json['adults'] as int?) ?? 1,
       currency: json['currency'] ?? 'EUR',
       deeplink: json['deeplink'] ?? '',
       additionalInfo: json['additional_info'] ?? '',

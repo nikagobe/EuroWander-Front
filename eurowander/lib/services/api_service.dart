@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/constants/app_constants.dart';
+import '../models/attraction.dart';
 import '../models/bus.dart';
 import '../models/city.dart';
 import '../models/document.dart';
@@ -10,6 +11,7 @@ import '../models/finance.dart';
 import '../models/flight.dart';
 import '../models/hotel.dart';
 import '../models/photo.dart';
+import '../models/restaurant.dart';
 import '../models/saved_trip.dart';
 import '../models/user.dart';
 
@@ -869,5 +871,220 @@ class ApiService {
     if (response.statusCode != 200 && response.statusCode != 204) {
       throw Exception('Failed to delete photo: ${response.statusCode} ${response.body}');
     }
+  }
+
+  // ─── ATTRACTIONS ─────────────────────────────────────────────────────────────
+
+  Future<List<AttractionDestination>> searchAttractionDestinations({
+    required String query,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/attractions/destinations').replace(
+      queryParameters: {'query': query},
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => AttractionDestination.fromJson(json)).toList();
+    }
+    return [];
+  }
+
+  Future<PaginatedAttractions> searchAttractions({
+    required int geoId,
+    required String startDate,
+    required String endDate,
+    int adults = 1,
+    int page = 1,
+    String currency = 'EUR',
+    String sort = 'TRAVELER_FAVORITE_V2',
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/attractions/search').replace(
+      queryParameters: {
+        'geo_id': geoId.toString(),
+        'start_date': startDate,
+        'end_date': endDate,
+        'adults': adults.toString(),
+        'page': page.toString(),
+        'currency': currency,
+        'sort': sort,
+      },
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return PaginatedAttractions.fromJson(jsonDecode(response.body));
+    }
+    return PaginatedAttractions(data: [], currentPage: 1, totalPages: 1, totalResults: 0, pageSize: 30);
+  }
+
+  Future<AttractionDetail?> getAttractionDetails({
+    required String contentId,
+    required String startDate,
+    required String endDate,
+    String currency = 'EUR',
+    int adults = 1,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/attractions/details/$contentId').replace(
+      queryParameters: {
+        'start_date': startDate,
+        'end_date': endDate,
+        'currency': currency,
+        'adults': adults.toString(),
+      },
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return AttractionDetail.fromJson(jsonDecode(response.body));
+    }
+    return null;
+  }
+
+  Future<List<AttractionReview>> getAttractionReviews({
+    required String contentId,
+    String language = 'en',
+    int page = 1,
+    int size = 5,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/attractions/details/$contentId/reviews').replace(
+      queryParameters: {
+        'language': language,
+        'page': page.toString(),
+        'size': size.toString(),
+      },
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => AttractionReview.fromJson(json)).toList();
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> getAttractionNearby({
+    required String contentId,
+    String? category,
+    int size = 10,
+  }) async {
+    final params = <String, String>{
+      'size': size.toString(),
+    };
+    if (category != null) params['category'] = category;
+    final uri = Uri.parse('$baseUrl/api/v1/attractions/details/$contentId/nearby').replace(
+      queryParameters: params,
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    return {};
+  }
+
+  // ─── RESTAURANTS ─────────────────────────────────────────────────────────────
+
+  Future<PaginatedRestaurants> searchRestaurants({
+    required int geoId,
+    int page = 1,
+    String currency = 'EUR',
+    String sort = 'POPULARITY',
+    String? updateToken,
+  }) async {
+    final params = <String, String>{
+      'geo_id': geoId.toString(),
+      'page': page.toString(),
+      'currency': currency,
+      'sort': sort,
+    };
+    if (updateToken != null && updateToken.isNotEmpty) {
+      params['update_token'] = updateToken;
+    }
+    final uri = Uri.parse('$baseUrl/api/v1/restaurants/search').replace(
+      queryParameters: params,
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return PaginatedRestaurants.fromJson(jsonDecode(response.body));
+    }
+    return PaginatedRestaurants(data: [], currentPage: 1, totalPages: 1, totalResults: 0, pageSize: 30, updateToken: '');
+  }
+
+  Future<RestaurantDetail?> getRestaurantDetails({
+    required String contentId,
+    String currency = 'EUR',
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/restaurants/details').replace(
+      queryParameters: {
+        'content_id': contentId,
+        'currency': currency,
+      },
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return RestaurantDetail.fromJson(jsonDecode(response.body));
+    }
+    return null;
+  }
+
+  Future<List<RestaurantReview>> getRestaurantReviews({
+    required String contentId,
+    String language = 'en',
+    int page = 1,
+    int size = 5,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/restaurants/details/reviews').replace(
+      queryParameters: {
+        'content_id': contentId,
+        'language': language,
+        'page': page.toString(),
+        'size': size.toString(),
+      },
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => RestaurantReview.fromJson(json)).toList();
+    }
+    return [];
+  }
+
+  Future<List<NearbyRestaurant>> getRestaurantNearby({
+    required String contentId,
+    int size = 10,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/restaurants/details/nearby').replace(
+      queryParameters: {
+        'content_id': contentId,
+        'size': size.toString(),
+      },
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      if (data is List) {
+        return data.map((json) => NearbyRestaurant.fromJson(json)).toList();
+      }
+      if (data is Map && data['nearby_restaurants'] is List) {
+        return (data['nearby_restaurants'] as List)
+            .map((json) => NearbyRestaurant.fromJson(json))
+            .toList();
+      }
+    }
+    return [];
   }
 }

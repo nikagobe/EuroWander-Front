@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/hotel.dart';
@@ -54,6 +55,38 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
     {'id': 'distance', 'title': 'Distance from city centre'},
     {'id': 'upsort_bh', 'title': 'Entire homes & apartments first'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillDatesFromTrip();
+  }
+
+  void _prefillDatesFromTrip() {
+    // Pre-fill check-in from outbound flight arrival
+    if (widget.trip.outboundFlight != null) {
+      try {
+        final arrivalStr = widget.trip.outboundFlight!.arrivalTime;
+        final arrival = DateTime.parse(arrivalStr.replaceAll(' ', 'T'));
+        _arrivalDate = DateTime(arrival.year, arrival.month, arrival.day);
+      } catch (_) {}
+    }
+
+    // Pre-fill check-out: if bus exists, use bus departure; else use return flight departure
+    if (widget.trip.busJourney != null) {
+      try {
+        final busDepStr = widget.trip.busJourney!.depTime;
+        final busDep = DateTime.parse(busDepStr.replaceAll(' ', 'T'));
+        _departureDate = DateTime(busDep.year, busDep.month, busDep.day);
+      } catch (_) {}
+    } else if (widget.trip.returnFlight != null) {
+      try {
+        final retDepStr = widget.trip.returnFlight!.departureTime;
+        final retDep = DateTime.parse(retDepStr.replaceAll(' ', 'T'));
+        _departureDate = DateTime(retDep.year, retDep.month, retDep.day);
+      } catch (_) {}
+    }
+  }
 
   @override
   void dispose() {
@@ -255,6 +288,91 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
     );
   }
 
+  Widget _buildTripDatesInfo() {
+    final trip = widget.trip;
+    final hasFlightDates = trip.outboundFlight != null || trip.returnFlight != null;
+    if (!hasFlightDates) return const SizedBox.shrink();
+
+    final dateLines = <Map<String, String>>[];
+
+    if (trip.outboundFlight != null) {
+      final arrCity = trip.outboundFlight!.arrivalCityName.isNotEmpty
+          ? trip.outboundFlight!.arrivalCityName
+          : trip.outboundFlight!.arrivalAirportId;
+      try {
+        final dt = DateTime.parse(trip.outboundFlight!.arrivalTime.replaceAll(' ', 'T'));
+        dateLines.add({'label': 'Arrive in $arrCity', 'date': DateFormat('MMM d, yyyy').format(dt)});
+      } catch (_) {}
+    }
+
+    if (trip.busJourney != null) {
+      try {
+        final depDt = DateTime.parse(trip.busJourney!.depTime.replaceAll(' ', 'T'));
+        final arrDt = DateTime.parse(trip.busJourney!.arrTime.replaceAll(' ', 'T'));
+        dateLines.add({
+          'label': '${trip.busJourney!.depName} → ${trip.busJourney!.arrName}',
+          'date': DateFormat('MMM d').format(depDt) == DateFormat('MMM d').format(arrDt)
+              ? DateFormat('MMM d, yyyy').format(depDt)
+              : '${DateFormat('MMM d').format(depDt)} – ${DateFormat('MMM d').format(arrDt)}',
+        });
+      } catch (_) {}
+    }
+
+    if (trip.returnFlight != null) {
+      final depCity = trip.returnFlight!.departureCityName.isNotEmpty
+          ? trip.returnFlight!.departureCityName
+          : trip.returnFlight!.departureAirportId;
+      try {
+        final dt = DateTime.parse(trip.returnFlight!.departureTime.replaceAll(' ', 'T'));
+        dateLines.add({'label': 'Depart from $depCity', 'date': DateFormat('MMM d, yyyy').format(dt)});
+      } catch (_) {}
+    }
+
+    if (dateLines.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.primaryColor.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline_rounded, size: 16, color: AppTheme.primaryColor),
+              const SizedBox(width: 8),
+              Text(
+                'Your trip schedule',
+                style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...dateLines.map((line) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              children: [
+                Icon(Icons.circle, size: 6, color: AppTheme.primaryColor.withOpacity(0.5)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${line['label']} · ${line['date']}',
+                    style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textPrimary),
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSearchForm() {
     return Center(
       child: ConstrainedBox(
@@ -265,6 +383,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 16),
+              _buildTripDatesInfo(),
               // Destination search
               Text('Destination', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
               const SizedBox(height: 8),

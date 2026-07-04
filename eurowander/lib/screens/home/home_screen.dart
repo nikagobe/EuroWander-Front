@@ -261,12 +261,12 @@ class _HomeScreenState extends State<HomeScreen> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: _statusColor(trip.status).withOpacity(0.1),
+                color: AppTheme.primaryColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.flight_takeoff_rounded,
-                color: _statusColor(trip.status),
+                color: AppTheme.primaryColor,
                 size: 22,
               ),
             ),
@@ -311,46 +311,11 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            _buildStatusBadge(trip.status),
-            const SizedBox(width: 4),
             const Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary, size: 20),
           ],
         ),
       ),
     );
-  }
-
-  Widget _buildStatusBadge(String status) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: _statusColor(status).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        status[0].toUpperCase() + status.substring(1),
-        style: GoogleFonts.poppins(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: _statusColor(status),
-        ),
-      ),
-    );
-  }
-
-  Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'planning':
-        return const Color(0xFFFF9800);
-      case 'booked':
-        return const Color(0xFF4CAF50);
-      case 'completed':
-        return AppTheme.primaryColor;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return AppTheme.textSecondary;
-    }
   }
 
   String? _formatDate(String? dateStr) {

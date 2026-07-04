@@ -19,6 +19,7 @@ class RegionalSearchScreen extends StatefulWidget {
   final City origin;
   final City destination;
   final DateTime outboundDate;
+  final int adults;
 
   const RegionalSearchScreen({
     super.key,
@@ -28,6 +29,7 @@ class RegionalSearchScreen extends StatefulWidget {
     required this.origin,
     required this.destination,
     required this.outboundDate,
+    this.adults = 1,
   });
 
   @override
@@ -140,6 +142,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
         originCountry: widget.arrivalCountry,
         destinationId: _selectedDest!.freebaseId,
         outboundDate: dateStr,
+        adults: widget.adults,
       );
       if (mounted) {
         setState(() {
@@ -764,22 +767,38 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                   ],
                 ),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '€${flight.price.toStringAsFixed(0)}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '€${flight.price.toStringAsFixed(0)}',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                    if (flight.adults > 1 && flight.pricePerPerson != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '€${flight.pricePerPerson!.toStringAsFixed(0)}/person',
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -1089,6 +1108,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                   transitDate: _returnDate ?? widget.outboundDate,
                   outboundFlight: widget.firstFlight,
                   returnFlight: _selectedFlight!,
+                  adults: widget.adults,
                 ),
               ),
             );

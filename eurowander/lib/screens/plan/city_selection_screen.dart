@@ -17,6 +17,7 @@ class CitySelectionScreen extends StatefulWidget {
   final bool isReturn;
   final FlightOffer? firstFlight;
   final City? outboundDestinationCity;
+  final int adults;
 
   const CitySelectionScreen({
     super.key,
@@ -25,6 +26,7 @@ class CitySelectionScreen extends StatefulWidget {
     this.isReturn = false,
     this.firstFlight,
     this.outboundDestinationCity,
+    this.adults = 1,
   });
 
   @override
@@ -47,6 +49,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
   bool _isLoadingFrom = false;
   bool _isLoadingTo = false;
   DateTime? _departureDate;
+  int _adults = 1;
 
   Timer? _debounceFrom;
   Timer? _debounceTo;
@@ -54,6 +57,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
   @override
   void initState() {
     super.initState();
+    _adults = widget.adults;
     if (widget.prefillFrom != null) {
       _selectedFrom = widget.prefillFrom;
       _fromController.text = '${widget.prefillFrom!.name}, ${widget.prefillFrom!.country}';
@@ -240,6 +244,8 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     _buildSearchCard(),
                     const SizedBox(height: 20),
                     _buildDateCard(),
+                    const SizedBox(height: 20),
+                    _buildPassengersCard(),
                     const SizedBox(height: 32),
                     _buildSearchButton(),
                     const SizedBox(height: 32),
@@ -293,6 +299,8 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     _buildSearchCard(),
                     const SizedBox(height: 20),
                     _buildDateCard(),
+                    const SizedBox(height: 20),
+                    _buildPassengersCard(),
                     const SizedBox(height: 32),
                     _buildSearchButton(),
                     const SizedBox(height: 32),
@@ -564,6 +572,132 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
     );
   }
 
+  Widget _buildPassengersCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryColor.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Icons.person_rounded,
+              size: 18,
+              color: AppTheme.primaryColor,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Passengers',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textSecondary,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '$_adults ${_adults == 1 ? 'Adult' : 'Adults'}',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: _adults > 1
+                      ? () => setState(() => _adults--)
+                      : null,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _adults > 1
+                          ? AppTheme.primaryColor.withOpacity(0.1)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.remove_rounded,
+                      size: 18,
+                      color: _adults > 1
+                          ? AppTheme.primaryColor
+                          : Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    '$_adults',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: _adults < 9
+                      ? () => setState(() => _adults++)
+                      : null,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _adults < 9
+                          ? AppTheme.primaryColor.withOpacity(0.1)
+                          : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      Icons.add_rounded,
+                      size: 18,
+                      color: _adults < 9
+                          ? AppTheme.primaryColor
+                          : Colors.grey.shade400,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSearchButton() {
     final isReady =
         _selectedFrom != null && _selectedTo != null && _departureDate != null;
@@ -576,6 +710,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     origin: _selectedFrom!,
                     destination: _selectedTo!,
                     departureDate: _departureDate!,
+                    adults: _adults,
                     isReturn: widget.isReturn,
                     firstFlight: widget.firstFlight,
                     outboundDestinationCity: widget.outboundDestinationCity,
