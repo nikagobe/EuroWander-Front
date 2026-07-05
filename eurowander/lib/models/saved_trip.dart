@@ -1,6 +1,138 @@
 import 'bus.dart';
 import 'flight.dart';
 
+class SavedAttraction {
+  final String locationId;
+  final String name;
+  final String category;
+  final String photoUrl;
+  final double latitude;
+  final double longitude;
+  final String address;
+  final double rating;
+  final int numReviews;
+  final String ticketPrice;
+  final String dayDate;
+  final String timeSlot;
+  final bool isPaid;
+  final double? actualPaidAmount;
+  final String? paidCurrency;
+  final String? paidBy;
+  final List<String> eligibleMemberIds;
+
+  SavedAttraction({
+    required this.locationId,
+    required this.name,
+    required this.category,
+    required this.photoUrl,
+    required this.latitude,
+    required this.longitude,
+    required this.address,
+    required this.rating,
+    required this.numReviews,
+    required this.ticketPrice,
+    required this.dayDate,
+    required this.timeSlot,
+    this.isPaid = false,
+    this.actualPaidAmount,
+    this.paidCurrency,
+    this.paidBy,
+    this.eligibleMemberIds = const [],
+  });
+
+  factory SavedAttraction.fromJson(Map<String, dynamic> json) {
+    return SavedAttraction(
+      locationId: json['location_id'] ?? '',
+      name: json['name'] ?? '',
+      category: json['category'] ?? '',
+      photoUrl: json['photo_url'] ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
+      address: json['address'] ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      numReviews: json['num_reviews'] ?? 0,
+      ticketPrice: json['ticket_price'] ?? '',
+      dayDate: json['day_date'] ?? '',
+      timeSlot: json['time_slot'] ?? '',
+      isPaid: json['is_paid'] == true,
+      actualPaidAmount: json['actual_paid_amount'] != null
+          ? (json['actual_paid_amount'] as num).toDouble()
+          : null,
+      paidCurrency: json['paid_currency'],
+      paidBy: json['paid_by'],
+      eligibleMemberIds: json['eligible_member_ids'] != null
+          ? List<String>.from(json['eligible_member_ids'])
+          : [],
+    );
+  }
+}
+
+class SavedRestaurant {
+  final String locationId;
+  final String name;
+  final String cuisine;
+  final String photoUrl;
+  final double latitude;
+  final double longitude;
+  final String address;
+  final double rating;
+  final int numReviews;
+  final String priceLevel;
+  final String dayDate;
+  final String timeSlot;
+  final bool isPaid;
+  final double? actualPaidAmount;
+  final String? paidCurrency;
+  final String? paidBy;
+  final List<String> eligibleMemberIds;
+
+  SavedRestaurant({
+    required this.locationId,
+    required this.name,
+    required this.cuisine,
+    required this.photoUrl,
+    required this.latitude,
+    required this.longitude,
+    required this.address,
+    required this.rating,
+    required this.numReviews,
+    required this.priceLevel,
+    required this.dayDate,
+    required this.timeSlot,
+    this.isPaid = false,
+    this.actualPaidAmount,
+    this.paidCurrency,
+    this.paidBy,
+    this.eligibleMemberIds = const [],
+  });
+
+  factory SavedRestaurant.fromJson(Map<String, dynamic> json) {
+    return SavedRestaurant(
+      locationId: json['location_id'] ?? '',
+      name: json['name'] ?? '',
+      cuisine: json['cuisine'] ?? '',
+      photoUrl: json['photo_url'] ?? '',
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
+      address: json['address'] ?? '',
+      rating: (json['rating'] as num?)?.toDouble() ?? 0,
+      numReviews: json['num_reviews'] ?? 0,
+      priceLevel: json['price_level'] ?? '',
+      dayDate: json['day_date'] ?? '',
+      timeSlot: json['time_slot'] ?? '',
+      isPaid: json['is_paid'] == true,
+      actualPaidAmount: json['actual_paid_amount'] != null
+          ? (json['actual_paid_amount'] as num).toDouble()
+          : null,
+      paidCurrency: json['paid_currency'],
+      paidBy: json['paid_by'],
+      eligibleMemberIds: json['eligible_member_ids'] != null
+          ? List<String>.from(json['eligible_member_ids'])
+          : [],
+    );
+  }
+}
+
 class SavedHotel {
   final int hotelId;
   final String name;
@@ -86,6 +218,8 @@ class SavedTrip {
   final FlightOffer? returnFlight;
   final BusOffer? busJourney;
   final List<SavedHotel> hotels;
+  final List<SavedAttraction> attractions;
+  final List<SavedRestaurant> restaurants;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -98,6 +232,8 @@ class SavedTrip {
     this.returnFlight,
     this.busJourney,
     this.hotels = const [],
+    this.attractions = const [],
+    this.restaurants = const [],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -119,6 +255,12 @@ class SavedTrip {
           : null,
       hotels: json['hotels'] != null
           ? (json['hotels'] as List).map((h) => SavedHotel.fromJson(h)).toList()
+          : [],
+      attractions: json['attractions'] != null
+          ? (json['attractions'] as List).map((a) => SavedAttraction.fromJson(a)).toList()
+          : [],
+      restaurants: json['restaurants'] != null
+          ? (json['restaurants'] as List).map((r) => SavedRestaurant.fromJson(r)).toList()
           : [],
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),

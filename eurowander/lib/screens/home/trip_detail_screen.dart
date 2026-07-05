@@ -5,11 +5,13 @@ import '../../core/theme/app_theme.dart';
 import '../../models/saved_trip.dart';
 import 'attraction_search_screen.dart';
 import 'restaurant_search_screen.dart';
+import 'trip_activities_screen.dart';
 import 'trip_documents_screen.dart';
 import 'trip_finances_screen.dart';
 import 'trip_hotels_screen.dart';
 import 'trip_members_screen.dart';
 import 'trip_photos_screen.dart';
+import 'trip_schedule_screen.dart';
 import 'trip_tickets_screen.dart';
 
 class TripDetailScreen extends StatelessWidget {
@@ -288,6 +290,19 @@ class TripDetailScreen extends StatelessWidget {
         },
       ),
       _ModuleItem(
+        icon: Icons.bookmark_rounded,
+        label: 'Activities',
+        subtitle: 'Saved places',
+        gradientColors: [const Color(0xFF009688), const Color(0xFF4DB6AC)],
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => TripActivitiesScreen(trip: trip),
+            ),
+          );
+        },
+      ),
+      _ModuleItem(
         icon: Icons.account_balance_wallet_rounded,
         label: 'Finances',
         subtitle: 'Budget & expenses',
@@ -309,6 +324,19 @@ class TripDetailScreen extends StatelessWidget {
           Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => TripPhotosScreen(trip: trip),
+            ),
+          );
+        },
+      ),
+      _ModuleItem(
+        icon: Icons.calendar_month_rounded,
+        label: 'Schedule',
+        subtitle: 'Day-by-day plan',
+        gradientColors: [const Color(0xFF00BCD4), const Color(0xFF4DD0E1)],
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => TripScheduleScreen(trip: trip),
             ),
           );
         },

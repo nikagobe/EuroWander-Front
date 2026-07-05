@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/attraction.dart';
 import '../../models/saved_trip.dart';
+import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import 'restaurant_detail_screen.dart';
 
@@ -114,7 +117,122 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
                   : _buildContent(),
         ),
       ),
+      bottomNavigationBar: (!_isLoading && _details != null)
+          ? _buildAddToTripBar()
+          : null,
     );
+  }
+
+  Widget _buildAddToTripBar() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        child: SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: _showAddToTripSheet,
+            icon: const Icon(Icons.add_rounded, size: 20),
+            label: Text(
+              'Add to Trip',
+              style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddToTripSheet() {
+    final attraction = _details!;
+    // Get trip date range
+    DateTime? tripStart;
+    DateTime? tripEnd;
+    if (widget.trip.outboundFlight != null) {
+      try {
+        tripStart = DateTime.parse(widget.trip.outboundFlight!.departureTime.replaceAll(' ', 'T'));
+      } catch (_) {}
+    }
+    if (widget.trip.returnFlight != null) {
+      try {
+        tripEnd = DateTime.parse(widget.trip.returnFlight!.arrivalTime.replaceAll(' ', 'T'));
+      } catch (_) {}
+    }
+    tripStart ??= DateTime.now();
+    tripEnd ??= DateTime.now().add(const Duration(days: 7));
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _AddToTripSheet(
+        tripStart: tripStart!,
+        tripEnd: tripEnd!,
+        onConfirm: (dayDate, timeSlot) async {
+          Navigator.pop(ctx);
+          await _saveAttractionToTrip(attraction, dayDate, timeSlot);
+        },
+      ),
+    );
+  }
+
+  Future<void> _saveAttractionToTrip(AttractionDetail attraction, String dayDate, String timeSlot) async {
+    final token = context.read<AuthProvider>().token;
+    if (token == null) return;
+    try {
+      await _apiService.addAttractionToTrip(
+        token: token,
+        tripId: widget.trip.id,
+        attractionData: {
+          'location_id': attraction.contentId,
+          'name': attraction.name,
+          'category': attraction.category,
+          'photo_url': attraction.photos.isNotEmpty ? attraction.photos.first.url : '',
+          'latitude': attraction.latitude,
+          'longitude': attraction.longitude,
+          'address': attraction.address,
+          'rating': attraction.rating,
+          'num_reviews': attraction.numReviews,
+          'ticket_price': '',
+          'day_date': dayDate,
+          'time_slot': timeSlot,
+        },
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${attraction.name} added to trip!'),
+            backgroundColor: Colors.green.shade600,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final message = e.toString().contains('CONFLICT')
+            ? 'Already added to this trip'
+            : 'Failed to add to trip';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message), backgroundColor: Colors.red.shade600),
+        );
+      }
+    }
   }
 
   Widget _buildError() {
@@ -705,6 +823,179 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+// ─── Shared "Add to Trip" bottom sheet ─────────────────────────────────
+
+class _AddToTripSheet extends StatefulWidget {
+  final DateTime tripStart;
+  final DateTime tripEnd;
+  final Future<void> Function(String dayDate, String timeSlot) onConfirm;
+
+  const _AddToTripSheet({
+    required this.tripStart,
+    required this.tripEnd,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_AddToTripSheet> createState() => _AddToTripSheetState();
+}
+
+class _AddToTripSheetState extends State<_AddToTripSheet> {
+  DateTime? _selectedDate;
+  String? _selectedSlot;
+  bool _saving = false;
+
+  List<DateTime> get _tripDays {
+    final days = <DateTime>[];
+    var current = DateTime(widget.tripStart.year, widget.tripStart.month, widget.tripStart.day);
+    final end = DateTime(widget.tripEnd.year, widget.tripEnd.month, widget.tripEnd.day);
+    while (!current.isAfter(end)) {
+      days.add(current);
+      current = current.add(const Duration(days: 1));
+    }
+    return days;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = _tripDays;
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 24,
+        right: 24,
+        top: 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Add to Schedule',
+            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 16),
+          Text('Pick a day', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 60,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: days.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final day = days[index];
+                final isSelected = _selectedDate != null &&
+                    _selectedDate!.year == day.year &&
+                    _selectedDate!.month == day.month &&
+                    _selectedDate!.day == day.day;
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedDate = day),
+                  child: Container(
+                    width: 56,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppTheme.primaryColor : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          DateFormat('EEE').format(day),
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            color: isSelected ? Colors.white : AppTheme.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          DateFormat('d').format(day),
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected ? Colors.white : AppTheme.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text('Pick a time slot', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _buildSlotChip('morning', 'Morning', Icons.wb_sunny_rounded),
+              _buildSlotChip('midday', 'Midday', Icons.light_mode_rounded),
+              _buildSlotChip('evening', 'Evening', Icons.wb_twilight_rounded),
+              _buildSlotChip('night', 'Night', Icons.nightlight_round),
+            ],
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: (_selectedDate != null && _selectedSlot != null && !_saving)
+                  ? () async {
+                      setState(() => _saving = true);
+                      final dayStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+                      await widget.onConfirm(dayStr, _selectedSlot!);
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: _saving
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text('Confirm', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlotChip(String value, String label, IconData icon) {
+    final isSelected = _selectedSlot == value;
+    return ChoiceChip(
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: isSelected ? Colors.white : AppTheme.textSecondary),
+          const SizedBox(width: 4),
+          Text(label),
+        ],
+      ),
+      selected: isSelected,
+      onSelected: (_) => setState(() => _selectedSlot = value),
+      selectedColor: AppTheme.primaryColor,
+      labelStyle: GoogleFonts.poppins(
+        fontSize: 13,
+        color: isSelected ? Colors.white : AppTheme.textPrimary,
       ),
     );
   }

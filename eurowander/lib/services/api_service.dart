@@ -13,6 +13,7 @@ import '../models/hotel.dart';
 import '../models/photo.dart';
 import '../models/restaurant.dart';
 import '../models/saved_trip.dart';
+import '../models/schedule.dart';
 import '../models/user.dart';
 
 class ApiService {
@@ -1086,5 +1087,239 @@ class ApiService {
       }
     }
     return [];
+  }
+
+  // ─── Trip Attractions ───────────────────────────────────────────────
+
+  Future<SavedTrip> addAttractionToTrip({
+    required String token,
+    required String tripId,
+    required Map<String, dynamic> attractionData,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/attractions');
+    _logRequest('POST', uri, body: attractionData);
+    final response = await http.post(uri, headers: _authHeaders(token), body: jsonEncode(attractionData));
+    _logResponse(response);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    if (response.statusCode == 409) {
+      throw Exception('CONFLICT: Already added to this trip');
+    }
+    throw Exception('Failed to add attraction: ${response.statusCode} ${response.body}');
+  }
+
+  Future<SavedTrip> removeAttractionFromTrip({
+    required String token,
+    required String tripId,
+    required String locationId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/attractions/$locationId');
+    _logRequest('DELETE', uri);
+    final response = await http.delete(uri, headers: _authHeaders(token));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to remove attraction: ${response.statusCode}');
+  }
+
+  Future<SavedTrip> markAttractionPaid({
+    required String token,
+    required String tripId,
+    required String locationId,
+    required double actualPaidAmount,
+    required String paidBy,
+    required List<String> eligibleMemberIds,
+    String currency = 'EUR',
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/attractions/$locationId/payment');
+    final body = {
+      'actual_paid_amount': actualPaidAmount,
+      'paid_by': paidBy,
+      'eligible_member_ids': eligibleMemberIds,
+      'currency': currency,
+    };
+    _logRequest('PATCH', uri, body: body);
+    final response = await http.patch(uri, headers: _authHeaders(token), body: jsonEncode(body));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to mark attraction paid: ${response.statusCode}');
+  }
+
+  Future<SavedTrip> unmarkAttractionPaid({
+    required String token,
+    required String tripId,
+    required String locationId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/attractions/$locationId/payment');
+    _logRequest('DELETE', uri);
+    final response = await http.delete(uri, headers: _authHeaders(token));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to unmark attraction paid: ${response.statusCode}');
+  }
+
+  // ─── Trip Restaurants ───────────────────────────────────────────────
+
+  Future<SavedTrip> addRestaurantToTrip({
+    required String token,
+    required String tripId,
+    required Map<String, dynamic> restaurantData,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/restaurants');
+    _logRequest('POST', uri, body: restaurantData);
+    final response = await http.post(uri, headers: _authHeaders(token), body: jsonEncode(restaurantData));
+    _logResponse(response);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    if (response.statusCode == 409) {
+      throw Exception('CONFLICT: Already added to this trip');
+    }
+    throw Exception('Failed to add restaurant: ${response.statusCode} ${response.body}');
+  }
+
+  Future<SavedTrip> removeRestaurantFromTrip({
+    required String token,
+    required String tripId,
+    required String locationId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/restaurants/$locationId');
+    _logRequest('DELETE', uri);
+    final response = await http.delete(uri, headers: _authHeaders(token));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to remove restaurant: ${response.statusCode}');
+  }
+
+  Future<SavedTrip> markRestaurantPaid({
+    required String token,
+    required String tripId,
+    required String locationId,
+    required double actualPaidAmount,
+    required String paidBy,
+    required List<String> eligibleMemberIds,
+    String currency = 'EUR',
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/restaurants/$locationId/payment');
+    final body = {
+      'actual_paid_amount': actualPaidAmount,
+      'paid_by': paidBy,
+      'eligible_member_ids': eligibleMemberIds,
+      'currency': currency,
+    };
+    _logRequest('PATCH', uri, body: body);
+    final response = await http.patch(uri, headers: _authHeaders(token), body: jsonEncode(body));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to mark restaurant paid: ${response.statusCode}');
+  }
+
+  Future<SavedTrip> unmarkRestaurantPaid({
+    required String token,
+    required String tripId,
+    required String locationId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/restaurants/$locationId/payment');
+    _logRequest('DELETE', uri);
+    final response = await http.delete(uri, headers: _authHeaders(token));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to unmark restaurant paid: ${response.statusCode}');
+  }
+
+  // ─── Schedule ───────────────────────────────────────────────────────
+
+  Future<FullSchedule> getTripSchedule({
+    required String token,
+    required String tripId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/schedule');
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _authHeaders(token));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return FullSchedule.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to get schedule: ${response.statusCode}');
+  }
+
+  Future<ScheduleItem> addScheduleItem({
+    required String token,
+    required String tripId,
+    required String dayDate,
+    required String timeSlot,
+    required String itemType,
+    required String title,
+    String subtitle = '',
+    String referenceId = '',
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/schedule/items');
+    final body = {
+      'day_date': dayDate,
+      'time_slot': timeSlot,
+      'item_type': itemType,
+      'title': title,
+      'subtitle': subtitle,
+      'reference_id': referenceId,
+    };
+    _logRequest('POST', uri, body: body);
+    final response = await http.post(uri, headers: _authHeaders(token), body: jsonEncode(body));
+    _logResponse(response);
+    if (response.statusCode == 201) {
+      return ScheduleItem.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to add schedule item: ${response.statusCode} ${response.body}');
+  }
+
+  Future<ScheduleItem> updateScheduleItem({
+    required String token,
+    required String tripId,
+    required String itemId,
+    String? dayDate,
+    String? timeSlot,
+    String? title,
+    String? subtitle,
+    int? order,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/schedule/items/$itemId');
+    final body = <String, dynamic>{};
+    if (dayDate != null) body['day_date'] = dayDate;
+    if (timeSlot != null) body['time_slot'] = timeSlot;
+    if (title != null) body['title'] = title;
+    if (subtitle != null) body['subtitle'] = subtitle;
+    if (order != null) body['order'] = order;
+    _logRequest('PATCH', uri, body: body);
+    final response = await http.patch(uri, headers: _authHeaders(token), body: jsonEncode(body));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return ScheduleItem.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to update schedule item: ${response.statusCode} ${response.body}');
+  }
+
+  Future<void> deleteScheduleItem({
+    required String token,
+    required String tripId,
+    required String itemId,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/schedule/items/$itemId');
+    _logRequest('DELETE', uri);
+    final response = await http.delete(uri, headers: _authHeaders(token));
+    _logResponse(response);
+    if (response.statusCode != 204) {
+      throw Exception('Failed to delete schedule item: ${response.statusCode}');
+    }
   }
 }
