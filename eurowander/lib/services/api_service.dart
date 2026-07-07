@@ -1239,6 +1239,48 @@ class ApiService {
     throw Exception('Failed to unmark restaurant paid: ${response.statusCode}');
   }
 
+  // ─── Reschedule Attractions & Restaurants ───────────────────────────
+
+  Future<SavedTrip> rescheduleAttraction({
+    required String token,
+    required String tripId,
+    required String locationId,
+    String? dayDate,
+    String? timeSlot,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/attractions/$locationId');
+    final body = <String, dynamic>{};
+    if (dayDate != null) body['day_date'] = dayDate;
+    if (timeSlot != null) body['time_slot'] = timeSlot;
+    _logRequest('PATCH', uri, body: body);
+    final response = await http.patch(uri, headers: _authHeaders(token), body: jsonEncode(body));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to reschedule attraction: ${response.statusCode}');
+  }
+
+  Future<SavedTrip> rescheduleRestaurant({
+    required String token,
+    required String tripId,
+    required String locationId,
+    String? dayDate,
+    String? timeSlot,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/restaurants/$locationId');
+    final body = <String, dynamic>{};
+    if (dayDate != null) body['day_date'] = dayDate;
+    if (timeSlot != null) body['time_slot'] = timeSlot;
+    _logRequest('PATCH', uri, body: body);
+    final response = await http.patch(uri, headers: _authHeaders(token), body: jsonEncode(body));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return SavedTrip.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Failed to reschedule restaurant: ${response.statusCode}');
+  }
+
   // ─── Schedule ───────────────────────────────────────────────────────
 
   Future<FullSchedule> getTripSchedule({

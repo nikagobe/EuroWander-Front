@@ -3,8 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/saved_trip.dart';
-import 'attraction_search_screen.dart';
-import 'restaurant_search_screen.dart';
 import 'trip_activities_screen.dart';
 import 'trip_documents_screen.dart';
 import 'trip_finances_screen.dart';
@@ -264,36 +262,10 @@ class TripDetailScreen extends StatelessWidget {
         },
       ),
       _ModuleItem(
-        icon: Icons.attractions_rounded,
-        label: 'Attractions',
-        subtitle: 'Things to do',
-        gradientColors: [const Color(0xFFFF5722), const Color(0xFFFF8A65)],
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => AttractionSearchScreen(trip: trip),
-            ),
-          );
-        },
-      ),
-      _ModuleItem(
-        icon: Icons.restaurant_rounded,
-        label: 'Restaurants',
-        subtitle: 'Where to eat',
-        gradientColors: [const Color(0xFF795548), const Color(0xFFA1887F)],
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => RestaurantSearchScreen(trip: trip),
-            ),
-          );
-        },
-      ),
-      _ModuleItem(
-        icon: Icons.bookmark_rounded,
+        icon: Icons.explore_rounded,
         label: 'Activities',
-        subtitle: 'Saved places',
-        gradientColors: [const Color(0xFF009688), const Color(0xFF4DB6AC)],
+        subtitle: 'Places to visit & eat',
+        gradientColors: [const Color(0xFFFF5722), const Color(0xFFFF8A65)],
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(

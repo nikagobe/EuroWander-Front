@@ -35,6 +35,9 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
   AttractionDetail? _details;
   bool _isLoading = true;
 
+  // Photo gallery state
+  final ScrollController _photoScrollController = ScrollController();
+
   // Expandable sections state
   bool _reviewsExpanded = false;
   bool _reviewsLoading = false;
@@ -51,17 +54,32 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
     _loadDetails();
   }
 
+  @override
+  void dispose() {
+    _photoScrollController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadDetails() async {
-    final details = await _apiService.getAttractionDetails(
-      contentId: widget.contentId,
-      startDate: widget.startDate,
-      endDate: widget.endDate,
-    );
-    if (mounted) {
-      setState(() {
-        _details = details;
-        _isLoading = false;
-      });
+    try {
+      final details = await _apiService.getAttractionDetails(
+        contentId: widget.contentId,
+        startDate: widget.startDate,
+        endDate: widget.endDate,
+      );
+      if (mounted) {
+        setState(() {
+          _details = details;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _details = null;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -137,11 +155,11 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
         ],
       ),
       child: SafeArea(
-        child: SizedBox(
-          width: double.infinity,
+        child: Center(
+          heightFactor: 1,
           child: ElevatedButton.icon(
             onPressed: _showAddToTripSheet,
-            icon: const Icon(Icons.add_rounded, size: 20),
+            icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
             label: Text(
               'Add to Trip',
               style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
@@ -149,8 +167,10 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+              elevation: 4,
+              shadowColor: AppTheme.primaryColor.withOpacity(0.4),
             ),
           ),
         ),
@@ -276,7 +296,8 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
                           const SizedBox(height: 20),
                           _buildInfoCard(attraction),
                           const SizedBox(height: 20),
-                          _buildMap(attraction),
+                          if (attraction.latitude != 0 || attraction.longitude != 0)
+                            _buildMap(attraction),
                           if (attraction.description.isNotEmpty) ...[
                             const SizedBox(height: 20),
                             _buildDescription(attraction),
@@ -346,32 +367,101 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
 
     return SizedBox(
       height: 220,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: attraction.photos.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          return GestureDetector(
-            onTap: () => _openPhotoViewer(attraction.photos, index),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: Image.network(
-                attraction.photos[index].url,
-                width: 300,
-                height: 220,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  width: 300,
-                  height: 220,
-                  color: Colors.grey.shade200,
-                  child: Icon(Icons.broken_image_rounded, size: 48, color: Colors.grey.shade400),
+      child: Stack(
+        children: [
+          ListView.builder(
+            controller: _photoScrollController,
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: attraction.photos.length,
+            itemBuilder: (context, index) {
+              return GestureDetector(
+                onTap: () => _openPhotoViewer(attraction.photos, index),
+                child: Container(
+                  width: 320,
+                  margin: EdgeInsets.only(right: index < attraction.photos.length - 1 ? 10 : 0),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: Image.network(
+                      attraction.photos[index].url,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: Icon(Icons.broken_image_rounded, size: 48, color: Colors.grey.shade400),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          // Left arrow
+          Positioned(
+            left: 20,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => _photoScrollController.animateTo(
+                  (_photoScrollController.offset - 330).clamp(0, _photoScrollController.position.maxScrollExtent),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.chevron_left_rounded, color: Colors.white, size: 24),
                 ),
               ),
             ),
-          );
-        },
+          ),
+          // Right arrow
+          Positioned(
+            right: 20,
+            top: 0,
+            bottom: 0,
+            child: Center(
+              child: GestureDetector(
+                onTap: () => _photoScrollController.animateTo(
+                  (_photoScrollController.offset + 330).clamp(0, _photoScrollController.position.maxScrollExtent),
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                ),
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.chevron_right_rounded, color: Colors.white, size: 24),
+                ),
+              ),
+            ),
+          ),
+          // Photo count
+          if (attraction.photos.length > 1)
+            Positioned(
+              bottom: 10,
+              right: 24,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${attraction.photos.length} photos',
+                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -478,6 +568,7 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
   }
 
   Widget _buildMap(AttractionDetail attraction) {
+    if (attraction.latitude == 0 && attraction.longitude == 0) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

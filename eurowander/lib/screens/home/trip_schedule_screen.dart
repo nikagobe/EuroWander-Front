@@ -7,6 +7,11 @@ import '../../models/saved_trip.dart';
 import '../../models/schedule.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import 'attraction_detail_screen.dart';
+import 'restaurant_detail_screen.dart';
+import 'schedule_planner_screen.dart';
+import 'trip_hotels_screen.dart';
+import 'trip_tickets_screen.dart';
 
 class TripScheduleScreen extends StatefulWidget {
   final SavedTrip trip;
@@ -144,6 +149,29 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textPrimary,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () async {
+              await Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => SchedulePlannerScreen(trip: widget.trip)),
+              );
+              _loadSchedule();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: [AppTheme.primaryColor, const Color(0xFF8B5CF6)]),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.edit_calendar_rounded, size: 16, color: Colors.white),
+                  const SizedBox(width: 4),
+                  Text('Plan', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                ],
               ),
             ),
           ),
@@ -380,17 +408,20 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
         );
       },
       onDismissed: (_) => _deleteItem(item),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: item.isAuto
-              ? Border.all(color: _getItemTypeColor(item.itemType).withOpacity(0.3))
-              : null,
-          boxShadow: [
-            BoxShadow(
+      child: GestureDetector(
+        onTap: () => _onScheduleItemTap(item),
+        onLongPress: () => _onScheduleItemLongPress(item),
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: item.isAuto
+                ? Border.all(color: _getItemTypeColor(item.itemType).withOpacity(0.3))
+                : null,
+            boxShadow: [
+              BoxShadow(
               color: Colors.black.withOpacity(0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
@@ -474,6 +505,125 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
             ],
           ],
         ),
+      ),
+      ),
+    );
+  }
+
+  void _onScheduleItemTap(ScheduleItem item) {
+    final type = item.itemType.toLowerCase();
+
+    // Attractions & restaurants → detail page
+    if ((type == 'attraction' || type == 'restaurant') && item.referenceId.isNotEmpty) {
+      if (type == 'attraction') {
+        String startDate = '';
+        String endDate = '';
+        if (widget.trip.outboundFlight != null) {
+          try {
+            final dt = DateTime.parse(widget.trip.outboundFlight!.arrivalTime.replaceAll(' ', 'T'));
+            startDate = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+          } catch (_) {}
+        }
+        if (widget.trip.returnFlight != null) {
+          try {
+            final dt = DateTime.parse(widget.trip.returnFlight!.departureTime.replaceAll(' ', 'T'));
+            endDate = '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+          } catch (_) {}
+        }
+        if (startDate.isEmpty) startDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+        if (endDate.isEmpty) endDate = DateFormat('yyyy-MM-dd').format(DateTime.now().add(const Duration(days: 7)));
+
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => AttractionDetailScreen(
+              contentId: item.referenceId,
+              startDate: startDate,
+              endDate: endDate,
+              trip: widget.trip,
+            ),
+          ),
+        );
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => RestaurantDetailScreen(
+              contentId: item.referenceId,
+              trip: widget.trip,
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Flights & buses → tickets screen
+    if (type == 'flight' || type == 'bus' || type == 'transit') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TripTicketsScreen(trip: widget.trip),
+        ),
+      );
+      return;
+    }
+
+    // Hotels → hotels screen
+    if (type == 'hotel_checkin' || type == 'hotel_checkout') {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => TripHotelsScreen(trip: widget.trip),
+        ),
+      );
+      return;
+    }
+  }
+
+  void _onScheduleItemLongPress(ScheduleItem item) {
+    final type = item.itemType.toLowerCase();
+    if (type != 'attraction' && type != 'restaurant') return;
+    if (item.referenceId.isEmpty) return;
+
+    _showRescheduleSheet(item);
+  }
+
+  void _showRescheduleSheet(ScheduleItem item) {
+    final days = _schedule?.days ?? [];
+    if (days.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _RescheduleSheet(
+        item: item,
+        days: days,
+        onConfirm: (dayDate, timeSlot) async {
+          Navigator.pop(ctx);
+          final token = context.read<AuthProvider>().token;
+          if (token == null) return;
+          try {
+            final type = item.itemType.toLowerCase();
+            if (type == 'attraction') {
+              await _apiService.rescheduleAttraction(
+                token: token, tripId: widget.trip.id, locationId: item.referenceId,
+                dayDate: dayDate, timeSlot: timeSlot,
+              );
+            } else {
+              await _apiService.rescheduleRestaurant(
+                token: token, tripId: widget.trip.id, locationId: item.referenceId,
+                dayDate: dayDate, timeSlot: timeSlot,
+              );
+            }
+            _loadSchedule();
+          } catch (e) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Failed to move: $e'), backgroundColor: Colors.red.shade600),
+              );
+            }
+          }
+        },
       ),
     );
   }
@@ -578,5 +728,127 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
       default:
         return AppTheme.primaryColor;
     }
+  }
+}
+
+// ─── Reschedule Bottom Sheet ─────────────────────────────────────────────
+
+class _RescheduleSheet extends StatefulWidget {
+  final ScheduleItem item;
+  final List<ScheduleDay> days;
+  final Future<void> Function(String dayDate, String timeSlot) onConfirm;
+
+  const _RescheduleSheet({
+    required this.item,
+    required this.days,
+    required this.onConfirm,
+  });
+
+  @override
+  State<_RescheduleSheet> createState() => _RescheduleSheetState();
+}
+
+class _RescheduleSheetState extends State<_RescheduleSheet> {
+  late String _selectedDate;
+  late String _selectedSlot;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedDate = widget.item.dayDate;
+    _selectedSlot = widget.item.timeSlot;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 24, right: 24, top: 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+          ),
+          const SizedBox(height: 20),
+          Text('Move "${widget.item.title}"', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 16),
+          Text('Day', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 56,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: widget.days.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final day = widget.days[index];
+                final isSelected = day.date == _selectedDate;
+                DateTime? dt;
+                try { dt = DateTime.parse(day.date); } catch (_) {}
+                return GestureDetector(
+                  onTap: () => setState(() => _selectedDate = day.date),
+                  child: Container(
+                    width: 52,
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppTheme.primaryColor : Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(dt != null ? DateFormat('EEE').format(dt) : '', style: GoogleFonts.poppins(fontSize: 10, color: isSelected ? Colors.white70 : AppTheme.textSecondary)),
+                        Text(dt != null ? DateFormat('d').format(dt) : day.date, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : AppTheme.textPrimary)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text('Time slot', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: ['morning', 'midday', 'evening', 'night'].map((slot) {
+              final isSelected = _selectedSlot == slot;
+              return ChoiceChip(
+                label: Text(slot[0].toUpperCase() + slot.substring(1)),
+                selected: isSelected,
+                onSelected: (_) => setState(() => _selectedSlot = slot),
+                selectedColor: AppTheme.primaryColor,
+                labelStyle: GoogleFonts.poppins(fontSize: 13, color: isSelected ? Colors.white : AppTheme.textPrimary),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _saving ? null : () async {
+                setState(() => _saving = true);
+                await widget.onConfirm(_selectedDate, _selectedSlot);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: _saving
+                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Text('Move', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
   }
 }
