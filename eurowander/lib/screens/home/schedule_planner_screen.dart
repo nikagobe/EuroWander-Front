@@ -318,8 +318,21 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      itemCount: _schedule!.days.length,
-      itemBuilder: (context, dayIndex) => _buildDaySection(_schedule!.days[dayIndex], dayIndex),
+      itemCount: _schedule!.days.length + (_schedule!.unscheduled.isNotEmpty ? 1 : 0),
+      itemBuilder: (context, dayIndex) {
+        if (dayIndex < _schedule!.days.length) {
+          return _buildDaySection(_schedule!.days[dayIndex], dayIndex);
+        }
+        return _buildUnscheduledSection();
+      },
+    );
+  }
+
+  Widget _buildUnscheduledSection() {
+    if (_schedule == null || _schedule!.unscheduled.isEmpty) return const SizedBox.shrink();
+    return _UnscheduledCollapsible(
+      items: _schedule!.unscheduled,
+      onSchedule: (item) => _showEditTimeSheet(item),
     );
   }
 
@@ -492,80 +505,115 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   }
 
   Widget _buildItemContent(ScheduleItem item, bool isMovable, int index) {
+    final isCustom = item.itemType.toLowerCase() == 'custom';
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isCustom ? const Color(0xFFFFF8E1) : Colors.white,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _getItemColor(item.itemType).withOpacity(0.12)),
+        border: Border.all(color: isCustom ? Colors.amber.withOpacity(0.3) : _getItemColor(item.itemType).withOpacity(0.12)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Reorder drag handle
-          if (isMovable)
-            ReorderableDragStartListener(
-              index: index,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: Icon(Icons.drag_indicator_rounded, size: 18, color: Colors.grey.shade400),
+          Row(
+            children: [
+              // Reorder drag handle
+              if (isMovable)
+                ReorderableDragStartListener(
+                  index: index,
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: Icon(Icons.drag_indicator_rounded, size: 18, color: Colors.grey.shade400),
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Icon(Icons.lock_outline_rounded, size: 14, color: Colors.grey.shade300),
+                ),
+              // Icon
+              Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  color: _getItemColor(item.itemType).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  isCustom ? Icons.push_pin_rounded : _getItemIcon(item.itemType),
+                  size: 16,
+                  color: isCustom ? Colors.amber.shade700 : _getItemColor(item.itemType),
+                ),
               ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Icon(Icons.lock_outline_rounded, size: 14, color: Colors.grey.shade300),
-            ),
-          // Icon
-          Container(
-            width: 32, height: 32,
-            decoration: BoxDecoration(
-              color: _getItemColor(item.itemType).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(_getItemIcon(item.itemType), size: 16, color: _getItemColor(item.itemType)),
+              const SizedBox(width: 10),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    if (item.subtitle.isNotEmpty)
+                      Text(item.subtitle, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+              // Options menu
+              if (isMovable)
+                PopupMenuButton<String>(
+                  icon: Icon(Icons.more_vert_rounded, size: 18, color: AppTheme.textSecondary),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  onSelected: (value) {
+                    if (value == 'edit_time') _showEditTimeSheet(item);
+                    else if (value == 'duplicate') _showDuplicateSheet(item);
+                    else if (value == 'remove') _deleteItem(item);
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(value: 'edit_time', child: Row(children: [
+                      Icon(Icons.schedule_rounded, size: 18, color: AppTheme.primaryColor),
+                      const SizedBox(width: 8),
+                      Text('Edit time', style: GoogleFonts.poppins(fontSize: 13)),
+                    ])),
+                    PopupMenuItem(value: 'duplicate', child: Row(children: [
+                      Icon(Icons.copy_rounded, size: 18, color: Colors.blue.shade600),
+                      const SizedBox(width: 8),
+                      Text('Duplicate', style: GoogleFonts.poppins(fontSize: 13)),
+                    ])),
+                    PopupMenuItem(value: 'remove', child: Row(children: [
+                      Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red.shade600),
+                      const SizedBox(width: 8),
+                      Text('Remove', style: GoogleFonts.poppins(fontSize: 13, color: Colors.red.shade600)),
+                    ])),
+                  ],
+                ),
+            ],
           ),
-          const SizedBox(width: 10),
-          // Content
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                if (item.subtitle.isNotEmpty)
-                  Text(item.subtitle, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-          // Options menu
-          if (isMovable)
-            PopupMenuButton<String>(
-              icon: Icon(Icons.more_vert_rounded, size: 18, color: AppTheme.textSecondary),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              onSelected: (value) {
-                if (value == 'edit_time') _showEditTimeSheet(item);
-                else if (value == 'duplicate') _showDuplicateSheet(item);
-                else if (value == 'remove') _deleteItem(item);
-              },
-              itemBuilder: (context) => [
-                PopupMenuItem(value: 'edit_time', child: Row(children: [
-                  Icon(Icons.schedule_rounded, size: 18, color: AppTheme.primaryColor),
-                  const SizedBox(width: 8),
-                  Text('Edit time', style: GoogleFonts.poppins(fontSize: 13)),
-                ])),
-                PopupMenuItem(value: 'duplicate', child: Row(children: [
-                  Icon(Icons.copy_rounded, size: 18, color: Colors.blue.shade600),
-                  const SizedBox(width: 8),
-                  Text('Duplicate', style: GoogleFonts.poppins(fontSize: 13)),
-                ])),
-                PopupMenuItem(value: 'remove', child: Row(children: [
-                  Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red.shade600),
-                  const SizedBox(width: 8),
-                  Text('Remove', style: GoogleFonts.poppins(fontSize: 13, color: Colors.red.shade600)),
-                ])),
-              ],
+          // Note callout
+          if (item.note.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(top: 6, left: 40),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.sticky_note_2_outlined, size: 14, color: Colors.orange.shade700),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      item.note,
+                      style: TextStyle(fontSize: 11, color: Colors.orange.shade800),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
             ),
         ],
       ),
@@ -740,11 +788,11 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   }
 
   IconData _getItemIcon(String t) {
-    switch (t.toLowerCase()) { case 'flight': return Icons.flight_rounded; case 'bus': case 'transit': return Icons.directions_bus_rounded; case 'hotel_checkin': return Icons.login_rounded; case 'hotel_checkout': return Icons.logout_rounded; case 'attraction': return Icons.attractions_rounded; case 'restaurant': return Icons.restaurant_rounded; default: return Icons.event_rounded; }
+    switch (t.toLowerCase()) { case 'flight': return Icons.flight_rounded; case 'bus': case 'transit': return Icons.directions_bus_rounded; case 'hotel_checkin': return Icons.login_rounded; case 'hotel_checkout': return Icons.logout_rounded; case 'attraction': return Icons.attractions_rounded; case 'restaurant': return Icons.restaurant_rounded; case 'custom': return Icons.push_pin_rounded; default: return Icons.event_rounded; }
   }
 
   Color _getItemColor(String t) {
-    switch (t.toLowerCase()) { case 'flight': return const Color(0xFF2196F3); case 'bus': case 'transit': return const Color(0xFF4CAF50); case 'hotel_checkin': case 'hotel_checkout': return const Color(0xFFFF9800); case 'attraction': return const Color(0xFFFF5722); case 'restaurant': return const Color(0xFF795548); default: return AppTheme.primaryColor; }
+    switch (t.toLowerCase()) { case 'flight': return const Color(0xFF2196F3); case 'bus': case 'transit': return const Color(0xFF4CAF50); case 'hotel_checkin': case 'hotel_checkout': return const Color(0xFFFF9800); case 'attraction': return const Color(0xFFFF5722); case 'restaurant': return const Color(0xFF795548); case 'custom': return const Color(0xFFF9A825); default: return AppTheme.primaryColor; }
   }
 }
 
@@ -862,6 +910,107 @@ class _EditTimeSheetState extends State<_EditTimeSheet> {
             ),
           ),
           const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+class _UnscheduledCollapsible extends StatefulWidget {
+  final List<ScheduleItem> items;
+  final void Function(ScheduleItem item) onSchedule;
+
+  const _UnscheduledCollapsible({required this.items, required this.onSchedule});
+
+  @override
+  State<_UnscheduledCollapsible> createState() => _UnscheduledCollapsibleState();
+}
+
+class _UnscheduledCollapsibleState extends State<_UnscheduledCollapsible> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16, top: 8),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined, size: 20, color: Colors.orange.shade700),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '📋 Unscheduled Items (${widget.items.length})',
+                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
+                    ),
+                  ),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: Colors.orange.shade700,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded)
+            ...widget.items.map((item) => Container(
+              margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32, height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      item.itemType == 'attraction' ? Icons.attractions_rounded
+                          : item.itemType == 'restaurant' ? Icons.restaurant_rounded
+                          : Icons.push_pin_rounded,
+                      size: 16,
+                      color: Colors.orange.shade700,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(item.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        if (item.originalDayNumber != null)
+                          Text(
+                            'Originally Day ${item.originalDayNumber} • ${item.timeSlot[0].toUpperCase()}${item.timeSlot.substring(1)}',
+                            style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary),
+                          ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.calendar_month_outlined, size: 20),
+                    color: AppTheme.primaryColor,
+                    onPressed: () => widget.onSchedule(item),
+                    tooltip: 'Schedule this item',
+                  ),
+                ],
+              ),
+            )),
+          if (_expanded) const SizedBox(height: 8),
         ],
       ),
     );

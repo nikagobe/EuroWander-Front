@@ -1333,6 +1333,7 @@ class ApiService {
     String? timeSlot,
     String? title,
     String? subtitle,
+    String? note,
     int? order,
   }) async {
     final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/schedule/items/$itemId');
@@ -1341,6 +1342,7 @@ class ApiService {
     if (timeSlot != null) body['time_slot'] = timeSlot;
     if (title != null) body['title'] = title;
     if (subtitle != null) body['subtitle'] = subtitle;
+    if (note != null) body['note'] = note;
     if (order != null) body['order'] = order;
     _logRequest('PATCH', uri, body: body);
     final response = await http.patch(uri, headers: _authHeaders(token), body: jsonEncode(body));

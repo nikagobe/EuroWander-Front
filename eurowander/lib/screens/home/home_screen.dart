@@ -7,6 +7,8 @@ import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../plan/city_selection_screen.dart';
+import '../playlists/playlist_discovery_screen.dart';
+import '../playlists/my_playlists_screen.dart';
 import 'trip_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -74,6 +76,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         _buildHeader(context),
                         const SizedBox(height: 24),
                         _buildPlanButton(context),
+                        const SizedBox(height: 12),
+                        _buildPlaylistButtons(context),
                         const SizedBox(height: 28),
                         Text(
                           'My Trips',
@@ -187,6 +191,56 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPlaylistButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen())),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.explore_rounded, color: AppTheme.primaryColor, size: 18),
+                  const SizedBox(width: 6),
+                  Text('Playlists', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPlaylistsScreen())),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.secondaryColor.withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.playlist_play_rounded, color: AppTheme.secondaryColor, size: 18),
+                  const SizedBox(width: 6),
+                  Text('My Playlists', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.secondaryColor)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
