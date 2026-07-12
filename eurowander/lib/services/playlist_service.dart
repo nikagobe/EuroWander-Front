@@ -56,8 +56,10 @@ class PlaylistService {
     return [];
   }
 
-  Future<List<String>> getCities({required String token}) async {
-    final uri = Uri.parse('$baseUrl/api/v1/playlists/cities');
+  Future<List<String>> getCities({required String token, String query = '', int limit = 10}) async {
+    final params = <String, String>{'limit': limit.toString()};
+    if (query.isNotEmpty) params['q'] = query;
+    final uri = Uri.parse('$baseUrl/api/v1/playlists/cities').replace(queryParameters: params);
     _logRequest('GET', uri);
     final response = await http.get(uri, headers: _authHeaders(token));
     _logResponse(response);

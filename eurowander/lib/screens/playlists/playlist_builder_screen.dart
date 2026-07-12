@@ -1,3 +1,4 @@
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/playlist.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/playlist_provider.dart';
+import 'playlist_item_picker_screen.dart';
 
 class PlaylistBuilderScreen extends StatefulWidget {
   final String? editPlaylistId;
@@ -15,15 +17,17 @@ class PlaylistBuilderScreen extends StatefulWidget {
   State<PlaylistBuilderScreen> createState() => _PlaylistBuilderScreenState();
 }
 
-class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with SingleTickerProviderStateMixin {
+class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with TickerProviderStateMixin {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _cityController = TextEditingController();
-  final _countryController = TextEditingController();
-  final _coverPhotoController = TextEditingController();
   final _tagsController = TextEditingController();
 
-  PlaylistVibe _vibe = PlaylistVibe.chill;
+  String _selectedCountry = '';
+  List<String> _citySuggestions = [];
+  Timer? _cityDebounce;
+
+  Set<PlaylistVibe> _selectedVibes = {PlaylistVibe.chill};
   BudgetTier _budgetTier = BudgetTier.budget;
   int _totalDays = 1;
   bool _isPublic = true;
@@ -48,10 +52,9 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
     _titleController.dispose();
     _descriptionController.dispose();
     _cityController.dispose();
-    _countryController.dispose();
-    _coverPhotoController.dispose();
     _tagsController.dispose();
     _tabController?.dispose();
+    _cityDebounce?.cancel();
     super.dispose();
   }
 
@@ -68,9 +71,9 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
           _titleController.text = playlist.title;
           _descriptionController.text = playlist.description;
           _cityController.text = playlist.city;
-          _countryController.text = playlist.country;
-          _coverPhotoController.text = playlist.coverPhotoUrl;
-          _vibe = PlaylistVibe.fromString(playlist.vibe);
+          _selectedCountry = playlist.country;
+          _selectedVibes = playlist.vibes.map((v) => PlaylistVibe.fromString(v)).toSet();
+          if (_selectedVibes.isEmpty) _selectedVibes = {PlaylistVibe.chill};
           _budgetTier = BudgetTier.fromString(playlist.budgetTier);
           _totalDays = playlist.totalDays;
           _isPublic = playlist.isPublic;
@@ -80,10 +83,14 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
           _tabController = TabController(length: _totalDays, vsync: this);
         });
       }
-    } catch (_) {}
-    finally {
+    } catch (_) {} finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  String get _coverPhotoUrl {
+    final firstWithPhoto = _items.where((i) => i.photoUrl.isNotEmpty).toList();
+    return firstWithPhoto.isNotEmpty ? firstWithPhoto.first.photoUrl : '';
   }
 
   Future<void> _save() async {
@@ -109,9 +116,9 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
       'title': _titleController.text,
       'description': _descriptionController.text,
       'city': _cityController.text,
-      'country': _countryController.text,
-      'cover_photo_url': _coverPhotoController.text,
-      'vibe': _vibe.apiValue,
+      'country': _selectedCountry,
+      'cover_photo_url': _coverPhotoUrl,
+      'vibe': _selectedVibes.map((v) => v.apiValue).join(','),
       'budget_tier': _budgetTier.apiValue,
       'total_days': _totalDays,
       'is_public': _isPublic,
@@ -153,17 +160,41 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
     });
   }
 
-  void _addItem(int dayNumber) {
-    showModalBottomSheet(
-      context: context,
-      builder: (_) => _AddItemSheet(
-        dayNumber: dayNumber,
-        onAdd: (item) {
-          setState(() => _items.add(item));
-          Navigator.pop(context);
-        },
+  void _onCityChanged(String query) {
+    _cityDebounce?.cancel();
+    if (query.length < 2) {
+      setState(() => _citySuggestions = []);
+      return;
+    }
+    _cityDebounce = Timer(const Duration(milliseconds: 400), () async {
+      final token = context.read<AuthProvider>().token;
+      if (token == null) return;
+      final results = await context.read<PlaylistProvider>().searchCities(token: token, query: query);
+      if (mounted) setState(() => _citySuggestions = results);
+    });
+  }
+
+  void _selectCity(String city) {
+    setState(() {
+      _cityController.text = city;
+      _citySuggestions = [];
+    });
+  }
+
+  Future<void> _addItem(int dayNumber) async {
+    final results = await Navigator.push<List<PlaylistItem>>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PlaylistItemPickerScreen(
+          dayNumber: dayNumber,
+          totalDays: _totalDays,
+          initialCity: _cityController.text,
+        ),
       ),
     );
+    if (results != null && results.isNotEmpty && mounted) {
+      setState(() => _items.addAll(results));
+    }
   }
 
   void _removeItem(int index) {
@@ -206,28 +237,83 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Edit Playlist' : 'Create Playlist'),
-        actions: [
-          if (_isSaving)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-            )
-          else
-            TextButton(onPressed: _save, child: const Text('Save')),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMetadataForm(),
-            const SizedBox(height: 24),
-            _buildDayTabs(),
-          ],
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
+          ),
         ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                children: [
+                  _buildAppBar(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildMetadataForm(),
+                          const SizedBox(height: 24),
+                          _buildDayTabs(),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              width: 42, height: 42,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+              ),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              isEditing ? 'Edit Playlist' : 'Create Playlist',
+              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+            ),
+          ),
+          if (_isSaving)
+            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor))
+          else
+            GestureDetector(
+              onTap: _save,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text('Save', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -247,55 +333,82 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
           decoration: const InputDecoration(labelText: 'Description'),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: _cityController,
-                decoration: const InputDecoration(labelText: 'City *'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _countryController,
-                decoration: const InputDecoration(labelText: 'Country'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
         TextField(
-          controller: _coverPhotoController,
-          decoration: const InputDecoration(labelText: 'Cover Photo URL'),
+          controller: _cityController,
+          decoration: const InputDecoration(
+            labelText: 'City *',
+            prefixIcon: Icon(Icons.location_city, size: 20),
+          ),
+          onChanged: _onCityChanged,
+        ),
+        if (_citySuggestions.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
+            ),
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: _citySuggestions.length,
+              itemBuilder: (_, i) {
+                return ListTile(
+                  dense: true,
+                  leading: const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.primaryColor),
+                  title: Text(_citySuggestions[i], style: const TextStyle(fontSize: 14)),
+                  onTap: () => _selectCity(_citySuggestions[i]),
+                );
+              },
+            ),
+          ),
+        const SizedBox(height: 12),
+        Text('Vibes', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textSecondary)),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: PlaylistVibe.values.map((v) {
+            final isSelected = _selectedVibes.contains(v);
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  if (isSelected) {
+                    if (_selectedVibes.length > 1) _selectedVibes.remove(v);
+                  } else {
+                    _selectedVibes.add(v);
+                  }
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isSelected ? AppTheme.primaryColor.withOpacity(0.15) : Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300),
+                ),
+                child: Text(
+                  v.displayName,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: DropdownButtonFormField<PlaylistVibe>(
-                value: _vibe,
-                decoration: const InputDecoration(labelText: 'Vibe'),
-                items: PlaylistVibe.values.map((v) => DropdownMenuItem(
-                  value: v,
-                  child: Text('${v.icon} ${v.displayName}', style: const TextStyle(fontSize: 14)),
-                )).toList(),
-                onChanged: (v) { if (v != null) setState(() => _vibe = v); },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButtonFormField<BudgetTier>(
-                value: _budgetTier,
-                decoration: const InputDecoration(labelText: 'Budget'),
-                items: BudgetTier.values.map((b) => DropdownMenuItem(
-                  value: b,
-                  child: Text('${b.icon} ${b.displayName}', style: const TextStyle(fontSize: 14)),
-                )).toList(),
-                onChanged: (b) { if (b != null) setState(() => _budgetTier = b); },
-              ),
-            ),
-          ],
+        DropdownButtonFormField<BudgetTier>(
+          value: _budgetTier,
+          decoration: const InputDecoration(labelText: 'Budget'),
+          items: BudgetTier.values.map((b) => DropdownMenuItem(
+            value: b,
+            child: Text(b.displayName, style: const TextStyle(fontSize: 14)),
+          )).toList(),
+          onChanged: (b) { if (b != null) setState(() => _budgetTier = b); },
         ),
         const SizedBox(height: 12),
         TextField(
@@ -385,7 +498,6 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
                       final globalNew = _items.indexOf(dayItems[newIndex]);
                       final item = _items.removeAt(globalOld);
                       _items.insert(globalNew, item);
-                      // Update order
                       for (int i = 0; i < _items.length; i++) {
                         if (_items[i].dayNumber == dayNumber) {
                           _items[i] = _items[i].copyWith(order: i);
@@ -420,13 +532,15 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
       margin: const EdgeInsets.symmetric(vertical: 4),
       color: isCustom ? Colors.amber.shade50 : null,
       child: ListTile(
-        leading: Icon(
-          item.itemType == 'attraction' ? Icons.attractions_rounded
-              : item.itemType == 'restaurant' ? Icons.restaurant_rounded
-              : Icons.push_pin_rounded,
-          color: item.itemType == 'attraction' ? Colors.deepOrange
-              : item.itemType == 'restaurant' ? Colors.green
-              : Colors.amber.shade700,
+        leading: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: SizedBox(
+            width: 40, height: 40,
+            child: item.photoUrl.isNotEmpty
+                ? Image.network(item.photoUrl, fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _itemIcon(item))
+                : _itemIcon(item),
+          ),
         ),
         title: Text(item.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
         subtitle: Row(
@@ -453,16 +567,35 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
     );
   }
 
+  Widget _itemIcon(PlaylistItem item) {
+    IconData icon;
+    Color color;
+    switch (item.itemType) {
+      case 'attraction':
+        icon = Icons.attractions_rounded;
+        color = Colors.deepOrange;
+        break;
+      case 'restaurant':
+        icon = Icons.restaurant_rounded;
+        color = Colors.green;
+        break;
+      default:
+        icon = Icons.push_pin_rounded;
+        color = Colors.amber.shade700;
+    }
+    return Container(color: color.withOpacity(0.1), child: Icon(icon, color: color, size: 20));
+  }
+
   Widget _buildTimeSlotDropdown(int index) {
     return DropdownButton<String>(
       value: _items[index].timeSlot,
       isDense: true,
       underline: const SizedBox.shrink(),
       items: const [
-        DropdownMenuItem(value: 'morning', child: Text('🌅', style: TextStyle(fontSize: 14))),
-        DropdownMenuItem(value: 'midday', child: Text('☀️', style: TextStyle(fontSize: 14))),
-        DropdownMenuItem(value: 'evening', child: Text('🌆', style: TextStyle(fontSize: 14))),
-        DropdownMenuItem(value: 'night', child: Text('🌙', style: TextStyle(fontSize: 14))),
+        DropdownMenuItem(value: 'morning', child: Text('Morning', style: TextStyle(fontSize: 12))),
+        DropdownMenuItem(value: 'midday', child: Text('Midday', style: TextStyle(fontSize: 12))),
+        DropdownMenuItem(value: 'evening', child: Text('Evening', style: TextStyle(fontSize: 12))),
+        DropdownMenuItem(value: 'night', child: Text('Night', style: TextStyle(fontSize: 12))),
       ],
       onChanged: (v) {
         if (v != null) setState(() => _items[index] = _items[index].copyWith(timeSlot: v));
@@ -471,141 +604,3 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Sing
   }
 }
 
-class _AddItemSheet extends StatefulWidget {
-  final int dayNumber;
-  final void Function(PlaylistItem item) onAdd;
-
-  const _AddItemSheet({required this.dayNumber, required this.onAdd});
-
-  @override
-  State<_AddItemSheet> createState() => _AddItemSheetState();
-}
-
-class _AddItemSheetState extends State<_AddItemSheet> {
-  String _type = 'custom';
-  final _nameController = TextEditingController();
-  final _categoryController = TextEditingController();
-  final _noteController = TextEditingController();
-  String _timeSlot = 'morning';
-  int _duration = 60;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _categoryController.dispose();
-    _noteController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Add Item — Day ${widget.dayNumber}',
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 16),
-            // Type selector
-            Row(
-              children: [
-                _buildTypeChip('Custom', 'custom', Icons.push_pin_rounded),
-                const SizedBox(width: 8),
-                _buildTypeChip('Attraction', 'attraction', Icons.attractions_rounded),
-                const SizedBox(width: 8),
-                _buildTypeChip('Restaurant', 'restaurant', Icons.restaurant_rounded),
-              ],
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Name *'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _categoryController,
-              decoration: const InputDecoration(labelText: 'Category'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _noteController,
-              decoration: const InputDecoration(labelText: 'Note (tips/warnings)'),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Text('Time: '),
-                DropdownButton<String>(
-                  value: _timeSlot,
-                  items: const [
-                    DropdownMenuItem(value: 'morning', child: Text('🌅 Morning')),
-                    DropdownMenuItem(value: 'midday', child: Text('☀️ Midday')),
-                    DropdownMenuItem(value: 'evening', child: Text('🌆 Evening')),
-                    DropdownMenuItem(value: 'night', child: Text('🌙 Night')),
-                  ],
-                  onChanged: (v) { if (v != null) setState(() => _timeSlot = v); },
-                ),
-                const Spacer(),
-                const Text('Duration: '),
-                IconButton(
-                  icon: const Icon(Icons.remove, size: 18),
-                  onPressed: () { if (_duration > 15) setState(() => _duration -= 15); },
-                ),
-                Text('${_duration}min'),
-                IconButton(
-                  icon: const Icon(Icons.add, size: 18),
-                  onPressed: () => setState(() => _duration += 15),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  if (_nameController.text.isEmpty) return;
-                  widget.onAdd(PlaylistItem(
-                    itemType: _type,
-                    name: _nameController.text,
-                    dayNumber: widget.dayNumber,
-                    timeSlot: _timeSlot,
-                    order: 0,
-                    category: _categoryController.text,
-                    note: _noteController.text,
-                    suggestedDurationMinutes: _duration,
-                  ));
-                },
-                child: const Text('Add'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypeChip(String label, String value, IconData icon) {
-    final isSelected = _type == value;
-    return GestureDetector(
-      onTap: () => setState(() => _type = value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor.withOpacity(0.15) : Colors.grey.shade100,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: 16, color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 12, color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary)),
-          ],
-        ),
-      ),
-    );
-  }
-}

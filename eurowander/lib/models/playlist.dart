@@ -283,7 +283,7 @@ class Playlist {
   final String title;
   final String description;
   final String coverPhotoUrl;
-  final String vibe;
+  final List<String> vibes;
   final String budgetTier;
   final List<PlaylistItem> items;
   final List<String> tags;
@@ -297,6 +297,8 @@ class Playlist {
   final String updatedAt;
   final bool isLikedByMe;
 
+  String get vibe => vibes.isNotEmpty ? vibes.first : 'chill';
+
   Playlist({
     required this.id,
     required this.creatorId,
@@ -307,7 +309,7 @@ class Playlist {
     required this.title,
     this.description = '',
     this.coverPhotoUrl = '',
-    required this.vibe,
+    this.vibes = const ['chill'],
     required this.budgetTier,
     this.items = const [],
     this.tags = const [],
@@ -333,7 +335,7 @@ class Playlist {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       coverPhotoUrl: json['cover_photo_url'] ?? '',
-      vibe: json['vibe'] ?? 'chill',
+      vibes: _parseVibes(json['vibe']),
       budgetTier: json['budget_tier'] ?? 'budget',
       items: (json['items'] as List?)
               ?.map((item) => PlaylistItem.fromJson(item))
@@ -352,6 +354,14 @@ class Playlist {
     );
   }
 
+  static List<String> _parseVibes(dynamic value) {
+    if (value == null) return ['chill'];
+    if (value is List) return value.map((e) => e.toString()).toList();
+    final str = value.toString();
+    if (str.contains(',')) return str.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    return [str];
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'city': city,
@@ -359,7 +369,7 @@ class Playlist {
       'title': title,
       'description': description,
       'cover_photo_url': coverPhotoUrl,
-      'vibe': vibe,
+      'vibe': vibes.join(','),
       'budget_tier': budgetTier,
       'items': items.map((i) => i.toJson()).toList(),
       'tags': tags,
@@ -379,7 +389,7 @@ class PlaylistSummary {
   final String title;
   final String description;
   final String coverPhotoUrl;
-  final String vibe;
+  final List<String> vibes;
   final String budgetTier;
   final int totalDays;
   final int itemCount;
@@ -388,6 +398,8 @@ class PlaylistSummary {
   final int reviewCount;
   final double averageRating;
   final List<String> tags;
+
+  String get vibe => vibes.isNotEmpty ? vibes.first : 'chill';
 
   PlaylistSummary({
     required this.id,
@@ -399,7 +411,7 @@ class PlaylistSummary {
     required this.title,
     this.description = '',
     this.coverPhotoUrl = '',
-    required this.vibe,
+    this.vibes = const ['chill'],
     required this.budgetTier,
     required this.totalDays,
     this.itemCount = 0,
@@ -421,7 +433,7 @@ class PlaylistSummary {
       title: json['title'] ?? '',
       description: json['description'] ?? '',
       coverPhotoUrl: json['cover_photo_url'] ?? '',
-      vibe: json['vibe'] ?? 'chill',
+      vibes: _parseVibesList(json['vibe']),
       budgetTier: json['budget_tier'] ?? 'budget',
       totalDays: json['total_days'] ?? 1,
       itemCount: json['item_count'] ?? 0,
@@ -431,6 +443,14 @@ class PlaylistSummary {
       averageRating: (json['average_rating'] as num?)?.toDouble() ?? 0,
       tags: (json['tags'] as List?)?.map((t) => t.toString()).toList() ?? [],
     );
+  }
+
+  static List<String> _parseVibesList(dynamic value) {
+    if (value == null) return ['chill'];
+    if (value is List) return value.map((e) => e.toString()).toList();
+    final str = value.toString();
+    if (str.contains(',')) return str.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
+    return [str];
   }
 }
 

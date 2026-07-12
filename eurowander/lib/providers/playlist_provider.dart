@@ -122,6 +122,14 @@ class PlaylistProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<List<String>> searchCities({required String token, required String query}) async {
+    try {
+      return await _service.getCities(token: token, query: query);
+    } catch (_) {
+      return [];
+    }
+  }
+
   // ─── Detail Methods ────────────────────────────────────────────────
 
   Future<void> loadPlaylist({required String token, required String id}) async {
@@ -288,7 +296,7 @@ class PlaylistProvider extends ChangeNotifier {
       'title': p.title,
       'description': p.description,
       'cover_photo_url': p.coverPhotoUrl,
-      'vibe': p.vibe,
+      'vibe': p.vibes.join(','),
       'budget_tier': p.budgetTier,
       'items': p.items.map((i) => i.toJson()).toList(),
       'tags': p.tags,

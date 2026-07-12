@@ -46,8 +46,11 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
           ),
         ],
       ),
-      body: Consumer<PlaylistProvider>(
-        builder: (context, provider, _) {
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Consumer<PlaylistProvider>(
+            builder: (context, provider, _) {
           if (provider.isLoadingMine) {
             return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
           }
@@ -85,6 +88,8 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
             },
           );
         },
+          ),
+        ),
       ),
     );
   }
@@ -142,7 +147,7 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
           onTap: () async {
             await Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => PlaylistBuilderScreen(editPlaylistId: playlist.id)),
+              MaterialPageRoute(builder: (_) => PlaylistDetailScreen(playlistId: playlist.id)),
             );
             _loadData();
           },
@@ -177,7 +182,7 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
                           style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
-                      Text('${playlist.city} • ${vibe.icon} ${vibe.displayName}',
+                      Text('${playlist.city} • ${vibe.displayName}',
                           style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
                       const SizedBox(height: 4),
                       Row(

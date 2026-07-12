@@ -36,27 +36,43 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Consumer<PlaylistProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoadingDetail) {
-            return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
-          }
-          if (provider.detailError != null) {
-            return Center(child: Text('Error: ${provider.detailError}'));
-          }
-          final playlist = provider.currentPlaylist;
-          if (playlist == null) return const SizedBox.shrink();
-          return CustomScrollView(
-            slivers: [
-              _buildHeroAppBar(playlist),
-              SliverToBoxAdapter(child: _buildInfoSection(playlist)),
-              SliverToBoxAdapter(child: _buildActionButtons(playlist)),
-              SliverToBoxAdapter(child: _buildTagsSection(playlist)),
-              ..._buildDayItemsList(playlist),
-              SliverToBoxAdapter(child: _buildReviewsSection()),
-            ],
-          );
-        },
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Consumer<PlaylistProvider>(
+                builder: (context, provider, _) {
+                  if (provider.isLoadingDetail) {
+                    return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+                  }
+                  if (provider.detailError != null) {
+                    return Center(child: Text('Error: ${provider.detailError}'));
+                  }
+                  final playlist = provider.currentPlaylist;
+                  if (playlist == null) return const SizedBox.shrink();
+                  return CustomScrollView(
+                    slivers: [
+                      _buildHeroAppBar(playlist),
+                      SliverToBoxAdapter(child: _buildInfoSection(playlist)),
+                      SliverToBoxAdapter(child: _buildActionButtons(playlist)),
+                      SliverToBoxAdapter(child: _buildTagsSection(playlist)),
+                      ..._buildDayItemsList(playlist),
+                      SliverToBoxAdapter(child: _buildReviewsSection()),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -93,7 +109,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   }
 
   Widget _buildInfoSection(Playlist playlist) {
-    final vibe = PlaylistVibe.fromString(playlist.vibe);
+    final vibes = playlist.vibes.map((v) => PlaylistVibe.fromString(v)).toList();
     final budget = BudgetTier.fromString(playlist.budgetTier);
 
     return Padding(
@@ -112,22 +128,23 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             Text(playlist.description, style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textPrimary)),
           const SizedBox(height: 12),
           // Badges
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
             children: [
-              _buildChip('${vibe.icon} ${vibe.displayName}', AppTheme.primaryColor),
-              const SizedBox(width: 8),
-              _buildChip('${budget.icon} ${budget.displayName}', Colors.amber.shade700),
+              ...vibes.map((vibe) => _buildChip(vibe.displayName, AppTheme.primaryColor)),
+              _buildChip(budget.displayName, Colors.amber.shade700),
             ],
           ),
           const SizedBox(height: 12),
           // Stats row
           Row(
             children: [
-              _buildStatItem('❤️', '${playlist.likeCount} likes'),
+              _buildStatItem(Icons.favorite, '${playlist.likeCount} likes'),
               const SizedBox(width: 16),
-              _buildStatItem('📥', '${playlist.importCount} imports'),
+              _buildStatItem(Icons.download_rounded, '${playlist.importCount} imports'),
               const SizedBox(width: 16),
-              _buildStatItem('⭐', '${playlist.averageRating.toStringAsFixed(1)} (${playlist.reviewCount})'),
+              _buildStatItem(Icons.star_rounded, '${playlist.averageRating.toStringAsFixed(1)} (${playlist.reviewCount})'),
             ],
           ),
         ],
@@ -136,6 +153,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   }
 
   Widget _buildActionButtons(Playlist playlist) {
+    final currentUserId = context.read<AuthProvider>().user?.id;
+    final isOwner = currentUserId == playlist.creatorId;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -162,23 +182,39 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(
-            child: _ActionButton(
-              icon: Icons.fork_right_rounded,
-              label: 'Fork',
-              color: Colors.teal,
-              onTap: () async {
-                final token = context.read<AuthProvider>().token;
-                if (token == null) return;
-                final forked = await context.read<PlaylistProvider>().forkPlaylist(token: token, id: playlist.id);
-                if (forked != null && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Forked "${forked.title}" to your playlists!')),
+          if (isOwner)
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.edit_rounded,
+                label: 'Edit',
+                color: Colors.orange,
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PlaylistBuilderScreen(editPlaylistId: playlist.id)),
                   );
-                }
-              },
+                  _loadData();
+                },
+              ),
+            )
+          else
+            Expanded(
+              child: _ActionButton(
+                icon: Icons.fork_right_rounded,
+                label: 'Fork',
+                color: Colors.teal,
+                onTap: () async {
+                  final token = context.read<AuthProvider>().token;
+                  if (token == null) return;
+                  final forked = await context.read<PlaylistProvider>().forkPlaylist(token: token, id: playlist.id);
+                  if (forked != null && mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Forked "${forked.title}" to your playlists!')),
+                    );
+                  }
+                },
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -528,10 +564,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     );
   }
 
-  Widget _buildStatItem(String icon, String text) {
+  Widget _buildStatItem(IconData icon, String text) {
     return Row(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 14)),
+        Icon(icon, size: 16, color: AppTheme.textSecondary),
         const SizedBox(width: 4),
         Text(text, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
       ],

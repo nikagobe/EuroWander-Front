@@ -6,10 +6,10 @@ import '../../core/theme/app_theme.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../playlists/playlist_discovery_screen.dart';
+import 'activity_search_screen.dart';
 import 'attraction_detail_screen.dart';
-import 'attraction_search_screen.dart';
 import 'restaurant_detail_screen.dart';
-import 'restaurant_search_screen.dart';
 
 class TripActivitiesScreen extends StatefulWidget {
   final SavedTrip trip;
@@ -152,6 +152,8 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                 children: [
                   _buildAppBar(context),
                   _buildSearchBar(),
+                  const SizedBox(height: 8),
+                  _buildImportPlaylistButton(),
                   const SizedBox(height: 12),
                   _buildTabBar(),
                   Expanded(
@@ -176,7 +178,10 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: GestureDetector(
-        onTap: _showSearchOptions,
+        onTap: () async {
+          await Navigator.push(context, MaterialPageRoute(builder: (_) => ActivitySearchScreen(trip: _trip)));
+          _reloadTrip();
+        },
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
@@ -220,6 +225,47 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                 ),
               ),
               const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 20),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImportPlaylistButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: GestureDetector(
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen())),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFF9C27B0).withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF9C27B0).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.playlist_play_rounded, color: Color(0xFF9C27B0), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Import from Playlist', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+                    Text('Browse community itineraries', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.textSecondary),
             ],
           ),
         ),
@@ -320,14 +366,14 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
 
   void _navigateToAttractionSearch() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => AttractionSearchScreen(trip: _trip)),
+      MaterialPageRoute(builder: (_) => ActivitySearchScreen(trip: _trip, initialTab: 0)),
     );
     _reloadTrip();
   }
 
   void _navigateToRestaurantSearch() async {
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => RestaurantSearchScreen(trip: _trip)),
+      MaterialPageRoute(builder: (_) => ActivitySearchScreen(trip: _trip, initialTab: 1)),
     );
     _reloadTrip();
   }

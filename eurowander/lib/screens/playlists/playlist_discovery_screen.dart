@@ -18,7 +18,6 @@ class PlaylistDiscoveryScreen extends StatefulWidget {
 class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  String? _selectedCity;
   PlaylistVibe? _selectedVibe;
   BudgetTier? _selectedBudgetTier;
   String _sortBy = 'popular';
@@ -64,7 +63,6 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
     if (token == null) return;
     final provider = context.read<PlaylistProvider>();
     provider.setFilters(
-      city: _selectedCity,
       vibe: _selectedVibe?.apiValue,
       budgetTier: _selectedBudgetTier?.apiValue,
       keyword: _searchController.text.isNotEmpty ? _searchController.text : null,
@@ -85,14 +83,19 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
           ),
         ),
         child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(),
-              _buildSearchBar(),
-              _buildFilterChips(),
-              _buildSortRow(),
-              Expanded(child: _buildPlaylistGrid()),
-            ],
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(
+                children: [
+                  _buildAppBar(),
+                  _buildSearchBar(),
+                  _buildFilterRow(),
+                  _buildSortRow(),
+                  Expanded(child: _buildPlaylistGrid()),
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -106,14 +109,30 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildAppBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Text(
-            'Discover Playlists',
-            style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+          GestureDetector(
+            onTap: () => Navigator.of(context).pop(),
+            child: Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
+              ),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              'Discover Playlists',
+              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+            ),
           ),
         ],
       ),
@@ -122,15 +141,15 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: 'Search playlists...',
+          hintText: 'Search by city, country or keyword...',
           prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear),
+                  icon: const Icon(Icons.clear, size: 18),
                   onPressed: () {
                     _searchController.clear();
                     _applyFilters();
@@ -147,107 +166,88 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
     );
   }
 
-  Widget _buildFilterChips() {
-    return Consumer<PlaylistProvider>(
-      builder: (context, provider, _) {
-        return Column(
-          children: [
-            // Vibe chips
-            SizedBox(
-              height: 40,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: PlaylistVibe.values.map((vibe) {
-                  final isSelected = _selectedVibe == vibe;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text('${vibe.icon} ${vibe.displayName}'),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        setState(() => _selectedVibe = selected ? vibe : null);
-                        _applyFilters();
-                      },
-                      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
-                      checkmarkColor: AppTheme.primaryColor,
-                      labelStyle: TextStyle(
-                        fontSize: 12,
-                        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
-                      ),
+  Widget _buildFilterRow() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          // Vibe dropdown
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _selectedVibe != null ? AppTheme.primaryColor : Colors.grey.shade300),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<PlaylistVibe?>(
+                  value: _selectedVibe,
+                  hint: Text('Vibe', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
+                  isExpanded: true,
+                  isDense: true,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                  items: [
+                    DropdownMenuItem<PlaylistVibe?>(
+                      value: null,
+                      child: Text('All Vibes', style: GoogleFonts.poppins(fontSize: 13)),
                     ),
-                  );
-                }).toList(),
+                    ...PlaylistVibe.values.map((v) => DropdownMenuItem(
+                      value: v,
+                      child: Text(v.displayName, style: GoogleFonts.poppins(fontSize: 13)),
+                    )),
+                  ],
+                  onChanged: (v) {
+                    setState(() => _selectedVibe = v);
+                    _applyFilters();
+                  },
+                ),
               ),
             ),
-            const SizedBox(height: 8),
-            // Budget tier chips
-            SizedBox(
-              height: 40,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  // City dropdown
-                  if (provider.cities.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: DropdownButtonHideUnderline(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          decoration: BoxDecoration(
-                            color: _selectedCity != null ? AppTheme.primaryColor.withOpacity(0.1) : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: DropdownButton<String>(
-                            value: _selectedCity,
-                            hint: const Text('City', style: TextStyle(fontSize: 12)),
-                            items: [
-                              const DropdownMenuItem(value: null, child: Text('All Cities')),
-                              ...provider.cities.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 12)))),
-                            ],
-                            onChanged: (v) {
-                              setState(() => _selectedCity = v);
-                              _applyFilters();
-                            },
-                            isDense: true,
-                          ),
-                        ),
-                      ),
+          ),
+          const SizedBox(width: 10),
+          // Budget dropdown
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _selectedBudgetTier != null ? AppTheme.primaryColor : Colors.grey.shade300),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<BudgetTier?>(
+                  value: _selectedBudgetTier,
+                  hint: Text('Budget', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
+                  isExpanded: true,
+                  isDense: true,
+                  icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
+                  items: [
+                    DropdownMenuItem<BudgetTier?>(
+                      value: null,
+                      child: Text('All Budgets', style: GoogleFonts.poppins(fontSize: 13)),
                     ),
-                  ...BudgetTier.values.map((tier) {
-                    final isSelected = _selectedBudgetTier == tier;
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: FilterChip(
-                        label: Text('${tier.icon} ${tier.displayName}'),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() => _selectedBudgetTier = selected ? tier : null);
-                          _applyFilters();
-                        },
-                        selectedColor: AppTheme.primaryColor.withOpacity(0.2),
-                        checkmarkColor: AppTheme.primaryColor,
-                        labelStyle: TextStyle(
-                          fontSize: 12,
-                          color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
-                        ),
-                      ),
-                    );
-                  }),
-                ],
+                    ...BudgetTier.values.map((b) => DropdownMenuItem(
+                      value: b,
+                      child: Text(b.displayName, style: GoogleFonts.poppins(fontSize: 13)),
+                    )),
+                  ],
+                  onChanged: (b) {
+                    setState(() => _selectedBudgetTier = b);
+                    _applyFilters();
+                  },
+                ),
               ),
             ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildSortRow() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Row(
         children: [
           _buildSortChip('Popular', 'popular'),
@@ -308,7 +308,7 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
         }
         return ListView.builder(
           controller: _scrollController,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: provider.searchResults.length + (provider.hasMore ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == provider.searchResults.length) {
@@ -390,9 +390,9 @@ class PlaylistCard extends StatelessWidget {
                 left: 12,
                 child: Row(
                   children: [
-                    _buildBadge('${vibe.icon} ${vibe.displayName}', AppTheme.primaryColor.withOpacity(0.9)),
+                    _buildBadge(vibe.displayName, AppTheme.primaryColor.withOpacity(0.9)),
                     const SizedBox(width: 6),
-                    _buildBadge(budget.icon, Colors.amber.shade700.withOpacity(0.9)),
+                    _buildBadge(budget.displayName, Colors.amber.shade700.withOpacity(0.9)),
                   ],
                 ),
               ),
@@ -418,13 +418,13 @@ class PlaylistCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        _buildStat('❤️', playlist.likeCount.toString()),
+                        _buildStat(Icons.favorite, playlist.likeCount.toString()),
                         const SizedBox(width: 12),
-                        _buildStat('📥', playlist.importCount.toString()),
+                        _buildStat(Icons.download_rounded, playlist.importCount.toString()),
                         const SizedBox(width: 12),
-                        _buildStat('⭐', playlist.averageRating.toStringAsFixed(1)),
+                        _buildStat(Icons.star_rounded, playlist.averageRating.toStringAsFixed(1)),
                         const Spacer(),
-                        _buildBadge('${playlist.totalDays}-Day Plan', Colors.white.withOpacity(0.2)),
+                        _buildBadge('${playlist.totalDays}-Day', Colors.white.withOpacity(0.2)),
                         const SizedBox(width: 6),
                         _buildBadge('${playlist.itemCount} spots', Colors.white.withOpacity(0.2)),
                       ],
@@ -447,11 +447,11 @@ class PlaylistCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStat(String icon, String value) {
+  Widget _buildStat(IconData icon, String value) {
     return Row(
       children: [
-        Text(icon, style: const TextStyle(fontSize: 12)),
-        const SizedBox(width: 2),
+        Icon(icon, size: 13, color: Colors.white70),
+        const SizedBox(width: 3),
         Text(value, style: const TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w500)),
       ],
     );

@@ -900,17 +900,20 @@ class ApiService {
     int page = 1,
     String currency = 'EUR',
     String sort = 'TRAVELER_FAVORITE_V2',
+    String? query,
   }) async {
+    final params = <String, String>{
+      'geo_id': geoId.toString(),
+      'start_date': startDate,
+      'end_date': endDate,
+      'adults': adults.toString(),
+      'page': page.toString(),
+      'currency': currency,
+      'sort': sort,
+    };
+    if (query != null && query.length >= 2) params['query'] = query;
     final uri = Uri.parse('$baseUrl/api/v1/attractions/search').replace(
-      queryParameters: {
-        'geo_id': geoId.toString(),
-        'start_date': startDate,
-        'end_date': endDate,
-        'adults': adults.toString(),
-        'page': page.toString(),
-        'currency': currency,
-        'sort': sort,
-      },
+      queryParameters: params,
     );
     _logRequest('GET', uri);
     final response = await http.get(uri, headers: _headers);
@@ -997,6 +1000,7 @@ class ApiService {
     String currency = 'EUR',
     String sort = 'POPULARITY',
     String? updateToken,
+    String? query,
   }) async {
     final params = <String, String>{
       'geo_id': geoId.toString(),
@@ -1007,6 +1011,7 @@ class ApiService {
     if (updateToken != null && updateToken.isNotEmpty) {
       params['update_token'] = updateToken;
     }
+    if (query != null && query.length >= 2) params['query'] = query;
     final uri = Uri.parse('$baseUrl/api/v1/restaurants/search').replace(
       queryParameters: params,
     );
