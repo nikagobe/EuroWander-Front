@@ -9,6 +9,8 @@ import '../../services/api_service.dart';
 import '../plan/city_selection_screen.dart';
 import '../playlists/playlist_discovery_screen.dart';
 import '../playlists/my_playlists_screen.dart';
+import '../templates/template_discovery_screen.dart';
+import '../templates/my_templates_screen.dart';
 import 'trip_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -78,6 +80,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         _buildPlanButton(context),
                         const SizedBox(height: 12),
                         _buildPlaylistButtons(context),
+                        const SizedBox(height: 10),
+                        _buildTemplateButtons(context),
                         const SizedBox(height: 28),
                         Text(
                           'My Trips',
@@ -235,6 +239,56 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.playlist_play_rounded, color: AppTheme.secondaryColor, size: 18),
                   const SizedBox(width: 6),
                   Text('My Playlists', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.secondaryColor)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTemplateButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen())),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.compass_calibration_rounded, color: Color(0xFFFF9800), size: 18),
+                  const SizedBox(width: 6),
+                  Text('Templates', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFFF9800))),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: GestureDetector(
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyTemplatesScreen())),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFFE65100).withOpacity(0.3)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.dashboard_customize_rounded, color: Color(0xFFE65100), size: 18),
+                  const SizedBox(width: 6),
+                  Text('My Templates', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFE65100))),
                 ],
               ),
             ),

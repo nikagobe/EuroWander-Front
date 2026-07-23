@@ -924,6 +924,32 @@ class ApiService {
     return PaginatedAttractions(data: [], currentPage: 1, totalPages: 1, totalResults: 0, pageSize: 30);
   }
 
+  Future<PaginatedAttractions> searchAttractionsByName({
+    required String query,
+    String? category,
+    String? geoName,
+    int page = 1,
+    int size = 20,
+  }) async {
+    final params = <String, String>{
+      'query': query,
+      'page': page.toString(),
+      'size': size.toString(),
+    };
+    if (category != null) params['category'] = category;
+    if (geoName != null && geoName.isNotEmpty) params['geo_name'] = geoName;
+    final uri = Uri.parse('$baseUrl/api/v1/attractions/search-by-name').replace(
+      queryParameters: params,
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return PaginatedAttractions.fromJson(jsonDecode(response.body));
+    }
+    return PaginatedAttractions(data: [], currentPage: 1, totalPages: 1, totalResults: 0, pageSize: 20);
+  }
+
   Future<AttractionDetail?> getAttractionDetails({
     required String contentId,
     required String startDate,

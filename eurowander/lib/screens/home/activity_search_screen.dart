@@ -137,14 +137,26 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
     if (page != null) _attractionPage = page;
     setState(() => _isLoadingAttractions = true);
     try {
-      final result = await _apiService.searchAttractions(
-        geoId: _selectedDestination!.geoId,
-        startDate: _startDate,
-        endDate: _endDate,
-        page: _attractionPage,
-        sort: _attractionSort,
-        query: _queryController.text.length >= 2 ? _queryController.text : null,
-      );
+      final PaginatedAttractions result;
+      final query = _queryController.text.trim();
+      if (query.length >= 2) {
+        // Use search-by-name endpoint
+        result = await _apiService.searchAttractionsByName(
+          query: query,
+          category: 'ATTRACTION',
+          geoName: _selectedDestination!.name,
+          page: _attractionPage,
+        );
+      } else {
+        // Use regular geo-based search
+        result = await _apiService.searchAttractions(
+          geoId: _selectedDestination!.geoId,
+          startDate: _startDate,
+          endDate: _endDate,
+          page: _attractionPage,
+          sort: _attractionSort,
+        );
+      }
       if (mounted) {
         setState(() {
           if (refresh || page != null) _attractions = result.data;
@@ -171,21 +183,54 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
     if (page != null) _restaurantPage = page;
     setState(() => _isLoadingRestaurants = true);
     try {
-      final result = await _apiService.searchRestaurants(
-        geoId: _selectedDestination!.geoId,
-        page: _restaurantPage,
-        sort: _restaurantSort,
-        updateToken: _restaurantPage > 1 && _updateToken.isNotEmpty ? _updateToken : null,
-        query: _queryController.text.length >= 2 ? _queryController.text : null,
-      );
-      if (mounted) {
-        setState(() {
-          if (refresh || page != null) _restaurants = result.data;
-          else _restaurants.addAll(result.data);
-          _restaurantTotalPages = result.totalPages;
-          _updateToken = result.updateToken;
-          _isLoadingRestaurants = false;
-        });
+      final query = _queryController.text.trim();
+      if (query.length >= 2) {
+        // Use search-by-name endpoint for restaurants
+        final result = await _apiService.searchAttractionsByName(
+          query: query,
+          category: 'RESTAURANT',
+          geoName: _selectedDestination!.name,
+          page: _restaurantPage,
+        );
+        if (mounted) {
+          setState(() {
+            // Map AttractionResponse to RestaurantResponse for display
+            final mapped = result.data.map((a) => RestaurantResponse(
+              locationId: a.locationId,
+              name: a.name,
+              cuisine: a.category,
+              neighborhood: a.neighborhood,
+              rating: a.rating,
+              numReviews: a.numReviews,
+              photoUrl: a.photoUrl,
+              badge: a.badge,
+              badgeYear: '',
+              priceLevel: a.ticketPrice,
+              isSponsored: false,
+            )).toList();
+            if (refresh || page != null) _restaurants = mapped;
+            else _restaurants.addAll(mapped);
+            _restaurantTotalPages = result.totalPages;
+            _isLoadingRestaurants = false;
+          });
+        }
+      } else {
+        // Use regular geo-based search
+        final result = await _apiService.searchRestaurants(
+          geoId: _selectedDestination!.geoId,
+          page: _restaurantPage,
+          sort: _restaurantSort,
+          updateToken: _restaurantPage > 1 && _updateToken.isNotEmpty ? _updateToken : null,
+        );
+        if (mounted) {
+          setState(() {
+            if (refresh || page != null) _restaurants = result.data;
+            else _restaurants.addAll(result.data);
+            _restaurantTotalPages = result.totalPages;
+            _updateToken = result.updateToken;
+            _isLoadingRestaurants = false;
+          });
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _isLoadingRestaurants = false);

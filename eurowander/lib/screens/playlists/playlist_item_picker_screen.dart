@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:latlong2/latlong.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/attraction.dart';
 import '../../models/playlist.dart';
@@ -28,6 +30,7 @@ class PlaylistItemPickerScreen extends StatefulWidget {
 class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> with SingleTickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   final TextEditingController _searchController = TextEditingController();
+  final MapController _mapController = MapController();
   late TabController _tabController;
   Timer? _debounce;
 
@@ -277,6 +280,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                   children: [
                     _buildAppBar(),
                     _buildSearchSection(),
+                    if (_selectedDestination != null) _buildMap(),
                     _buildDayAndTimeRow(),
                     TabBar(
                       controller: _tabController,
@@ -398,6 +402,53 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildMap() {
+    final markers = _attractions.asMap().entries.map((entry) {
+      final i = entry.key;
+      final a = entry.value;
+      final isExpanded = _expandedAttractionIndex == i;
+      return Marker(
+        point: LatLng(a.latitude, a.longitude),
+        width: isExpanded ? 44 : 36,
+        height: isExpanded ? 44 : 36,
+        child: GestureDetector(
+          onTap: () => setState(() => _expandedAttractionIndex = _expandedAttractionIndex == i ? null : i),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isExpanded ? AppTheme.primaryColor : Colors.deepOrange,
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4)],
+            ),
+            child: const Icon(Icons.attractions_rounded, color: Colors.white, size: 18),
+          ),
+        ),
+      );
+    }).toList();
+
+    final center = _attractions.isNotEmpty
+        ? LatLng(_attractions.first.latitude, _attractions.first.longitude)
+        : const LatLng(48.8566, 2.3522);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(14),
+        child: SizedBox(
+          height: 160,
+          child: FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(initialCenter: center, initialZoom: 12),
+            children: [
+              TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+              if (markers.isNotEmpty) MarkerLayer(markers: markers),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -637,7 +688,12 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
         children: [
           InkWell(
             borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => _expandedAttractionIndex = isExpanded ? null : index),
+            onTap: () {
+              setState(() => _expandedAttractionIndex = isExpanded ? null : index);
+              if (!isExpanded && a.latitude != 0 && a.longitude != 0) {
+                _mapController.move(LatLng(a.latitude, a.longitude), 14);
+              }
+            },
             child: Padding(
               padding: const EdgeInsets.all(10),
               child: Row(
