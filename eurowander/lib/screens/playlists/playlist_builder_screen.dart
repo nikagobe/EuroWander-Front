@@ -137,7 +137,8 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(isEditing ? 'Playlist updated!' : 'Playlist created!')),
         );
-        Navigator.pop(context);
+        // Pop with the playlist title so callers can use it
+        Navigator.pop(context, _titleController.text);
       }
     } catch (e) {
       if (mounted) {

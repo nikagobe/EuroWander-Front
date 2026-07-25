@@ -46,6 +46,11 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   bool _hasMorePages = true;
   final ScrollController _listScrollController = ScrollController();
 
+  // Hotel name search
+  final TextEditingController _hotelNameController = TextEditingController();
+  Timer? _nameDebounce;
+  String? _hotelNameFilter;
+
   final List<Map<String, String>> _sortOptions = [
     {'id': 'popularity', 'title': 'Popularity'},
     {'id': 'price', 'title': 'Price (lowest first)'},
@@ -92,7 +97,9 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   void dispose() {
     _searchController.dispose();
     _listScrollController.dispose();
+    _hotelNameController.dispose();
     _debounce?.cancel();
+    _nameDebounce?.cancel();
     super.dispose();
   }
 
@@ -188,15 +195,28 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
     });
 
     try {
-      final results = await _apiService.searchHotels(
-        destId: _selectedDestination!.destId,
-        arrivalDate: _formatDate(_arrivalDate!),
-        departureDate: _formatDate(_departureDate!),
-        adults: _adults,
-        roomQty: _rooms,
-        sortBy: _sortBy,
-        pageNumber: page,
-      );
+      List<HotelOffer> results;
+      if (_hotelNameFilter != null && _hotelNameFilter!.length >= 2) {
+        // Name search — uses dedicated endpoint, no pagination
+        results = await _apiService.searchHotelsByName(
+          query: _hotelNameFilter!,
+          arrivalDate: _formatDate(_arrivalDate!),
+          departureDate: _formatDate(_departureDate!),
+          adults: _adults,
+          roomQty: _rooms,
+        );
+      } else {
+        // Browse mode — paginated city search
+        results = await _apiService.searchHotels(
+          destId: _selectedDestination!.destId,
+          arrivalDate: _formatDate(_arrivalDate!),
+          departureDate: _formatDate(_departureDate!),
+          adults: _adults,
+          roomQty: _rooms,
+          sortBy: _sortBy,
+          pageNumber: page,
+        );
+      }
       if (mounted) {
         setState(() {
           _hotels = results;
@@ -573,24 +593,6 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   }
 
   Widget _buildResultsView() {
-    if (_isSearchingHotels) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
-    }
-    if (_hotels.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.hotel_rounded, size: 56, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            Text('No hotels found', style: GoogleFonts.poppins(fontSize: 16, color: AppTheme.textSecondary)),
-            const SizedBox(height: 4),
-            Text('Try different dates or destination', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
-          ],
-        ),
-      );
-    }
-
     return Row(
       children: [
         // Hotel list on the left
@@ -598,13 +600,58 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
           flex: 5,
           child: Column(
             children: [
-              Expanded(
-                child: ListView.builder(
-                  controller: _listScrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  itemCount: _hotels.length,
-                  itemBuilder: (context, index) => _buildHotelCard(index),
+              // Hotel name search bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+                child: TextField(
+                  controller: _hotelNameController,
+                  style: GoogleFonts.poppins(fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'Search by hotel name...',
+                    hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+                    prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textSecondary),
+                    suffixIcon: _hotelNameFilter != null && _hotelNameFilter!.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () {
+                              _hotelNameController.clear();
+                              setState(() => _hotelNameFilter = null);
+                              _searchHotels();
+                            },
+                            child: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+                          )
+                        : null,
+                    filled: true, fillColor: Colors.white,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    isDense: true,
+                  ),
+                  onChanged: (v) {
+                    _nameDebounce?.cancel();
+                    _nameDebounce = Timer(const Duration(milliseconds: 400), () {
+                      setState(() => _hotelNameFilter = v.isEmpty ? null : v);
+                      _searchHotels();
+                    });
+                  },
                 ),
+              ),
+              // Hotel list or loading/empty state
+              Expanded(
+                child: _isSearchingHotels
+                    ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                    : _hotels.isEmpty
+                        ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.hotel_rounded, size: 48, color: Colors.grey.shade300),
+                            const SizedBox(height: 8),
+                            Text('No hotels found', style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary)),
+                            const SizedBox(height: 4),
+                            Text('Try a different name or filters', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                          ]))
+                        : ListView.builder(
+                            controller: _listScrollController,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            itemCount: _hotels.length,
+                            itemBuilder: (context, index) => _buildHotelCard(index),
+                          ),
               ),
               // Pagination controls
               _buildPagination(),

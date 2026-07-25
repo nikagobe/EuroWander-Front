@@ -7,7 +7,10 @@ import '../../../models/template.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/template_provider.dart';
 import '../../../services/api_service.dart';
+import '../../../services/playlist_service.dart';
+import '../../playlists/playlist_builder_screen.dart';
 import 'template_hotel_picker_screen.dart';
+import 'template_playlist_picker_screen.dart';
 
 class CreateTemplateScreen extends StatefulWidget {
   final String? editTemplateId;
@@ -62,6 +65,8 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
         _legs = t.legs.map((l) => _LegDraft(
           city: l.city, country: l.country, days: l.days,
           hotelPicks: l.hotelRecommendations?.primaryPicks ?? [],
+          playlistId: l.playlistId.isNotEmpty ? l.playlistId : null,
+          playlistName: l.playlistId.isNotEmpty ? 'Attached playlist' : '',
           authorNotes: l.authorNotes,
         )).toList();
       });
@@ -104,6 +109,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
           city: leg.city, country: leg.country, primaryPicks: leg.hotelPicks,
           fallbackNeighborhood: '', fallbackStarMin: 1, fallbackStarMax: 5,
         ) : null,
+        playlistId: leg.playlistId,
         restaurantIds: [], authorNotes: leg.notesController.text,
       );
     }).toList();
@@ -161,10 +167,55 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     }
     final result = await Navigator.push<List<HotelPick>>(
       context,
-      MaterialPageRoute(builder: (_) => TemplateHotelPickerScreen(city: leg.city, existingPicks: leg.hotelPicks)),
+      MaterialPageRoute(builder: (_) => TemplateHotelPickerScreen(city: leg.city, days: leg.days, existingPicks: leg.hotelPicks)),
     );
     if (result != null && mounted) {
-      setState(() => _legs[legIndex].hotelPicks = result);
+      setState(() {
+        // Preserve existing tips when picks come back
+        final oldTips = <int, String>{};
+        for (final p in leg.hotelPicks) {
+          if (p.authorReview.isNotEmpty) oldTips[p.bookingHotelId] = p.authorReview;
+        }
+        _legs[legIndex].hotelPicks = result.map((p) => HotelPick(
+          bookingHotelId: p.bookingHotelId, name: p.name, city: p.city,
+          neighborhood: p.neighborhood, stars: p.stars, photoUrl: p.photoUrl,
+          authorReview: oldTips[p.bookingHotelId] ?? p.authorReview,
+          priority: p.priority, pricePaid: p.pricePaid, currency: p.currency,
+        )).toList();
+      });
+    }
+  }
+
+  Future<void> _openPlaylistPicker(int legIndex) async {
+    final result = await Navigator.push<Map<String, String>>(
+      context,
+      MaterialPageRoute(builder: (_) => TemplatePlaylistPickerScreen(city: _legs[legIndex].city)),
+    );
+    if (result != null && mounted) {
+      setState(() {
+        _legs[legIndex].playlistId = result['id'];
+        _legs[legIndex].playlistName = result['name'] ?? 'Playlist';
+      });
+    }
+  }
+
+  Future<void> _createPlaylistForLeg(int legIndex) async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (_) => const PlaylistBuilderScreen()),
+    );
+    if (result != null && mounted) {
+      // result is the playlist title; reload my playlists to get the ID
+      final token = context.read<AuthProvider>().token ?? '';
+      final service = PlaylistService();
+      final myPlaylists = await service.getMyPlaylists(token: token);
+      if (myPlaylists.isNotEmpty && mounted) {
+        final newest = myPlaylists.first;
+        setState(() {
+          _legs[legIndex].playlistId = newest.id;
+          _legs[legIndex].playlistName = newest.title;
+        });
+      }
     }
   }
 
@@ -323,7 +374,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
           },
         ),
         if (leg.country.isNotEmpty)
-          Padding(padding: const EdgeInsets.only(top: 4), child: Text('${leg.country}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
+          Padding(padding: const EdgeInsets.only(top: 4), child: Text(leg.country, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
         const SizedBox(height: 10),
 
         // Days
@@ -337,37 +388,122 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
         ]),
         const SizedBox(height: 12),
 
-        // Hotels
-        Row(children: [
-          const Text('🏨 Hotels', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          const Spacer(),
-          if (leg.hotelPicks.isNotEmpty) Text('${leg.hotelPicks.length} picked', style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.w500)),
-        ]),
-        const SizedBox(height: 6),
-
-        // Show picks
-        if (leg.hotelPicks.isNotEmpty) ...[
-          ...leg.hotelPicks.map((pick) => Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(children: [
-              const Text('⭐ ', style: TextStyle(fontSize: 12)),
-              Expanded(child: Text('${pick.name} ${'★' * pick.stars}', style: const TextStyle(fontSize: 13))),
-              if (pick.pricePaid != null) Text('${pick.currency}${pick.pricePaid!.toInt()}/n', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+        // Hotels - collapsible section
+        Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(top: 6),
+            initiallyExpanded: leg.hotelPicks.isEmpty,
+            title: Row(children: [
+              const Text('🏨 Hotels', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const Spacer(),
+              if (leg.hotelPicks.isNotEmpty) Text('${leg.hotelPicks.length} recommended', style: const TextStyle(fontSize: 12, color: Color(0xFFFF9800), fontWeight: FontWeight.w500)),
             ]),
-          )),
-          const SizedBox(height: 6),
-        ],
+            children: [
+              // Show picks with collapsible tip
+              if (leg.hotelPicks.isNotEmpty) ...[
+                ...leg.hotelPicks.asMap().entries.map((entry) {
+                  final pickIdx = entry.key;
+                  final pick = entry.value;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3))),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        tilePadding: const EdgeInsets.symmetric(horizontal: 10),
+                        childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                        dense: true,
+                        iconColor: AppTheme.textSecondary,
+                        collapsedIconColor: AppTheme.textSecondary,
+                        title: Row(children: [
+                          const Text('⭐ ', style: TextStyle(fontSize: 12)),
+                          Expanded(child: Text('${pick.name} ${'★' * pick.stars}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                          if (pick.pricePaid != null) Text('${pick.currency}${pick.pricePaid!.toInt()}/n', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                        ]),
+                        subtitle: pick.authorReview.isNotEmpty
+                            ? Text('💡 ${pick.authorReview}', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)
+                            : const Text('Tap to add tip', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                        children: [
+                          TextField(
+                            decoration: _inputDeco('💡 Add tip for this hotel...').copyWith(fillColor: Colors.white),
+                            style: const TextStyle(fontSize: 12),
+                            controller: TextEditingController(text: pick.authorReview),
+                            onChanged: (v) {
+                              _legs[index].hotelPicks[pickIdx] = HotelPick(
+                                bookingHotelId: pick.bookingHotelId, name: pick.name, city: pick.city,
+                                neighborhood: pick.neighborhood, stars: pick.stars, photoUrl: pick.photoUrl,
+                                authorReview: v, priority: pick.priority, pricePaid: pick.pricePaid, currency: pick.currency,
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }),
+              ],
 
-        // Search hotels button
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => _openHotelPicker(index),
-            icon: const Icon(Icons.search, size: 16), label: Text(leg.hotelPicks.isEmpty ? 'Search & pick hotels' : 'Change hotel picks'),
-            style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
+              // Search hotels button
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => _openHotelPicker(index),
+                  icon: const Icon(Icons.search, size: 16), label: Text(leg.hotelPicks.isEmpty ? 'Search & recommend hotels' : 'Change hotel picks'),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 4),
+
+        // Playlist
+        Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ExpansionTile(
+            tilePadding: EdgeInsets.zero,
+            childrenPadding: const EdgeInsets.only(top: 6, bottom: 4),
+            initiallyExpanded: leg.playlistId == null,
+            title: Row(children: [
+              const Text('🎵 Playlist', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const Spacer(),
+              if (leg.playlistId != null) Text(leg.playlistName, style: const TextStyle(fontSize: 12, color: Color(0xFF4CAF50), fontWeight: FontWeight.w500)),
+            ]),
+            children: [
+              if (leg.playlistId != null)
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(color: Colors.green.withOpacity(0.05), borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.green.withOpacity(0.2))),
+                  child: Row(children: [
+                    const Icon(Icons.playlist_play_rounded, size: 20, color: Color(0xFF4CAF50)),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(leg.playlistName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+                    GestureDetector(
+                      onTap: () => setState(() { leg.playlistId = null; leg.playlistName = ''; }),
+                      child: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+                    ),
+                  ]),
+                ),
+              if (leg.playlistId != null) const SizedBox(height: 8),
+              Row(children: [
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: () => _openPlaylistPicker(index),
+                  icon: const Icon(Icons.search, size: 16), label: Text(leg.playlistId != null ? 'Change' : 'Find playlist'),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
+                )),
+                const SizedBox(width: 8),
+                Expanded(child: OutlinedButton.icon(
+                  onPressed: () => _createPlaylistForLeg(index),
+                  icon: const Icon(Icons.add, size: 16), label: const Text('Create new'),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
+                )),
+              ]),
+            ],
+          ),
+        ),
+        const SizedBox(height: 8),
 
         // Author notes
         TextField(controller: leg.notesController, maxLines: 2, decoration: _inputDeco('📝 Tips for travelers in ${leg.city.isNotEmpty ? leg.city : "this city"}...')),
@@ -401,10 +537,12 @@ class _LegDraft {
   String country;
   int days;
   List<HotelPick> hotelPicks;
+  String? playlistId;
+  String playlistName;
   final TextEditingController cityController;
   final TextEditingController notesController;
 
-  _LegDraft({this.city = '', this.country = '', this.days = 1, this.hotelPicks = const [], String authorNotes = ''})
+  _LegDraft({this.city = '', this.country = '', this.days = 1, this.hotelPicks = const [], this.playlistId, this.playlistName = '', String authorNotes = ''})
       : cityController = TextEditingController(text: city),
         notesController = TextEditingController(text: authorNotes);
 }

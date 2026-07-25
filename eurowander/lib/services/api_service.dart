@@ -463,6 +463,55 @@ class ApiService {
     return [];
   }
 
+  Future<List<HotelOffer>> searchHotelsByName({
+    required String query,
+    required String arrivalDate,
+    required String departureDate,
+    int adults = 1,
+    int roomQty = 1,
+    String currencyCode = 'EUR',
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/hotels/search-by-name').replace(
+      queryParameters: {
+        'query': query,
+        'arrival_date': arrivalDate,
+        'departure_date': departureDate,
+        'adults': adults.toString(),
+        'room_qty': roomQty.toString(),
+        'currency_code': currencyCode,
+      },
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      // Response is HotelDetailsResponse[] — map to HotelOffer for card consistency
+      return data.map((json) {
+        final photos = json['photos'] as List<dynamic>?;
+        return HotelOffer(
+          hotelId: json['hotel_id'] ?? 0,
+          name: json['name'] ?? '',
+          latitude: (json['latitude'] as num?)?.toDouble() ?? 0,
+          longitude: (json['longitude'] as num?)?.toDouble() ?? 0,
+          photoUrl: (photos != null && photos.isNotEmpty) ? photos.first.toString() : (json['photo_url'] ?? ''),
+          stars: json['stars'] ?? 0,
+          reviewScore: (json['review_score'] as num?)?.toDouble() ?? 0,
+          reviewScoreWord: json['review_score_word'] ?? '',
+          reviewCount: json['review_count'] ?? 0,
+          pricePerNight: (json['price_per_night'] as num?)?.toDouble() ?? 0,
+          priceTotal: (json['price_total'] as num?)?.toDouble() ?? 0,
+          priceExcluded: (json['price_excluded'] as num?)?.toDouble() ?? 0,
+          currency: json['currency'] ?? 'EUR',
+          checkinFrom: json['checkin_from'] ?? '',
+          checkoutUntil: json['checkout_until'] ?? '',
+          countryCode: json['country_code'] ?? '',
+        );
+      }).toList();
+    }
+    return [];
+  }
+
   Future<HotelDetails?> getHotelDetails({
     required int hotelId,
     required String arrivalDate,
