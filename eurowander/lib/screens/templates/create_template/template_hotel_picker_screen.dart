@@ -92,8 +92,9 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
       List<HotelOffer> results;
       if (_nameFilter != null && _nameFilter!.length >= 2) {
         // Name search — dedicated endpoint
+        final cityPrefix = _destination?.cityName ?? widget.city;
         results = await _apiService.searchHotelsByName(
-          query: _nameFilter!,
+          query: '$cityPrefix ${_nameFilter!}'.trim(),
           arrivalDate: _formatDate(_arrivalDate),
           departureDate: _formatDate(_departureDate),
         );

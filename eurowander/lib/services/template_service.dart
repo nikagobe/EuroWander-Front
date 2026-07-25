@@ -152,11 +152,11 @@ class TemplateService {
 
   // ─── Archive Template ─────────────────────────────────────────────
 
-  Future<TemplateResponse> archiveTemplate({
+  Future<TemplateResponse> unpublishTemplate({
     required String templateId,
     required String userId,
   }) async {
-    final uri = Uri.parse('$baseUrl/api/v1/templates/$templateId/archive')
+    final uri = Uri.parse('$baseUrl/api/v1/templates/$templateId/unpublish')
         .replace(queryParameters: {'user_id': userId});
     _logRequest('PATCH', uri);
     final response = await http.patch(uri, headers: _headers);
@@ -165,7 +165,7 @@ class TemplateService {
     if (response.statusCode == 200) {
       return TemplateResponse.fromJson(jsonDecode(response.body));
     }
-    throw Exception('Failed to archive template: ${response.statusCode}');
+    throw Exception('Failed to unpublish template: ${response.statusCode}');
   }
 
   // ─── Delete Template ──────────────────────────────────────────────

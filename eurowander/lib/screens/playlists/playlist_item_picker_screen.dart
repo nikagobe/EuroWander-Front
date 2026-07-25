@@ -54,6 +54,16 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
   String _updateToken = '';
   int? _expandedRestaurantIndex;
 
+  // Name search filters
+  final TextEditingController _attractionNameController = TextEditingController();
+  final TextEditingController _restaurantNameController = TextEditingController();
+  Timer? _attractionNameDebounce;
+  Timer? _restaurantNameDebounce;
+  String? _attractionNameFilter;
+  String? _restaurantNameFilter;
+  List<AttractionResponse> _attractionNameResults = [];
+  bool _isSearchingAttractionByName = false;
+
   // Selection state
   int _selectedDay = 1;
   String _timeSlot = 'morning';
@@ -82,6 +92,10 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
     _searchController.dispose();
     _tabController.dispose();
     _debounce?.cancel();
+    _attractionNameDebounce?.cancel();
+    _restaurantNameDebounce?.cancel();
+    _attractionNameController.dispose();
+    _restaurantNameController.dispose();
     _customNameController.dispose();
     _customCategoryController.dispose();
     _customNoteController.dispose();
@@ -535,67 +549,168 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
     if (_selectedDestination == null) {
       return _buildEmptyPrompt('Search for a city to browse attractions');
     }
-    if (_isLoadingAttractions && _attractions.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
-    }
-    if (_attractions.isEmpty) {
-      return _buildEmptyPrompt('No attractions found');
-    }
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollEndNotification &&
-            notification.metrics.pixels >= notification.metrics.maxScrollExtent - 200 &&
-            !_isLoadingAttractions &&
-            _attractionPage < _attractionTotalPages) {
-          _attractionPage++;
-          _loadAttractions();
-        }
-        return false;
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: _attractions.length + (_attractionPage < _attractionTotalPages ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _attractions.length) {
-            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)));
-          }
-          return _buildAttractionCard(_attractions[index], index);
-        },
-      ),
+
+    // Decide which list to show
+    final isNameSearching = _attractionNameFilter != null && _attractionNameFilter!.length >= 2;
+    final displayList = isNameSearching ? _attractionNameResults : _attractions;
+    final isLoading = isNameSearching ? _isSearchingAttractionByName : (_isLoadingAttractions && _attractions.isEmpty);
+
+    return Column(
+      children: [
+        // Name search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: TextField(
+            controller: _attractionNameController,
+            style: GoogleFonts.poppins(fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Search attractions by name...',
+              hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textSecondary),
+              suffixIcon: _attractionNameFilter != null && _attractionNameFilter!.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        _attractionNameController.clear();
+                        setState(() { _attractionNameFilter = null; _attractionNameResults = []; });
+                      },
+                      child: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+                    )
+                  : null,
+              filled: true, fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              isDense: true,
+            ),
+            onChanged: (v) {
+              _attractionNameDebounce?.cancel();
+              _attractionNameDebounce = Timer(const Duration(milliseconds: 400), () {
+                setState(() => _attractionNameFilter = v.isEmpty ? null : v);
+                if (v.length >= 2) _searchAttractionsByName(v);
+              });
+            },
+          ),
+        ),
+        // List
+        Expanded(
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+              : displayList.isEmpty
+                  ? _buildEmptyPrompt(isNameSearching ? 'No attractions matching "$_attractionNameFilter"' : 'No attractions found')
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (!isNameSearching &&
+                            notification is ScrollEndNotification &&
+                            notification.metrics.pixels >= notification.metrics.maxScrollExtent - 200 &&
+                            !_isLoadingAttractions &&
+                            _attractionPage < _attractionTotalPages) {
+                          _attractionPage++;
+                          _loadAttractions();
+                        }
+                        return false;
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: displayList.length + (!isNameSearching && _attractionPage < _attractionTotalPages ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == displayList.length) {
+                            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)));
+                          }
+                          return _buildAttractionCard(displayList[index], index);
+                        },
+                      ),
+                    ),
+        ),
+      ],
     );
+  }
+
+  Future<void> _searchAttractionsByName(String query) async {
+    setState(() => _isSearchingAttractionByName = true);
+    try {
+      final geoName = _selectedDestination?.name;
+      final result = await _apiService.searchAttractionsByName(query: query, geoName: geoName);
+      if (mounted) setState(() => _attractionNameResults = result.data);
+    } catch (_) {}
+    if (mounted) setState(() => _isSearchingAttractionByName = false);
   }
 
   Widget _buildRestaurantsList() {
     if (_selectedDestination == null) {
       return _buildEmptyPrompt('Search for a city to browse restaurants');
     }
-    if (_isLoadingRestaurants && _restaurants.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
-    }
-    if (_restaurants.isEmpty) {
-      return _buildEmptyPrompt('No restaurants found');
-    }
-    return NotificationListener<ScrollNotification>(
-      onNotification: (notification) {
-        if (notification is ScrollEndNotification &&
-            notification.metrics.pixels >= notification.metrics.maxScrollExtent - 200 &&
-            !_isLoadingRestaurants &&
-            _restaurantPage < _restaurantTotalPages) {
-          _restaurantPage++;
-          _loadRestaurants();
-        }
-        return false;
-      },
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        itemCount: _restaurants.length + (_restaurantPage < _restaurantTotalPages ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _restaurants.length) {
-            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)));
-          }
-          return _buildRestaurantCard(_restaurants[index], index);
-        },
-      ),
+
+    // Client-side name filter for restaurants (no server endpoint)
+    final isNameFiltering = _restaurantNameFilter != null && _restaurantNameFilter!.length >= 2;
+    final displayList = isNameFiltering
+        ? _restaurants.where((r) => r.name.toLowerCase().contains(_restaurantNameFilter!.toLowerCase())).toList()
+        : _restaurants;
+    final isLoading = _isLoadingRestaurants && _restaurants.isEmpty;
+
+    return Column(
+      children: [
+        // Name search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: TextField(
+            controller: _restaurantNameController,
+            style: GoogleFonts.poppins(fontSize: 13),
+            decoration: InputDecoration(
+              hintText: 'Filter restaurants by name...',
+              hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textSecondary),
+              suffixIcon: _restaurantNameFilter != null && _restaurantNameFilter!.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () {
+                        _restaurantNameController.clear();
+                        setState(() => _restaurantNameFilter = null);
+                      },
+                      child: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+                    )
+                  : null,
+              filled: true, fillColor: Colors.white,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              isDense: true,
+            ),
+            onChanged: (v) {
+              _restaurantNameDebounce?.cancel();
+              _restaurantNameDebounce = Timer(const Duration(milliseconds: 300), () {
+                setState(() => _restaurantNameFilter = v.isEmpty ? null : v);
+              });
+            },
+          ),
+        ),
+        // List
+        Expanded(
+          child: isLoading
+              ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+              : displayList.isEmpty
+                  ? _buildEmptyPrompt(isNameFiltering ? 'No restaurants matching "$_restaurantNameFilter"' : 'No restaurants found')
+                  : NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (!isNameFiltering &&
+                            notification is ScrollEndNotification &&
+                            notification.metrics.pixels >= notification.metrics.maxScrollExtent - 200 &&
+                            !_isLoadingRestaurants &&
+                            _restaurantPage < _restaurantTotalPages) {
+                          _restaurantPage++;
+                          _loadRestaurants();
+                        }
+                        return false;
+                      },
+                      child: ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        itemCount: displayList.length + (!isNameFiltering && _restaurantPage < _restaurantTotalPages ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == displayList.length) {
+                            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)));
+                          }
+                          return _buildRestaurantCard(displayList[index], index);
+                        },
+                      ),
+                    ),
+        ),
+      ],
     );
   }
 

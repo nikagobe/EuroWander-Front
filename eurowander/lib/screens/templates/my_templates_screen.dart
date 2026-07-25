@@ -22,7 +22,7 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final userId = context.read<AuthProvider>().user?.id ?? '';
       context.read<TemplateProvider>().loadMyTemplates(userId);
@@ -87,9 +87,8 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
                     unselectedLabelColor: AppTheme.textSecondary,
                     indicatorColor: AppTheme.primaryColor,
                     tabs: const [
-                      Tab(text: 'Drafts'),
                       Tab(text: 'Published'),
-                      Tab(text: 'Archived'),
+                      Tab(text: 'Drafts'),
                     ],
                   ),
                   // Content
@@ -105,9 +104,8 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
                         return TabBarView(
                           controller: _tabController,
                           children: [
-                            _buildList(provider.myDrafts, 'draft'),
                             _buildList(provider.myPublished, 'published'),
-                            _buildList(provider.myArchived, 'archived'),
+                            _buildList(provider.myDrafts, 'draft'),
                           ],
                         );
                       },
@@ -143,21 +141,13 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              status == 'draft'
-                  ? Icons.edit_note
-                  : status == 'published'
-                      ? Icons.public
-                      : Icons.archive,
+              status == 'published' ? Icons.public : Icons.edit_note,
               size: 48,
               color: AppTheme.textSecondary.withOpacity(0.5),
             ),
             const SizedBox(height: 12),
             Text(
-              status == 'draft'
-                  ? 'No drafts yet'
-                  : status == 'published'
-                      ? 'No published templates'
-                      : 'No archived templates',
+              status == 'published' ? 'No published templates' : 'No drafts yet',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
@@ -227,25 +217,11 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
   }
 
   Widget _buildStatusBadge(String status) {
-    Color bgColor;
-    Color textColor;
-    switch (status) {
-      case 'draft':
-        bgColor = Colors.orange.withOpacity(0.1);
-        textColor = Colors.orange;
-        break;
-      case 'published':
-        bgColor = Colors.green.withOpacity(0.1);
-        textColor = Colors.green;
-        break;
-      default:
-        bgColor = Colors.grey.withOpacity(0.1);
-        textColor = Colors.grey;
-    }
+    final isPublished = status == 'published';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: isPublished ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
@@ -253,7 +229,7 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: textColor,
+          color: isPublished ? Colors.green : Colors.orange,
         ),
       ),
     );
@@ -263,88 +239,39 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
     final userId = context.read<AuthProvider>().user?.id ?? '';
     final provider = context.read<TemplateProvider>();
 
-    if (status == 'draft') {
-      return Row(
-        children: [
-          _buildActionButton('Edit', Icons.edit_outlined, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    CreateTemplateScreen(editTemplateId: template.id),
-              ),
-            );
-          }),
-          const SizedBox(width: 8),
-          _buildActionButton('Delete', Icons.delete_outline, () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Delete template?'),
-                content: const Text('This cannot be undone.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Delete',
-                        style: TextStyle(color: Colors.red)),
-                  ),
-                ],
-              ),
-            );
-            if (confirmed == true) {
-              provider.deleteTemplate(
-                templateId: template.id,
-                userId: userId,
-              );
-            }
-          }, color: Colors.red),
-          const SizedBox(width: 8),
+    return Row(
+      children: [
+        _buildActionButton('Edit', Icons.edit_outlined, () {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => CreateTemplateScreen(editTemplateId: template.id)));
+        }),
+        const SizedBox(width: 8),
+        _buildActionButton('Delete', Icons.delete_outline, () async {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Delete template?'),
+              content: const Text('This cannot be undone.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Delete', style: TextStyle(color: Colors.red))),
+              ],
+            ),
+          );
+          if (confirmed == true) {
+            provider.deleteTemplate(templateId: template.id, userId: userId);
+          }
+        }, color: Colors.red),
+        const SizedBox(width: 8),
+        if (status == 'draft')
           _buildActionButton('Publish', Icons.publish, () {
-            provider.publishTemplate(
-              templateId: template.id,
-              userId: userId,
-            );
+            provider.publishTemplate(templateId: template.id, userId: userId);
           }, color: Colors.green),
-        ],
-      );
-    }
-
-    if (status == 'published') {
-      return Row(
-        children: [
-          _buildActionButton('View', Icons.visibility_outlined, () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    TemplateDetailScreen(templateId: template.id),
-              ),
-            );
+        if (status == 'published')
+          _buildActionButton('Unpublish', Icons.unpublished_outlined, () {
+            provider.unpublishTemplate(templateId: template.id, userId: userId);
           }),
-          const SizedBox(width: 8),
-          _buildActionButton('Archive', Icons.archive_outlined, () {
-            provider.archiveTemplate(
-              templateId: template.id,
-              userId: userId,
-            );
-          }),
-        ],
-      );
-    }
-
-    // Archived
-    return _buildActionButton('View', Icons.visibility_outlined, () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => TemplateDetailScreen(templateId: template.id),
-        ),
-      );
-    });
+      ],
+    );
   }
 
   Widget _buildActionButton(

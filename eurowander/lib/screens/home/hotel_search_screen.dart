@@ -198,8 +198,9 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
       List<HotelOffer> results;
       if (_hotelNameFilter != null && _hotelNameFilter!.length >= 2) {
         // Name search — uses dedicated endpoint, no pagination
+        final cityPrefix = _selectedDestination?.cityName ?? '';
         results = await _apiService.searchHotelsByName(
-          query: _hotelNameFilter!,
+          query: '$cityPrefix ${_hotelNameFilter!}'.trim(),
           arrivalDate: _formatDate(_arrivalDate!),
           departureDate: _formatDate(_departureDate!),
           adults: _adults,

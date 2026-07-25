@@ -32,8 +32,6 @@ class TemplateProvider extends ChangeNotifier {
       _myTemplates.where((t) => t.status == 'draft').toList();
   List<TemplateListItem> get myPublished =>
       _myTemplates.where((t) => t.status == 'published').toList();
-  List<TemplateListItem> get myArchived =>
-      _myTemplates.where((t) => t.status == 'archived').toList();
 
   // ─── Detail State ─────────────────────────────────────────────────
   TemplateResponse? _currentTemplate;
@@ -185,12 +183,12 @@ class TemplateProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> archiveTemplate({
+  Future<bool> unpublishTemplate({
     required String templateId,
     required String userId,
   }) async {
     try {
-      await _service.archiveTemplate(
+      await _service.unpublishTemplate(
         templateId: templateId,
         userId: userId,
       );
