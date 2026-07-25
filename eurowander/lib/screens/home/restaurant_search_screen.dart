@@ -8,6 +8,7 @@ import '../../models/attraction.dart';
 import '../../models/restaurant.dart';
 import '../../models/saved_trip.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 import 'restaurant_detail_screen.dart';
 
 class RestaurantSearchScreen extends StatefulWidget {
@@ -126,36 +127,13 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: _hasSearched ? _buildResultsView() : _buildSearchForm(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return AppScaffold(
+      maxWidth: double.infinity,
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () {
+          EWAppBar(
+            title: _hasSearched ? 'Restaurants in ${_selectedDestination?.name ?? ''}' : 'Find Restaurants',
+            onBack: () {
               if (_hasSearched) {
                 setState(() {
                   _hasSearched = false;
@@ -167,24 +145,9 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
                 Navigator.of(context).pop();
               }
             },
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
           ),
-          const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              _hasSearched ? 'Restaurants in ${_selectedDestination?.name ?? ''}' : 'Find Restaurants',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: _hasSearched ? _buildResultsView() : _buildSearchForm(),
           ),
         ],
       ),
@@ -192,17 +155,19 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
   }
 
   Widget _buildSearchForm() {
+    final ew = context.ew;
+    final theme = Theme.of(context);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: AppSpacing.paddingHorizontalXl,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
-              Text('City', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.md),
+              Text('City', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
               TextField(
                 controller: _searchController,
                 onChanged: _onSearchChanged,
@@ -233,7 +198,7 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: _destinations.length,
-                    separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                    separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey.shade100),
                     itemBuilder: (context, index) {
                       final dest = _destinations[index];
                       return ListTile(
@@ -246,15 +211,15 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
                     },
                   ),
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               // Sort option
-              Text('Sort by', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const SizedBox(height: 8),
+              Text('Sort by', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppRadius.borderLg,
                   border: Border.all(color: Colors.grey.shade200),
                 ),
                 child: DropdownButtonHideUnderline(
@@ -269,7 +234,7 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
               // Search button
               SizedBox(
                 width: double.infinity,
@@ -277,15 +242,15 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
                 child: ElevatedButton(
                   onPressed: _selectedDestination != null ? () => _searchRestaurants() : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: AppColors.brandPrimary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                     elevation: 0,
                   ),
-                  child: Text('Search Restaurants', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
+                  child: Text('Search Restaurants', style: theme.textTheme.titleMedium!.copyWith(color: Colors.white)),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),
@@ -295,18 +260,12 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
 
   Widget _buildResultsView() {
     if (_isSearching) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+      return const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary));
     }
     if (_restaurants.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.restaurant_rounded, size: 56, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            Text('No restaurants found', style: GoogleFonts.poppins(fontSize: 16, color: AppTheme.textSecondary)),
-          ],
-        ),
+      return const EmptyState(
+        icon: Icons.restaurant_rounded,
+        title: 'No restaurants found',
       );
     }
 
@@ -358,6 +317,8 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
 
   Widget _buildRestaurantCard(int index) {
     final restaurant = _restaurants[index];
+    final theme = Theme.of(context);
+    final ew = context.ew;
 
     return GestureDetector(
       onTap: () {
@@ -371,11 +332,11 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
         );
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: ew.cardColor,
+          borderRadius: AppRadius.borderLg,
           boxShadow: [
             BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2)),
           ],
@@ -386,66 +347,66 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
               borderRadius: BorderRadius.circular(12),
               child: restaurant.photoUrl.isNotEmpty
                   ? Image.network(restaurant.photoUrl, width: 80, height: 80, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(width: 80, height: 80, color: Colors.grey.shade200, child: const Icon(Icons.restaurant_rounded)))
+                      errorBuilder: (_, _, _) => Container(width: 80, height: 80, color: Colors.grey.shade200, child: const Icon(Icons.restaurant_rounded)))
                   : Container(width: 80, height: 80, color: Colors.grey.shade200, child: const Icon(Icons.restaurant_rounded)),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (restaurant.badge.isNotEmpty)
                     Container(
-                      margin: const EdgeInsets.only(bottom: 4),
+                      margin: const EdgeInsets.only(bottom: AppSpacing.xxs),
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.amber.shade50,
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                       child: Text(
                         '${restaurant.badge.replaceAll('_', ' ')} ${restaurant.badgeYear}',
-                        style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.amber.shade800),
+                        style: theme.textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.amber.shade800, fontSize: 9),
                       ),
                     ),
                   Text(
                     restaurant.name,
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xxs),
                   Text(
                     restaurant.cuisine,
-                    style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary),
+                    style: theme.textTheme.labelSmall!.copyWith(color: ew.textSecondary),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xxs),
                   Row(
                     children: [
                       Icon(Icons.star_rounded, size: 14, color: Colors.amber.shade600),
                       const SizedBox(width: 2),
-                      Text('${restaurant.rating}', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
-                      const SizedBox(width: 4),
-                      Text('(${restaurant.numReviews})', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+                      Text('${restaurant.rating}', style: theme.textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600)),
+                      const SizedBox(width: AppSpacing.xxs),
+                      Text('(${restaurant.numReviews})', style: theme.textTheme.labelSmall!.copyWith(color: ew.textSecondary)),
                       if (restaurant.priceLevel.isNotEmpty) ...[
                         const Spacer(),
-                        Text(restaurant.priceLevel, style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.green.shade700)),
+                        Text(restaurant.priceLevel, style: theme.textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500, color: Colors.green.shade700)),
                       ],
                     ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.xs),
             Container(
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.brandPrimary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.primaryColor),
+              child: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppColors.brandPrimary),
             ),
           ],
         ),
@@ -456,7 +417,7 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
   Widget _buildPaginationControls() {
     if (_totalPages <= 1) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -464,16 +425,16 @@ class _RestaurantSearchScreenState extends State<RestaurantSearchScreen> {
             TextButton.icon(
               onPressed: () => _searchRestaurants(page: _currentPage - 1),
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: Text('Previous', style: GoogleFonts.poppins(fontSize: 13)),
+              label: Text('Previous', style: Theme.of(context).textTheme.bodySmall),
             ),
-          const SizedBox(width: 16),
-          Text('Page $_currentPage of $_totalPages', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
+          Text('Page $_currentPage of $_totalPages', style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary)),
+          const SizedBox(width: AppSpacing.md),
           if (_currentPage < _totalPages)
             TextButton.icon(
               onPressed: () => _searchRestaurants(page: _currentPage + 1),
               icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-              label: Text('Next', style: GoogleFonts.poppins(fontSize: 13)),
+              label: Text('Next', style: Theme.of(context).textTheme.bodySmall),
             ),
         ],
       ),

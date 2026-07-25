@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/widgets.dart';
 import '../../models/saved_trip.dart';
 import '../../models/schedule.dart';
 import '../../providers/auth_provider.dart';
@@ -258,58 +259,22 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-              : Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 480),
-                    child: Column(
-                      children: [
-                        _buildAppBar(),
-                        Expanded(child: _buildScheduleList()),
-                      ],
-                    ),
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    if (_isLoading) {
+      return AppScaffold(
+        child: const Center(child: ShimmerList()),
+      );
+    }
+    return AppScaffold(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text('Edit Schedule', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-          ),
+          EWAppBar(title: 'Edit Schedule'),
+          Expanded(child: _buildScheduleList()),
         ],
       ),
     );
   }
+
+
 
   Widget _buildScheduleList() {
     if (_schedule == null || _schedule!.days.isEmpty) {
@@ -566,8 +531,9 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                   constraints: const BoxConstraints(),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   onSelected: (value) {
-                    if (value == 'edit_time') _showEditTimeSheet(item);
-                    else if (value == 'duplicate') _showDuplicateSheet(item);
+                    if (value == 'edit_time') {
+                      _showEditTimeSheet(item);
+                    } else if (value == 'duplicate') _showDuplicateSheet(item);
                     else if (value == 'remove') _deleteItem(item);
                   },
                   itemBuilder: (context) => [
@@ -658,7 +624,7 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                     child: ListView.separated(
                       controller: scrollController,
                       itemCount: items.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      separatorBuilder: (_, _) => const SizedBox(height: 8),
                       itemBuilder: (context, index) {
                         final item = items[index];
                         final isHere = item.currentDay == dayDate && item.currentSlot == slot;
@@ -854,7 +820,7 @@ class _EditTimeSheetState extends State<_EditTimeSheet> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: widget.days.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final day = widget.days[index];
                 final isSelected = day.date == _selectedDate;

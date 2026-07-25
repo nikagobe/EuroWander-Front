@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../models/city.dart';
@@ -8,6 +7,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/template_provider.dart';
 import '../../../services/api_service.dart';
 import '../../../services/playlist_service.dart';
+import '../../../widgets/widgets.dart';
 import '../../playlists/playlist_builder_screen.dart';
 import 'template_hotel_picker_screen.dart';
 import 'template_playlist_picker_screen.dart';
@@ -221,31 +221,14 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)])),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(children: [
-                // App bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(children: [
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: Container(width: 42, height: 42, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))]), child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary)),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(child: Text(_isEditing ? 'Edit Template' : 'Create Template', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
-                  ]),
-                ),
+    return AppScaffold(
+      child: Column(children: [
+        EWAppBar(title: _isEditing ? 'Edit Template' : 'Create Template'),
 
-                // Scrollable content
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+        // Scrollable content
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       // ─── GENERAL INFO ────────────────────────────
                       _sectionTitle('GENERAL INFO'),
@@ -273,11 +256,11 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: isSelected ? AppTheme.primaryColor.withOpacity(0.15) : Colors.white,
+                              color: isSelected ? AppColors.brandPrimary.withOpacity(0.15) : Colors.white,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey.withOpacity(0.3)),
+                              border: Border.all(color: isSelected ? AppColors.brandPrimary : Colors.grey.withOpacity(0.3)),
                             ),
-                            child: Text(tag, style: TextStyle(fontSize: 12, color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
+                            child: Text(tag, style: TextStyle(fontSize: 12, color: isSelected ? AppColors.brandPrimary : AppColors.lightTextSecondary, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
                           ),
                         );
                       }).toList()),
@@ -312,7 +295,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _addLeg,
                           icon: const Icon(Icons.add, size: 18), label: const Text('Add city'),
-                          style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 14)),
+                          style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandPrimary, side: BorderSide(color: AppColors.brandPrimary.withOpacity(0.5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 14)),
                         ),
                       ),
 
@@ -324,7 +307,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                         child: OutlinedButton.icon(
                           onPressed: _isSaving ? null : () => _save(publish: false),
                           icon: const Icon(Icons.save_outlined, size: 18), label: const Text('Save as Draft'),
-                          style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: const BorderSide(color: AppTheme.primaryColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                          style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandPrimary, side: const BorderSide(color: AppColors.brandPrimary), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -334,7 +317,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                           onPressed: _isSaving ? null : () => _save(publish: true),
                           icon: _isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.rocket_launch, size: 18),
                           label: Text(_isSaving ? 'Saving...' : 'Publish'),
-                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.brandPrimary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         ),
                       ),
                       const SizedBox(height: 32),
@@ -342,10 +325,6 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                   ),
                 ),
               ]),
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -374,7 +353,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
           },
         ),
         if (leg.country.isNotEmpty)
-          Padding(padding: const EdgeInsets.only(top: 4), child: Text(leg.country, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
+          Padding(padding: const EdgeInsets.only(top: 4), child: Text(leg.country, style: const TextStyle(fontSize: 12, color: AppColors.lightTextSecondary))),
         const SizedBox(height: 10),
 
         // Days
@@ -415,16 +394,16 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                         tilePadding: const EdgeInsets.symmetric(horizontal: 10),
                         childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                         dense: true,
-                        iconColor: AppTheme.textSecondary,
-                        collapsedIconColor: AppTheme.textSecondary,
+                        iconColor: AppColors.lightTextSecondary,
+                        collapsedIconColor: AppColors.lightTextSecondary,
                         title: Row(children: [
                           const Text('⭐ ', style: TextStyle(fontSize: 12)),
                           Expanded(child: Text('${pick.name} ${'★' * pick.stars}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
-                          if (pick.pricePaid != null) Text('${pick.currency}${pick.pricePaid!.toInt()}/n', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                          if (pick.pricePaid != null) Text('${pick.currency}${pick.pricePaid!.toInt()}/n', style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary)),
                         ]),
                         subtitle: pick.authorReview.isNotEmpty
-                            ? Text('💡 ${pick.authorReview}', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)
-                            : const Text('Tap to add tip', style: TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                            ? Text('💡 ${pick.authorReview}', style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)
+                            : const Text('Tap to add tip', style: TextStyle(fontSize: 11, color: AppColors.lightTextSecondary)),
                         children: [
                           TextField(
                             decoration: _inputDeco('💡 Add tip for this hotel...').copyWith(fillColor: Colors.white),
@@ -451,7 +430,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => _openHotelPicker(index),
                   icon: const Icon(Icons.search, size: 16), label: Text(leg.hotelPicks.isEmpty ? 'Search & recommend hotels' : 'Change hotel picks'),
-                  style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandPrimary, side: BorderSide(color: AppColors.brandPrimary.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
                 ),
               ),
             ],
@@ -482,7 +461,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                     Expanded(child: Text(leg.playlistName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
                     GestureDetector(
                       onTap: () => setState(() { leg.playlistId = null; leg.playlistName = ''; }),
-                      child: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+                      child: const Icon(Icons.close, size: 18, color: AppColors.lightTextSecondary),
                     ),
                   ]),
                 ),
@@ -491,13 +470,13 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                 Expanded(child: OutlinedButton.icon(
                   onPressed: () => _openPlaylistPicker(index),
                   icon: const Icon(Icons.search, size: 16), label: Text(leg.playlistId != null ? 'Change' : 'Find playlist'),
-                  style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandPrimary, side: BorderSide(color: AppColors.brandPrimary.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
                 )),
                 const SizedBox(width: 8),
                 Expanded(child: OutlinedButton.icon(
                   onPressed: () => _createPlaylistForLeg(index),
                   icon: const Icon(Icons.add, size: 16), label: const Text('Create new'),
-                  style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandPrimary, side: BorderSide(color: AppColors.brandPrimary.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
                 )),
               ]),
             ],
@@ -514,7 +493,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
   Widget _sectionTitle(String title) {
     return Row(children: [
       Expanded(child: Divider(color: Colors.grey.withOpacity(0.3))),
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondary, letterSpacing: 1.5))),
+      Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.lightTextSecondary, letterSpacing: 1.5))),
       Expanded(child: Divider(color: Colors.grey.withOpacity(0.3))),
     ]);
   }
@@ -525,7 +504,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     hintText: hint, filled: true, fillColor: Colors.white,
     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.withOpacity(0.3))),
     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.withOpacity(0.3))),
-    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppTheme.primaryColor)),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppColors.brandPrimary)),
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
   );
 }
@@ -582,7 +561,7 @@ class _CitySearchFieldState extends State<_CitySearchField> {
           hintText: 'Search city...', filled: true, fillColor: const Color(0xFFF8F5FF),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          suffixIcon: _isSearching ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor))) : const Icon(Icons.search, color: AppTheme.textSecondary, size: 20),
+          suffixIcon: _isSearching ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary))) : const Icon(Icons.search, color: AppColors.lightTextSecondary, size: 20),
         ),
         onChanged: _onChanged,
       ),
@@ -592,14 +571,14 @@ class _CitySearchFieldState extends State<_CitySearchField> {
           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.withOpacity(0.2)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 4))]),
           child: ListView.separated(
             shrinkWrap: true, padding: EdgeInsets.zero, itemCount: _suggestions.length,
-            separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.withOpacity(0.15)),
+            separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey.withOpacity(0.15)),
             itemBuilder: (_, i) {
               final city = _suggestions[i];
               return ListTile(
                 dense: true, visualDensity: VisualDensity.compact,
-                leading: const Icon(Icons.location_on_outlined, size: 18, color: AppTheme.primaryColor),
+                leading: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.brandPrimary),
                 title: Text(city.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-                subtitle: Text(city.country, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                subtitle: Text(city.country, style: const TextStyle(fontSize: 12, color: AppColors.lightTextSecondary)),
                 onTap: () {
                   widget.controller.text = city.name;
                   widget.onCitySelected(city);

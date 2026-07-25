@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/hotel.dart';
 import '../../models/saved_trip.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 import 'hotel_detail_screen.dart';
 
 class HotelSearchScreen extends StatefulWidget {
@@ -248,36 +249,13 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: _hasSearched ? _buildResultsView() : _buildSearchForm(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return AppScaffold(
+      maxWidth: double.infinity,
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () {
+          EWAppBar(
+            title: _hasSearched ? 'Hotels in ${_selectedDestination?.cityName ?? ''}' : 'Find Hotels',
+            onBack: () {
               if (_hasSearched) {
                 setState(() {
                   _hasSearched = false;
@@ -288,21 +266,9 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                 Navigator.of(context).pop();
               }
             },
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
           ),
-          const SizedBox(width: 16),
-          Text(
-            _hasSearched ? 'Hotels in ${_selectedDestination?.cityName ?? ''}' : 'Find Hotels',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+          Expanded(
+            child: _hasSearched ? _buildResultsView() : _buildSearchForm(),
           ),
         ],
       ),
@@ -395,19 +361,21 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   }
 
   Widget _buildSearchForm() {
+    final ew = context.ew;
+    final theme = Theme.of(context);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: AppSpacing.paddingHorizontalXl,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               _buildTripDatesInfo(),
               // Destination search
-              Text('Destination', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const SizedBox(height: 8),
+              Text('Destination', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
               TextField(
                 controller: _searchController,
                 onChanged: _onSearchChanged,
@@ -440,7 +408,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                     shrinkWrap: true,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: _destinations.length,
-                    separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                    separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey.shade100),
                     itemBuilder: (_, i) {
                       final dest = _destinations[i];
                       return ListTile(
@@ -452,32 +420,32 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                     },
                   ),
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               // Dates
-              Text('Dates', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const SizedBox(height: 8),
+              Text('Dates', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
                   Expanded(child: _buildDateButton('Check-in', _arrivalDate, _pickArrivalDate)),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(child: _buildDateButton('Check-out', _departureDate, _pickDepartureDate)),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               // Adults & rooms
-              Text('Guests & Rooms', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const SizedBox(height: 8),
+              Text('Guests & Rooms', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
                   Expanded(child: _buildCounterField('Adults', _adults, (v) => setState(() => _adults = v))),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(child: _buildCounterField('Rooms', _rooms, (v) => setState(() => _rooms = v))),
                 ],
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               // Sort
-              Text('Sort by', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const SizedBox(height: 8),
+              Text('Sort by', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 decoration: BoxDecoration(
@@ -497,7 +465,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
               // Search button
               SizedBox(
                 width: double.infinity,
@@ -505,21 +473,21 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                 child: ElevatedButton(
                   onPressed: _searchHotels,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    backgroundColor: AppColors.brandPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                     elevation: 0,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(Icons.search_rounded, color: Colors.white, size: 22),
-                      const SizedBox(width: 8),
-                      Text('Search Hotels', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white)),
+                      const SizedBox(width: AppSpacing.xs),
+                      Text('Search Hotels', style: theme.textTheme.titleMedium!.copyWith(color: Colors.white)),
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         ),
@@ -638,15 +606,13 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
               // Hotel list or loading/empty state
               Expanded(
                 child: _isSearchingHotels
-                    ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary))
                     : _hotels.isEmpty
-                        ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.hotel_rounded, size: 48, color: Colors.grey.shade300),
-                            const SizedBox(height: 8),
-                            Text('No hotels found', style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary)),
-                            const SizedBox(height: 4),
-                            Text('Try a different name or filters', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
-                          ]))
+                        ? const EmptyState(
+                            icon: Icons.hotel_rounded,
+                            title: 'No hotels found',
+                            subtitle: 'Try a different name or filters',
+                          )
                         : ListView.builder(
                             controller: _listScrollController,
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -669,10 +635,12 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   }
 
   Widget _buildPagination() {
+    final theme = Theme.of(context);
+    final ew = context.ew;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ew.cardColor,
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, -2))],
       ),
       child: Row(
@@ -682,12 +650,12 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
             icon: Icons.chevron_left_rounded,
             onTap: _currentPage > 1 ? () => _searchHotels(page: _currentPage - 1) : null,
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Text(
             'Page $_currentPage',
-            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+            style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           _buildPageButton(
             icon: Icons.chevron_right_rounded,
             onTap: _hasMorePages ? () => _searchHotels(page: _currentPage + 1) : null,
@@ -722,7 +690,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
         options: MapOptions(
           initialCenter: bounds.center,
           initialZoom: 12,
-          onTap: (_, __) => setState(() => _selectedHotelIndex = null),
+          onTap: (_, _) => setState(() => _selectedHotelIndex = null),
         ),
         children: [
           TileLayer(
@@ -800,6 +768,8 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   Widget _buildHotelCard(int index) {
     final hotel = _hotels[index];
     final isSelected = index == _selectedHotelIndex;
+    final theme = Theme.of(context);
+    final ew = context.ew;
 
     return GestureDetector(
       onTap: () {
@@ -807,15 +777,15 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
         _mapController.move(LatLng(hotel.latitude, hotel.longitude), 14);
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(12),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: isSelected ? Border.all(color: AppTheme.primaryColor, width: 1.5) : null,
+          color: ew.cardColor,
+          borderRadius: AppRadius.borderLg,
+          border: isSelected ? Border.all(color: AppColors.brandPrimary, width: 1.5) : null,
           boxShadow: [
             BoxShadow(
-              color: isSelected ? AppTheme.primaryColor.withOpacity(0.12) : Colors.black.withOpacity(0.04),
+              color: isSelected ? AppColors.brandPrimary.withOpacity(0.12) : Colors.black.withOpacity(0.04),
               blurRadius: isSelected ? 16 : 10,
               offset: const Offset(0, 4),
             ),
@@ -832,7 +802,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                 width: 100,
                 height: 100,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   width: 100,
                   height: 100,
                   decoration: BoxDecoration(
@@ -843,7 +813,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             // Details
             Expanded(
               child: Column(
@@ -851,17 +821,17 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                 children: [
                   Text(
                     hotel.name,
-                    style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                    style: theme.textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: ew.textPrimary),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xxs),
                   // Stars
                   if (hotel.stars > 0)
                     Row(
                       children: List.generate(hotel.stars, (_) => const Icon(Icons.star_rounded, size: 14, color: Colors.amber)),
                     ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xxs),
                   // Review
                   if (hotel.reviewScore > 0)
                     Row(
@@ -870,35 +840,35 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: _reviewColor(hotel.reviewScore),
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(AppRadius.xs),
                           ),
                           child: Text(
                             hotel.reviewScore.toStringAsFixed(1),
-                            style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                            style: theme.textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w700, color: Colors.white),
                           ),
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
                             '${hotel.reviewScoreWord} · ${hotel.reviewCount} reviews',
-                            style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary),
+                            style: theme.textTheme.labelSmall!.copyWith(color: ew.textSecondary),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
                     ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.xs),
                   // Price
                   Row(
                     children: [
                       Text(
                         '€${hotel.pricePerNight.toStringAsFixed(0)}',
-                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                        style: theme.textTheme.headlineSmall!.copyWith(color: AppColors.brandPrimary),
                       ),
                       Text(
                         ' / night',
-                        style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary),
+                        style: theme.textTheme.labelSmall!.copyWith(color: ew.textSecondary),
                       ),
                     ],
                   ),

@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element, unused_local_variable
 import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/widgets.dart';
 import '../../models/document.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
@@ -106,12 +108,12 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
           padding: EdgeInsets.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom,
           ),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.xl)),
           ),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(AppSpacing.xl),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,51 +128,42 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.lg),
                 Text(
                   'Upload Document',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(ctx).textTheme.headlineSmall,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   fileName,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                  ),
+                  style: Theme.of(ctx).textTheme.bodyMedium,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: AppSpacing.lg),
                 TextField(
                   controller: nameController,
                   decoration: InputDecoration(
                     labelText: 'Document Name (optional)',
                     labelStyle: GoogleFonts.poppins(fontSize: 14),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.borderMd,
                     ),
                     contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.sm,
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 Text(
                   'Category',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(ctx).textTheme.labelLarge,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.xs),
                 Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                  spacing: AppSpacing.xs,
+                  runSpacing: AppSpacing.xs,
                   children: [
                     'boarding_pass',
                     'hotel_confirmation',
@@ -184,10 +177,9 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                     return ChoiceChip(
                       label: Text(_categoryLabel(cat)),
                       selected: isSelected,
-                      selectedColor: AppTheme.primaryColor.withOpacity(0.15),
-                      labelStyle: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                      selectedColor: AppColors.brandPrimary.withOpacity(0.15),
+                      labelStyle: Theme.of(ctx).textTheme.labelSmall?.copyWith(
+                        color: isSelected ? AppColors.brandPrimary : context.ew.textSecondary,
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                       ),
                       onSelected: (_) {
@@ -196,26 +188,22 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                     );
                   }).toList(),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: AppSpacing.md),
                 Text(
                   'Visibility',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: Theme.of(ctx).textTheme.labelLarge,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
                     ChoiceChip(
                       label: const Text('Group'),
                       selected: selectedVisibility == 'group',
-                      selectedColor: AppTheme.primaryColor.withOpacity(0.15),
-                      labelStyle: GoogleFonts.poppins(
-                        fontSize: 12,
+                      selectedColor: AppColors.brandPrimary.withOpacity(0.15),
+                      labelStyle: Theme.of(ctx).textTheme.labelSmall?.copyWith(
                         color: selectedVisibility == 'group'
-                            ? AppTheme.primaryColor
-                            : AppTheme.textSecondary,
+                            ? AppColors.brandPrimary
+                            : context.ew.textSecondary,
                         fontWeight: selectedVisibility == 'group'
                             ? FontWeight.w600
                             : FontWeight.normal,
@@ -224,16 +212,15 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                         setSheetState(() => selectedVisibility = 'group');
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.xs),
                     ChoiceChip(
                       label: const Text('Private'),
                       selected: selectedVisibility == 'private',
-                      selectedColor: AppTheme.primaryColor.withOpacity(0.15),
-                      labelStyle: GoogleFonts.poppins(
-                        fontSize: 12,
+                      selectedColor: AppColors.brandPrimary.withOpacity(0.15),
+                      labelStyle: Theme.of(ctx).textTheme.labelSmall?.copyWith(
                         color: selectedVisibility == 'private'
-                            ? AppTheme.primaryColor
-                            : AppTheme.textSecondary,
+                            ? AppColors.brandPrimary
+                            : context.ew.textSecondary,
                         fontWeight: selectedVisibility == 'private'
                             ? FontWeight.w600
                             : FontWeight.normal,
@@ -244,7 +231,7 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSpacing.xl),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
@@ -263,18 +250,17 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
+                      backgroundColor: AppColors.brandPrimary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.borderMd,
                       ),
                     ),
                     child: Text(
                       'Upload',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -302,7 +288,6 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
     setState(() => _isUploading = true);
 
     try {
-      // Step 1: Get presigned upload URL
       final uploadData = await _apiService.requestDocumentUploadUrl(
         token: token,
         tripId: widget.trip.id,
@@ -315,14 +300,12 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
       final uploadUrl = uploadData['upload_url'] as String;
       final fileKey = uploadData['file_key'] as String;
 
-      // Step 2: Upload file to presigned URL
       await _apiService.uploadFileToPresignedUrl(
         uploadUrl: uploadUrl,
         fileBytes: fileBytes,
         contentType: contentType,
       );
 
-      // Step 3: Confirm upload
       await _apiService.confirmDocumentUpload(
         token: token,
         tripId: widget.trip.id,
@@ -505,150 +488,40 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8F5FF), Colors.white],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _documents.isEmpty
-                            ? _buildEmptyState()
-                            : _buildDocumentList(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Documents',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          if (_isUploading)
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            GestureDetector(
-              onTap: _uploadDocument,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primaryColor, Color(0xFF8B5CF6)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.add_rounded, color: Colors.white, size: 22),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
+    return AppScaffold(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2196F3).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Icon(
-              Icons.description_rounded,
-              size: 40,
-              color: Color(0xFF2196F3),
-            ),
+          EWAppBar(
+            title: 'Documents',
+            trailing: [
+              if (_isUploading)
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                EWIconButton(
+                  icon: Icons.add_rounded,
+                  onTap: _uploadDocument,
+                  backgroundColor: AppColors.brandPrimary,
+                  iconColor: Colors.white,
+                ),
+            ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            'No documents yet',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Upload passports, tickets, and\nother travel documents',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: _uploadDocument,
-            icon: const Icon(Icons.upload_rounded),
-            label: Text(
-              'Upload Document',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
+          Expanded(
+            child: _isLoading
+                ? const ShimmerList()
+                : _documents.isEmpty
+                    ? EmptyState(
+                        icon: Icons.description_rounded,
+                        title: 'No documents yet',
+                        subtitle: 'Upload passports, tickets, and\nother travel documents',
+                        iconColor: const Color(0xFF2196F3),
+                        actionLabel: 'Upload Document',
+                        onAction: _uploadDocument,
+                      )
+                    : _buildDocumentList(),
           ),
         ],
       ),
@@ -656,7 +529,6 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
   }
 
   Widget _buildDocumentList() {
-    // Group documents by category
     final grouped = <String, List<TripDocument>>{};
     for (final doc in _documents) {
       grouped.putIfAbsent(doc.category, () => []).add(doc);
@@ -667,7 +539,7 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
     return RefreshIndicator(
       onRefresh: _loadDocuments,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: AppSpacing.paddingHorizontalXl,
         itemCount: categories.length,
         itemBuilder: (context, index) {
           final category = categories[index];
@@ -683,7 +555,7 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(top: 16, bottom: 12),
+          padding: const EdgeInsets.only(top: AppSpacing.md, bottom: AppSpacing.sm),
           child: Row(
             children: [
               Icon(
@@ -691,16 +563,14 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                 size: 18,
                 color: _categoryColor(category),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.xs),
               Text(
                 _categoryLabel(category),
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: context.ew.textPrimary,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
@@ -709,10 +579,9 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                 ),
                 child: Text(
                   '${docs.length}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: _categoryColor(category),
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -725,28 +594,19 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
   }
 
   Widget _buildDocumentCard(TripDocument doc) {
+    final ew = context.ew;
+    final theme = Theme.of(context);
     final color = _categoryColor(doc.category);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
+
+    return EWCard(
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.borderLg,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.borderLg,
           onTap: () => _openDocument(doc),
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
                 Container(
@@ -754,7 +614,7 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.borderMd,
                   ),
                   child: Icon(
                     doc.contentType == 'application/pdf'
@@ -764,51 +624,40 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
                     size: 22,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         doc.displayName,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
+                        style: Theme.of(context).textTheme.labelLarge,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xxs),
                       Row(
                         children: [
                           Text(
                             doc.formattedSize,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.xs),
                           Text(
-                            '·',
-                            style: GoogleFonts.poppins(
-                              color: AppTheme.textSecondary,
-                            ),
+                            '\u00b7',
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: AppSpacing.xs),
                           Text(
                             DateFormat('MMM d, y').format(doc.createdAt),
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: AppTheme.textSecondary,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall,
                           ),
                           if (doc.visibility == 'private') ...[
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.xs),
                             Icon(
                               Icons.lock_rounded,
                               size: 12,
-                              color: AppTheme.textSecondary,
+                              color: context.ew.textSecondary,
                             ),
                           ],
                         ],
@@ -829,3 +678,7 @@ class _TripDocumentsScreenState extends State<TripDocumentsScreen> {
     );
   }
 }
+
+
+
+

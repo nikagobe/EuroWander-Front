@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
+import 'package:provider/provider.dart';
 import '../../../providers/fork_wizard_provider.dart';
+import '../../../widgets/widgets.dart';
 
 class StepReviewCreate extends StatelessWidget {
   final String templateId;
@@ -30,32 +31,32 @@ class StepReviewCreate extends StatelessWidget {
                 ...guide.legs.map((leg) {
                   final hotel = provider.selectedHotels[leg.order];
                   return Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.withOpacity(0.15))),
+                    margin: const EdgeInsets.only(bottom: AppSpacing.xs),
+                    padding: const EdgeInsets.all(AppSpacing.sm),
+                    decoration: BoxDecoration(color: context.ew.cardColor, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.withOpacity(0.15))),
                     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text('📍 ${leg.city} (${leg.days} days)', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
                       if (hotel != null)
                         Text('🏨 ${hotel.name} — ${hotel.currency}${hotel.priceTotal.toInt()} total', style: const TextStyle(fontSize: 13))
                       else
-                        const Text('🏨 No hotel selected', style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic, color: AppTheme.textSecondary)),
+                        const Text('🏨 No hotel selected', style: TextStyle(fontSize: 13, fontStyle: FontStyle.italic, color: AppColors.lightTextSecondary)),
                       if (leg.playlistId != null && leg.playlistId!.isNotEmpty)
-                        const Text('🎵 Attractions from playlist', style: TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                        const Text('🎵 Attractions from playlist', style: TextStyle(fontSize: 12, color: AppColors.lightTextSecondary)),
                       if (leg.restaurantIds.isNotEmpty)
-                        Text('🍽 ${leg.restaurantIds.length} restaurants', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                        Text('🍽 ${leg.restaurantIds.length} restaurants', style: const TextStyle(fontSize: 12, color: AppColors.lightTextSecondary)),
                     ]),
                   );
                 }),
 
                 // Hotels total
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.sm),
                 Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3))),
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  decoration: BoxDecoration(color: context.ew.cardColor, borderRadius: AppRadius.borderMd, border: Border.all(color: AppColors.brandPrimary.withOpacity(0.3))),
                   child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     const Text('Hotels total:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                    Text('${guide.currency}${provider.hotelsTotal.toInt()}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppTheme.primaryColor)),
+                    Text('${guide.currency}${provider.hotelsTotal.toInt()}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.brandPrimary)),
                   ]),
                 ),
 
@@ -75,15 +76,15 @@ class StepReviewCreate extends StatelessWidget {
 
           // Bottom CTA
           Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))]),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(color: context.ew.cardColor, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, -4))]),
             child: SafeArea(
               child: Column(children: [
                 SizedBox(
                   width: double.infinity, height: 52,
                   child: ElevatedButton(
                     onPressed: () => _createTrip(context, provider),
-                    style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)), elevation: 0),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.brandPrimary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg), elevation: 0),
                     child: const Text('🚀  CREATE MY TRIP', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
                   ),
                 ),
@@ -112,3 +113,5 @@ class StepReviewCreate extends StatelessWidget {
     }
   }
 }
+
+

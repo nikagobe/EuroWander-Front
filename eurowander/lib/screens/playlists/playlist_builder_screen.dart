@@ -1,11 +1,11 @@
 ﻿import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/playlist.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/playlist_provider.dart';
+import '../../widgets/widgets.dart';
 import 'playlist_item_picker_screen.dart';
 
 class PlaylistBuilderScreen extends StatefulWidget {
@@ -232,53 +232,37 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
+      return const AppScaffold(
+        child: Center(child: CircularProgressIndicator(color: AppColors.brandPrimary)),
       );
     }
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
+    return AppScaffold(
+      child: Column(
                 children: [
                   _buildAppBar(),
                   Expanded(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           _buildMetadataForm(),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.xl),
                           _buildDayTabs(),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: AppSpacing.xl),
                         ],
                       ),
                     ),
                   ),
                 ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
 
   Widget _buildAppBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
           GestureDetector(
@@ -286,32 +270,32 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
             child: Container(
               width: 42, height: 42,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: context.ew.cardColor,
+                borderRadius: AppRadius.borderMd,
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: context.ew.textPrimary),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               isEditing ? 'Edit Playlist' : 'Create Playlist',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
           if (_isSaving)
-            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor))
+            const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary))
           else
             GestureDetector(
               onTap: _save,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor,
+                  color: AppColors.brandPrimary,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('Save', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                child: Text('Save', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: Colors.white)),
               ),
             ),
         ],
@@ -357,7 +341,7 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
               itemBuilder: (_, i) {
                 return ListTile(
                   dense: true,
-                  leading: const Icon(Icons.location_on_outlined, size: 16, color: AppTheme.primaryColor),
+                  leading: const Icon(Icons.location_on_outlined, size: 16, color: AppColors.brandPrimary),
                   title: Text(_citySuggestions[i], style: const TextStyle(fontSize: 14)),
                   onTap: () => _selectCity(_citySuggestions[i]),
                 );
@@ -365,7 +349,7 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
             ),
           ),
         const SizedBox(height: 12),
-        Text('Vibes', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textSecondary)),
+        Text('Vibes', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.ew.textSecondary)),
         const SizedBox(height: 6),
         Wrap(
           spacing: 8,
@@ -383,18 +367,18 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isSelected ? AppTheme.primaryColor.withOpacity(0.15) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300),
+                  color: isSelected ? AppColors.brandPrimary.withOpacity(0.15) : context.ew.cardColor,
+                  borderRadius: AppRadius.borderLg,
+                  border: Border.all(color: isSelected ? AppColors.brandPrimary : Colors.grey.shade300),
                 ),
                 child: Text(
                   v.displayName,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                    color: isSelected ? AppColors.brandPrimary : context.ew.textSecondary,
                   ),
                 ),
               ),
@@ -403,7 +387,7 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<BudgetTier>(
-          value: _budgetTier,
+          initialValue: _budgetTier,
           decoration: const InputDecoration(labelText: 'Budget'),
           items: BudgetTier.values.map((b) => DropdownMenuItem(
             value: b,
@@ -419,13 +403,13 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
         const SizedBox(height: 12),
         Row(
           children: [
-            Text('Total Days:', style: GoogleFonts.poppins(fontSize: 14)),
-            const SizedBox(width: 12),
+            Text('Total Days:', style: TextStyle(fontSize: 14)),
+            const SizedBox(width: AppSpacing.sm),
             IconButton(
               onPressed: () => _updateTotalDays(_totalDays - 1),
               icon: const Icon(Icons.remove_circle_outline),
             ),
-            Text('$_totalDays', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('$_totalDays', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             IconButton(
               onPressed: () => _updateTotalDays(_totalDays + 1),
               icon: const Icon(Icons.add_circle_outline),
@@ -437,7 +421,7 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
                 Switch(
                   value: _isPublic,
                   onChanged: (v) => setState(() => _isPublic = v),
-                  activeColor: AppTheme.primaryColor,
+                  activeThumbColor: AppColors.brandPrimary,
                 ),
               ],
             ),
@@ -454,8 +438,8 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
           TabBar(
             controller: _tabController,
             isScrollable: true,
-            labelColor: AppTheme.primaryColor,
-            unselectedLabelColor: AppTheme.textSecondary,
+            labelColor: AppColors.brandPrimary,
+            unselectedLabelColor: context.ew.textSecondary,
             tabs: List.generate(_totalDays, (i) => Tab(text: 'Day ${i + 1}')),
           ),
         const SizedBox(height: 12),
@@ -488,7 +472,7 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
               ? Center(
                   child: Text('No items for Day $dayNumber\nTap + to add',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: AppTheme.textSecondary)),
+                      style: TextStyle(color: context.ew.textSecondary)),
                 )
               : ReorderableListView.builder(
                   itemCount: dayItems.length,
@@ -539,7 +523,7 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
             width: 40, height: 40,
             child: item.photoUrl.isNotEmpty
                 ? Image.network(item.photoUrl, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _itemIcon(item))
+                    errorBuilder: (_, _, _) => _itemIcon(item))
                 : _itemIcon(item),
           ),
         ),

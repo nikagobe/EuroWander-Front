@@ -111,7 +111,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppTheme.primaryColor,
+              primary: AppColors.brandPrimary,
               onPrimary: Colors.white,
               surface: Colors.white,
             ),
@@ -181,17 +181,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8F5FF),
-              Color(0xFFEDE7F6),
-              Color(0xFFF3E5F5),
-            ],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -230,7 +220,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
               child: const Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 18,
-                color: AppTheme.textPrimary,
+                color: AppColors.lightTextPrimary,
               ),
             ),
           ),
@@ -240,7 +230,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
+              color: AppColors.lightTextPrimary,
             ),
           ),
         ],
@@ -307,7 +297,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
           style: GoogleFonts.poppins(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: AppColors.lightTextPrimary,
             height: 1.2,
           ),
         ),
@@ -316,7 +306,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
           'We\'ll search all airports in ${widget.arrivalCountry} for the best prices',
           style: GoogleFonts.poppins(
             fontSize: 13,
-            color: AppTheme.textSecondary,
+            color: AppColors.lightTextSecondary,
           ),
         ),
         const SizedBox(height: 32),
@@ -328,7 +318,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.06),
+                color: AppColors.brandPrimary.withOpacity(0.06),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -340,13 +330,13 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  color: AppColors.brandPrimary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
                   Icons.flight_takeoff_rounded,
                   size: 20,
-                  color: AppTheme.primaryColor,
+                  color: AppColors.brandPrimary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -359,7 +349,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -368,7 +358,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                   ],
@@ -387,7 +377,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.06),
+                color: AppColors.brandPrimary.withOpacity(0.06),
                 blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
@@ -402,7 +392,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                     height: 44,
                     decoration: BoxDecoration(
                       color: _selectedDest != null
-                          ? AppTheme.secondaryColor.withOpacity(0.1)
+                          ? AppColors.brandSecondary.withOpacity(0.1)
                           : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -410,8 +400,8 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       Icons.flight_land_rounded,
                       size: 20,
                       color: _selectedDest != null
-                          ? AppTheme.secondaryColor
-                          : AppTheme.textSecondary,
+                          ? AppColors.brandSecondary
+                          : AppColors.lightTextSecondary,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -424,7 +414,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textSecondary,
+                            color: AppColors.lightTextSecondary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -435,7 +425,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textPrimary,
+                            color: AppColors.lightTextPrimary,
                           ),
                           decoration: InputDecoration(
                             hintText: 'Arrival city',
@@ -457,7 +447,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: AppTheme.primaryColor,
+                        color: AppColors.brandPrimary,
                       ),
                     ),
                 ],
@@ -477,7 +467,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.06),
+                  color: AppColors.brandPrimary.withOpacity(0.06),
                   blurRadius: 16,
                   offset: const Offset(0, 4),
                 ),
@@ -490,7 +480,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: _returnDate != null
-                        ? AppTheme.primaryColor.withOpacity(0.1)
+                        ? AppColors.brandPrimary.withOpacity(0.1)
                         : Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -498,8 +488,8 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                     Icons.calendar_today_rounded,
                     size: 20,
                     color: _returnDate != null
-                        ? AppTheme.primaryColor
-                        : AppTheme.textSecondary,
+                        ? AppColors.brandPrimary
+                        : AppColors.lightTextSecondary,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -512,7 +502,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -524,7 +514,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           color: _returnDate != null
-                              ? AppTheme.textPrimary
+                              ? AppColors.lightTextPrimary
                               : Colors.grey.shade400,
                         ),
                       ),
@@ -545,7 +535,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
             decoration: BoxDecoration(
               gradient: isReady
                   ? const LinearGradient(
-                      colors: [AppTheme.primaryColor, Color(0xFF8B5CF6), AppTheme.secondaryColor],
+                      colors: [AppColors.brandPrimary, Color(0xFF8B5CF6), AppColors.brandSecondary],
                     )
                   : null,
               color: isReady ? null : Colors.grey.shade300,
@@ -553,7 +543,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
               boxShadow: isReady
                   ? [
                       BoxShadow(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        color: AppColors.brandPrimary.withOpacity(0.3),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -616,7 +606,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                   Icon(
                     Icons.location_on_outlined,
                     size: 16,
-                    color: AppTheme.primaryColor.withOpacity(0.7),
+                    color: AppColors.brandPrimary.withOpacity(0.7),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -628,14 +618,14 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textPrimary,
+                            color: AppColors.lightTextPrimary,
                           ),
                         ),
                         Text(
                           '${city.country} · ${city.description}',
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: AppTheme.textSecondary,
+                            color: AppColors.lightTextSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -655,7 +645,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
   Widget _buildResults() {
     if (_isSearching) {
       return const Center(
-        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+        child: CircularProgressIndicator(color: AppColors.brandPrimary),
       );
     }
     if (_error != null) {
@@ -679,7 +669,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
             const SizedBox(height: 12),
             Text(
               'No flights found',
-              style: GoogleFonts.poppins(fontSize: 16, color: AppTheme.textSecondary),
+              style: GoogleFonts.poppins(fontSize: 16, color: AppColors.lightTextSecondary),
             ),
           ],
         ),
@@ -710,14 +700,14 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+            color: isSelected ? AppColors.brandPrimary : Colors.transparent,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? AppTheme.primaryColor.withOpacity(0.15)
-                  : AppTheme.primaryColor.withOpacity(0.05),
+                  ? AppColors.brandPrimary.withOpacity(0.15)
+                  : AppColors.brandPrimary.withOpacity(0.05),
               blurRadius: isSelected ? 20 : 16,
               offset: const Offset(0, 4),
             ),
@@ -754,14 +744,14 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
                       '${flight.departureAirportId} → ${flight.arrivalAirportId}',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                   ],
@@ -774,7 +764,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                          colors: [AppColors.brandPrimary, AppColors.brandSecondary],
                         ),
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -794,7 +784,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                           '€${flight.pricePerPerson!.toStringAsFixed(0)}/person',
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: AppTheme.textSecondary,
+                            color: AppColors.lightTextSecondary,
                           ),
                         ),
                       ),
@@ -813,7 +803,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
@@ -822,7 +812,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                           : flight.departureAirportId,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary.withOpacity(0.7),
+                        color: AppColors.lightTextSecondary.withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -834,13 +824,13 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       children: [
                         Text(
                           durationStr,
-                          style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary),
+                          style: GoogleFonts.poppins(fontSize: 11, color: AppColors.lightTextSecondary),
                         ),
                         const SizedBox(height: 2),
                         Container(
                           height: 2,
                           decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withOpacity(0.2),
+                            color: AppColors.brandPrimary.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(1),
                           ),
                         ),
@@ -884,7 +874,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
@@ -893,7 +883,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                           : flight.arrivalAirportId,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary.withOpacity(0.7),
+                        color: AppColors.lightTextSecondary.withOpacity(0.7),
                       ),
                     ),
                   ],
@@ -908,7 +898,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
                   Container(
                     padding: const EdgeInsets.all(4),
                     decoration: const BoxDecoration(
-                      color: AppTheme.primaryColor,
+                      color: AppColors.brandPrimary,
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.check, size: 14, color: Colors.white),
@@ -929,7 +919,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.08),
+              color: AppColors.brandPrimary.withOpacity(0.08),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -962,7 +952,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
     // Build polylines and markers for all legs
     final polylines = <Polyline<Object>>[];
     final markers = <Marker>[];
-    final legColors = [AppTheme.primaryColor, const Color(0xFFE91E63), const Color(0xFF00BCD4), const Color(0xFFFF9800)];
+    final legColors = [AppColors.brandPrimary, const Color(0xFFE91E63), const Color(0xFF00BCD4), const Color(0xFFFF9800)];
     final legs = _selectedFlight!.legs;
 
     double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
@@ -998,10 +988,10 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
           height: 28,
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor,
+              color: AppColors.brandPrimary,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)],
+              boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.3), blurRadius: 6)],
             ),
           ),
         ));
@@ -1033,10 +1023,10 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
           height: 28,
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
+              color: AppColors.brandSecondary,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)],
+              boxShadow: [BoxShadow(color: AppColors.brandSecondary.withOpacity(0.3), blurRadius: 6)],
             ),
           ),
         ));
@@ -1051,7 +1041,7 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.08),
+            color: AppColors.brandPrimary.withOpacity(0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -1128,12 +1118,12 @@ class _RegionalSearchScreenState extends State<RegionalSearchScreen> {
           padding: const EdgeInsets.symmetric(vertical: 18),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [AppTheme.primaryColor, Color(0xFF8B5CF6), AppTheme.secondaryColor],
+              colors: [AppColors.brandPrimary, Color(0xFF8B5CF6), AppColors.brandSecondary],
             ),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.3),
+                color: AppColors.brandPrimary.withOpacity(0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),

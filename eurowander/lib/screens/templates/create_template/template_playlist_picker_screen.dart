@@ -1,11 +1,11 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../models/playlist.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/playlist_service.dart';
+import '../../../widgets/widgets.dart';
 import '../../playlists/playlist_builder_screen.dart';
 
 /// Lightweight playlist picker for template creation.
@@ -99,10 +99,10 @@ class _TemplatePlaylistPickerScreenState extends State<TemplatePlaylistPickerScr
                   child: Row(children: [
                     GestureDetector(
                       onTap: () => Navigator.pop(context),
-                      child: Container(width: 42, height: 42, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))]), child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary)),
+                      child: Container(width: 42, height: 42, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))]), child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.lightTextPrimary)),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(child: Text('Attach Playlist', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
+                    Expanded(child: Text('Attach Playlist', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.lightTextPrimary))),
                   ]),
                 ),
 
@@ -115,12 +115,12 @@ class _TemplatePlaylistPickerScreenState extends State<TemplatePlaylistPickerScr
                     style: GoogleFonts.poppins(fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Search playlists by city or keyword...',
-                      hintStyle: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary),
-                      prefixIcon: const Icon(Icons.search, size: 20, color: AppTheme.primaryColor),
-                      suffixIcon: _isLoading ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor))) : null,
+                      hintStyle: GoogleFonts.poppins(fontSize: 14, color: AppColors.lightTextSecondary),
+                      prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.brandPrimary),
+                      suffixIcon: _isLoading ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary))) : null,
                       filled: true, fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
-                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.brandPrimary, width: 1.5)),
                     ),
                   ),
                 ),
@@ -136,8 +136,8 @@ class _TemplatePlaylistPickerScreenState extends State<TemplatePlaylistPickerScr
                       icon: const Icon(Icons.add, size: 18),
                       label: const Text('Create new playlist'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.primaryColor,
-                        side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.4)),
+                        foregroundColor: AppColors.brandPrimary,
+                        side: BorderSide(color: AppColors.brandPrimary.withOpacity(0.4)),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
@@ -149,14 +149,14 @@ class _TemplatePlaylistPickerScreenState extends State<TemplatePlaylistPickerScr
                 // Results
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                      ? const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary))
                       : !_hasSearched
-                          ? Center(child: Text('Search for playlists or create a new one', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)))
+                          ? Center(child: Text('Search for playlists or create a new one', style: GoogleFonts.poppins(fontSize: 13, color: AppColors.lightTextSecondary)))
                           : _results.isEmpty
                               ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                                   Icon(Icons.playlist_play_rounded, size: 48, color: Colors.grey.shade300),
                                   const SizedBox(height: 8),
-                                  Text('No playlists found', style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary)),
+                                  Text('No playlists found', style: GoogleFonts.poppins(fontSize: 14, color: AppColors.lightTextSecondary)),
                                 ]))
                               : ListView.builder(
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -187,29 +187,29 @@ class _TemplatePlaylistPickerScreenState extends State<TemplatePlaylistPickerScr
           ClipRRect(
             borderRadius: BorderRadius.circular(10),
             child: playlist.coverPhotoUrl.isNotEmpty
-                ? Image.network(playlist.coverPhotoUrl, width: 56, height: 56, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder())
+                ? Image.network(playlist.coverPhotoUrl, width: 56, height: 56, fit: BoxFit.cover, errorBuilder: (_, _, _) => _placeholder())
                 : _placeholder(),
           ),
           const SizedBox(width: 12),
           // Info
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(playlist.title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(playlist.title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.lightTextPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 2),
-            Text('${playlist.city}${playlist.country.isNotEmpty ? ", ${playlist.country}" : ""} • ${playlist.itemCount} items', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+            Text('${playlist.city}${playlist.country.isNotEmpty ? ", ${playlist.country}" : ""} â€¢ ${playlist.itemCount} items', style: GoogleFonts.poppins(fontSize: 12, color: AppColors.lightTextSecondary)),
             const SizedBox(height: 2),
             Row(children: [
               if (playlist.averageRating > 0) ...[
                 const Icon(Icons.star_rounded, size: 14, color: Colors.amber),
                 const SizedBox(width: 2),
-                Text(playlist.averageRating.toStringAsFixed(1), style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+                Text(playlist.averageRating.toStringAsFixed(1), style: GoogleFonts.poppins(fontSize: 11, color: AppColors.lightTextSecondary)),
                 const SizedBox(width: 8),
               ],
-              Text('❤️ ${playlist.likeCount}', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+              Text('â¤ï¸ ${playlist.likeCount}', style: GoogleFonts.poppins(fontSize: 11, color: AppColors.lightTextSecondary)),
               const SizedBox(width: 8),
-              Text('📥 ${playlist.importCount}', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+              Text('ðŸ“¥ ${playlist.importCount}', style: GoogleFonts.poppins(fontSize: 11, color: AppColors.lightTextSecondary)),
             ]),
           ])),
-          const Icon(Icons.chevron_right_rounded, size: 22, color: AppTheme.textSecondary),
+          const Icon(Icons.chevron_right_rounded, size: 22, color: AppColors.lightTextSecondary),
         ]),
       ),
     );
@@ -217,7 +217,7 @@ class _TemplatePlaylistPickerScreenState extends State<TemplatePlaylistPickerScr
 
   Widget _placeholder() => Container(
     width: 56, height: 56,
-    decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-    child: const Icon(Icons.playlist_play_rounded, color: AppTheme.primaryColor, size: 24),
+    decoration: BoxDecoration(color: AppColors.brandPrimary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+    child: const Icon(Icons.playlist_play_rounded, color: AppColors.brandPrimary, size: 24),
   );
 }

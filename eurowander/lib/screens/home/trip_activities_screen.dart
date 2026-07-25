@@ -1,8 +1,9 @@
+// ignore_for_file: unused_element, unused_local_variable
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/widgets.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
@@ -135,41 +136,25 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildAppBar(context),
-                  _buildSearchBar(),
-                  const SizedBox(height: 8),
-                  _buildImportPlaylistButton(),
-                  const SizedBox(height: 12),
-                  _buildTabBar(),
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildAttractionsList(),
-                        _buildRestaurantsList(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+    return AppScaffold(
+      child: Column(
+        children: [
+          EWAppBar(title: 'Activities'),
+          _buildSearchBar(),
+          const SizedBox(height: AppSpacing.xs),
+          _buildImportPlaylistButton(),
+          const SizedBox(height: AppSpacing.sm),
+          _buildTabBar(),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildAttractionsList(),
+                _buildRestaurantsList(),
+              ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -186,12 +171,12 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [AppTheme.primaryColor, const Color(0xFF8B5CF6)],
+              colors: [AppColors.brandPrimary, const Color(0xFF8B5CF6)],
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.borderLg,
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.3),
+                color: AppColors.brandPrimary.withOpacity(0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -204,7 +189,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                 height: 40,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.borderMd,
                 ),
                 child: const Icon(Icons.search_rounded, color: Colors.white, size: 22),
               ),
@@ -215,11 +200,11 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                   children: [
                     Text(
                       'Discover new places',
-                      style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
+                      style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.white),
                     ),
                     Text(
                       'Search attractions & restaurants',
-                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.white.withOpacity(0.8)),
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(color: Colors.white.withOpacity(0.8)),
                     ),
                   ],
                 ),
@@ -241,7 +226,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.borderLg,
             border: Border.all(color: const Color(0xFF9C27B0).withOpacity(0.3)),
           ),
           child: Row(
@@ -255,17 +240,17 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                 ),
                 child: const Icon(Icons.playlist_play_rounded, color: Color(0xFF9C27B0), size: 20),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Import from Playlist', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                    Text('Browse community itineraries', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+                    Text('Import from Playlist', style: Theme.of(context).textTheme.labelLarge!.copyWith(color: context.ew.textPrimary)),
+                    Text('Browse community itineraries', style: Theme.of(context).textTheme.labelSmall!.copyWith(color: context.ew.textSecondary)),
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: AppTheme.textSecondary),
+              Icon(Icons.arrow_forward_ios_rounded, size: 16, color: context.ew.textSecondary),
             ],
           ),
         ),
@@ -289,20 +274,20 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
               height: 4,
               decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
             ),
-            const SizedBox(height: 20),
-            Text('What are you looking for?', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
+            Text('What are you looking for?', style: Theme.of(context).textTheme.titleMedium!),
+            const SizedBox(height: AppSpacing.md),
             _buildSearchOption(
               icon: Icons.attractions_rounded,
               label: 'Search Attractions',
               subtitle: 'Things to do & see',
-              color: const Color(0xFFFF5722),
+              color: AppColors.restaurant,
               onTap: () {
                 Navigator.pop(ctx);
                 _navigateToAttractionSearch();
               },
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             _buildSearchOption(
               icon: Icons.restaurant_rounded,
               label: 'Search Restaurants',
@@ -313,7 +298,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                 _navigateToRestaurantSearch();
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.md),
           ],
         ),
       ),
@@ -333,7 +318,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: color.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.borderLg,
           border: Border.all(color: color.withOpacity(0.15)),
         ),
         child: Row(
@@ -343,7 +328,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
               height: 44,
               decoration: BoxDecoration(
                 color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.borderMd,
               ),
               child: Icon(icon, color: color, size: 22),
             ),
@@ -352,8 +337,8 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(label, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                  Text(subtitle, style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                  Text(label, style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textPrimary)),
+                  Text(subtitle, style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary)),
                 ],
               ),
             ),
@@ -419,67 +404,23 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
     );
   }
 
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Activities',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTabBar() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: AppTheme.primaryColor,
+          color: AppColors.brandPrimary,
           borderRadius: BorderRadius.circular(10),
         ),
         labelColor: Colors.white,
-        unselectedLabelColor: AppTheme.textSecondary,
-        labelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
+        unselectedLabelColor: context.ew.textSecondary,
+        labelStyle: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600),
+        unselectedLabelStyle: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500),
         indicatorSize: TabBarIndicatorSize.tab,
         dividerHeight: 0,
         tabs: [
@@ -523,7 +464,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
       child: ListView.separated(
         padding: const EdgeInsets.all(20),
         itemCount: _trip.attractions.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
         itemBuilder: (context, index) => _buildAttractionCard(_trip.attractions[index]),
       ),
     );
@@ -544,7 +485,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
       child: ListView.separated(
         padding: const EdgeInsets.all(20),
         itemCount: _trip.restaurants.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
         itemBuilder: (context, index) => _buildRestaurantCard(_trip.restaurants[index]),
       ),
     );
@@ -559,7 +500,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
           color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.borderLg,
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
@@ -583,7 +524,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.borderLg,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
@@ -596,14 +537,14 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
             children: [
               // Photo
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.borderMd,
                 child: attraction.photoUrl.isNotEmpty
                     ? Image.network(
                         attraction.photoUrl,
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (_, _, _) => Container(
                           width: 60,
                           height: 60,
                           color: Colors.grey.shade200,
@@ -617,7 +558,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                         child: const Icon(Icons.attractions_rounded, color: Colors.grey),
                       ),
               ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             // Info
             Expanded(
               child: Column(
@@ -625,7 +566,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                 children: [
                   Text(
                     attraction.name,
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: Theme.of(context).textTheme.labelLarge!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -633,11 +574,11 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                   if (attraction.category.isNotEmpty)
                     Text(
                       attraction.category,
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xxs),
                   Row(
                     children: [
                       _buildScheduleBadge(attraction.dayDate, attraction.timeSlot),
@@ -651,7 +592,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                           ),
                           child: Text(
                             'Paid',
-                            style: GoogleFonts.poppins(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w500),
+                            style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Colors.green.shade700, fontWeight: FontWeight.w500),
                           ),
                         )
                       else
@@ -671,7 +612,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                                 const SizedBox(width: 3),
                                 Text(
                                   'Mark Paid',
-                                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green.shade700),
+                                  style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700),
                                 ),
                               ],
                             ),
@@ -698,7 +639,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
           color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.borderLg,
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
@@ -722,7 +663,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.borderLg,
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
@@ -735,14 +676,14 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
             children: [
               // Photo
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.borderMd,
                 child: restaurant.photoUrl.isNotEmpty
                     ? Image.network(
                         restaurant.photoUrl,
                         width: 60,
                         height: 60,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
+                        errorBuilder: (_, _, _) => Container(
                           width: 60,
                           height: 60,
                           color: Colors.grey.shade200,
@@ -756,7 +697,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                         child: const Icon(Icons.restaurant_rounded, color: Colors.grey),
                       ),
               ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             // Info
             Expanded(
               child: Column(
@@ -764,7 +705,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                 children: [
                   Text(
                     restaurant.name,
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: Theme.of(context).textTheme.labelLarge!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -772,11 +713,11 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                   if (restaurant.cuisine.isNotEmpty)
                     Text(
                       restaurant.cuisine,
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: AppSpacing.xxs),
                   Row(
                     children: [
                       _buildScheduleBadge(restaurant.dayDate, restaurant.timeSlot),
@@ -790,7 +731,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                           ),
                           child: Text(
                             'Paid',
-                            style: GoogleFonts.poppins(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w500),
+                            style: Theme.of(context).textTheme.labelSmall!.copyWith(color: Colors.green.shade700, fontWeight: FontWeight.w500),
                           ),
                         )
                       else
@@ -810,7 +751,7 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
                                 const SizedBox(width: 3),
                                 Text(
                                   'Mark Paid',
-                                  style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green.shade700),
+                                  style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700),
                                 ),
                               ],
                             ),
@@ -848,16 +789,12 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.08),
+        color: AppColors.brandPrimary.withOpacity(0.08),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
         label,
-        style: GoogleFonts.poppins(
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-          color: AppTheme.primaryColor,
-        ),
+        style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w500, color: AppColors.brandPrimary),
       ),
     );
   }
@@ -880,29 +817,29 @@ class _TripActivitiesScreenState extends State<TripActivitiesScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 56, color: AppTheme.primaryColor.withOpacity(0.4)),
-            const SizedBox(height: 16),
+            Icon(icon, size: 56, color: AppColors.brandPrimary.withOpacity(0.4)),
+            const SizedBox(height: AppSpacing.md),
             Text(
               message,
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500, color: AppTheme.textSecondary),
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textSecondary),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.xs),
             Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
             ),
             if (actionLabel != null && onAction != null) ...[
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
               ElevatedButton.icon(
                 onPressed: onAction,
                 icon: const Icon(Icons.search_rounded, size: 18),
-                label: Text(actionLabel, style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                label: Text(actionLabel, style: Theme.of(context).textTheme.labelLarge!),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: AppColors.brandPrimary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
                 ),
               ),
             ],
@@ -964,7 +901,7 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
     if (amountStr.isEmpty || _paidBy == null || _selectedMembers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please fill all fields', style: GoogleFonts.poppins()),
+          content: Text('Please fill all fields', style: Theme.of(context).textTheme.bodyMedium!),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
         ),
@@ -1041,19 +978,19 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'Mark as Paid',
-              style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+              style: Theme.of(context).textTheme.headlineMedium!,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xxs),
             Text(
               widget.itemName,
-              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Amount + currency
             Row(
               children: [
@@ -1062,30 +999,30 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
                   child: TextField(
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: GoogleFonts.poppins(fontSize: 14),
+                    style: Theme.of(context).textTheme.bodyMedium!,
                     decoration: InputDecoration(
                       hintText: 'Amount paid',
-                      hintStyle: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 14),
-                      prefixIcon: const Icon(Icons.attach_money_rounded, size: 20, color: AppTheme.primaryColor),
+                      hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(color: context.ew.textSecondary),
+                      prefixIcon: const Icon(Icons.attach_money_rounded, size: 20, color: AppColors.brandPrimary),
                       filled: true,
-                      fillColor: const Color(0xFFF8F5FF),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      fillColor: AppColors.lightSurfaceVariant,
+                      border: OutlineInputBorder(borderRadius: AppRadius.borderLg, borderSide: BorderSide.none),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8F5FF),
-                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.lightSurfaceVariant,
+                      borderRadius: AppRadius.borderLg,
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _currency,
                         isExpanded: true,
-                        style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textPrimary),
+                        style: Theme.of(context).textTheme.bodyMedium!,
                         items: _currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                         onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
                       ),
@@ -1094,10 +1031,10 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Who paid
-            Text('Who paid?', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            Text('Who paid?', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: context.ew.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1108,25 +1045,21 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppTheme.primaryColor : const Color(0xFFF8F5FF),
+                      color: selected ? AppColors.brandPrimary : AppColors.lightSurfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
                       m.displayName,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: selected ? Colors.white : AppTheme.textPrimary,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500, color: selected ? Colors.white : context.ew.textPrimary),
                     ),
                   ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Paid for
-            Text('Paid for', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            Text('Paid for', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: context.ew.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -1145,7 +1078,7 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? const Color(0xFF4CAF50) : const Color(0xFFF8F5FF),
+                      color: selected ? AppColors.success : AppColors.lightSurfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -1153,15 +1086,11 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
                       children: [
                         if (selected) ...[
                           const Icon(Icons.check_rounded, size: 14, color: Colors.white),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xxs),
                         ],
                         Text(
                           m.displayName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: selected ? Colors.white : AppTheme.textPrimary,
-                          ),
+                          style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500, color: selected ? Colors.white : context.ew.textPrimary),
                         ),
                       ],
                     ),
@@ -1169,7 +1098,7 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -1177,12 +1106,12 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade600,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                   elevation: 0,
                 ),
                 child: _isSaving
                     ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text('Confirm Payment', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                    : Text('Confirm Payment', style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.white)),
               ),
             ),
           ],
@@ -1191,3 +1120,4 @@ class _ActivityMarkPaidSheetState extends State<_ActivityMarkPaidSheet> {
     );
   }
 }
+

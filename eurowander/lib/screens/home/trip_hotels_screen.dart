@@ -1,8 +1,9 @@
+// ignore_for_file: unused_element, unused_local_variable
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/widgets.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
@@ -125,7 +126,7 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
           content: Text('Failed to get booking link: $e'),
           backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
         ),
       );
     } finally {
@@ -157,77 +158,34 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildAppBar(context),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 16),
-                          if (_trip.hotels.isNotEmpty) ...[
-                            _buildSectionLabel('Saved Hotels', Icons.hotel_rounded),
-                            const SizedBox(height: 12),
-                            ...List.generate(_trip.hotels.length, (i) => Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _buildHotelCard(_trip.hotels[i]),
-                            )),
-                          ] else ...[
-                            _buildEmptyState(),
-                          ],
-                          const SizedBox(height: 24),
-                          _buildSearchButton(),
-                          const SizedBox(height: 32),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return AppScaffold(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
+          EWAppBar(title: 'Hotels'),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: AppSpacing.paddingHorizontalXl,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.md),
+                  if (_trip.hotels.isNotEmpty) ...[
+                    _buildSectionLabel('Saved Hotels', Icons.hotel_rounded),
+                    const SizedBox(height: AppSpacing.sm),
+                    ...List.generate(_trip.hotels.length, (i) => Padding(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                      child: _buildHotelCard(_trip.hotels[i]),
+                    )),
+                  ] else ...[
+                    _buildEmptyState(),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildSearchButton(),
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
             ),
           ),
-          const SizedBox(width: 16),
-          Text('Hotels', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
         ],
       ),
     );
@@ -236,9 +194,9 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
   Widget _buildSectionLabel(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppTheme.primaryColor),
-        const SizedBox(width: 8),
-        Text(title, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+        Icon(icon, size: 18, color: AppColors.brandPrimary),
+        const SizedBox(width: AppSpacing.xs),
+        Text(title, style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textPrimary)),
       ],
     );
   }
@@ -249,16 +207,16 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
       padding: const EdgeInsets.symmetric(vertical: 48),
       child: Column(
         children: [
-          Icon(Icons.hotel_rounded, size: 64, color: AppTheme.primaryColor.withOpacity(0.3)),
-          const SizedBox(height: 16),
+          Icon(Icons.hotel_rounded, size: 64, color: AppColors.brandPrimary.withOpacity(0.3)),
+          const SizedBox(height: AppSpacing.md),
           Text(
             'No hotel saved yet',
-            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+            style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textPrimary),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             'Search and save a hotel for your trip',
-            style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+            style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
           ),
         ],
       ),
@@ -274,10 +232,10 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppRadius.borderXl,
           border: isPaid ? Border.all(color: Colors.green.shade300, width: 1.5) : null,
           boxShadow: [
-            BoxShadow(color: AppTheme.primaryColor.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 4)),
+            BoxShadow(color: AppColors.brandPrimary.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 4)),
           ],
         ),
         child: Column(
@@ -296,11 +254,11 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.check_circle_rounded, size: 16, color: Colors.green.shade600),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
                         'Paid · ${hotel.paidCurrency ?? hotel.currency}${hotel.actualPaidAmount?.toStringAsFixed(2) ?? ''}',
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green.shade700),
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700),
                       ),
                     ),
                     GestureDetector(
@@ -315,8 +273,8 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(Icons.edit_rounded, size: 12, color: Colors.green.shade700),
-                            const SizedBox(width: 4),
-                            Text('Edit', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
+                            const SizedBox(width: AppSpacing.xxs),
+                            Text('Edit', style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700)),
                           ],
                         ),
                       ),
@@ -329,14 +287,14 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.borderMd,
                   child: hotel.photoUrl.isNotEmpty
                       ? Image.network(
                           hotel.photoUrl,
                           width: 80,
                           height: 80,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
+                          errorBuilder: (_, _, _) => _buildPlaceholderImage(),
                         )
                       : _buildPlaceholderImage(),
                 ),
@@ -347,16 +305,16 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
                     children: [
                       Text(
                         hotel.name,
-                        style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                        style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textPrimary),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xxs),
                       Row(
                         children: [
                           if (hotel.stars > 0) ...[
                             ...List.generate(hotel.stars, (_) => const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFB800))),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: AppSpacing.xs),
                           ],
                           if (hotel.reviewScore > 0) ...[
                             Container(
@@ -367,21 +325,21 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
                               ),
                               child: Text(
                                 hotel.reviewScore.toStringAsFixed(1),
-                                style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                                style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.bold, color: Colors.white),
                               ),
                             ),
                           ],
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: AppSpacing.xxs),
                       Row(
                         children: [
-                          Icon(Icons.location_on_outlined, size: 14, color: AppTheme.textSecondary),
-                          const SizedBox(width: 4),
+                          Icon(Icons.location_on_outlined, size: 14, color: context.ew.textSecondary),
+                          const SizedBox(width: AppSpacing.xxs),
                           Expanded(
                             child: Text(
                               hotel.city,
-                              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                              style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -396,9 +354,9 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
                   children: [
                     Text(
                       '${hotel.currency == 'EUR' ? '€' : hotel.currency}${hotel.priceTotal.toStringAsFixed(0)}',
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                      style: Theme.of(context).textTheme.headlineSmall!.copyWith(color: AppColors.brandPrimary),
                     ),
-                    Text('total', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+                    Text('total', style: Theme.of(context).textTheme.labelSmall!.copyWith(color: context.ew.textSecondary)),
                   ],
                 ),
               ],
@@ -413,15 +371,15 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: const Color(0xFFF8F5FF), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: AppColors.lightSurfaceVariant, borderRadius: BorderRadius.circular(8)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.calendar_today_outlined, size: 13, color: AppTheme.primaryColor),
+                      Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.brandPrimary),
                       const SizedBox(width: 6),
                       Text(
                         '${hotel.checkinDate} → ${hotel.checkoutDate}',
-                        style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.primaryColor),
+                        style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500, color: AppColors.brandPrimary),
                       ),
                     ],
                   ),
@@ -443,21 +401,21 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.check_circle_outline_rounded, size: 14, color: Colors.green.shade600),
-                              const SizedBox(width: 4),
-                              Text('Mark as Paid', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
+                              const SizedBox(width: AppSpacing.xxs),
+                              Text('Mark as Paid', style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.green.shade700)),
                             ],
                           ),
                         ),
                       ),
-                    if (!isPaid) const SizedBox(width: 8),
+                    if (!isPaid) const SizedBox(width: AppSpacing.xs),
                     GestureDetector(
                       onTap: _isLoadingBooking ? null : () => _openBookingLink(hotel),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(colors: [AppTheme.primaryColor, Color(0xFF8B5CF6)]),
+                          gradient: const LinearGradient(colors: [AppColors.brandPrimary, Color(0xFF8B5CF6)]),
                           borderRadius: BorderRadius.circular(10),
-                          boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))],
+                          boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))],
                         ),
                         child: _isLoadingBooking
                             ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
@@ -466,7 +424,7 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
                                 children: [
                                   const Icon(Icons.open_in_new_rounded, size: 14, color: Colors.white),
                                   const SizedBox(width: 6),
-                                  Text('Book', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                                  Text('Book', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.white)),
                                 ],
                               ),
                       ),
@@ -486,10 +444,10 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
       width: 80,
       height: 80,
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F5FF),
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.lightSurfaceVariant,
+        borderRadius: AppRadius.borderMd,
       ),
-      child: Icon(Icons.hotel_rounded, size: 32, color: AppTheme.primaryColor.withOpacity(0.4)),
+      child: Icon(Icons.hotel_rounded, size: 32, color: AppColors.brandPrimary.withOpacity(0.4)),
     );
   }
 
@@ -500,10 +458,10 @@ class _TripHotelsScreenState extends State<TripHotelsScreen> {
       child: ElevatedButton.icon(
         onPressed: _navigateToSearch,
         icon: const Icon(Icons.search_rounded, color: Colors.white),
-        label: Text('Search Hotels', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+        label: Text('Search Hotels', style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.white)),
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.primaryColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          backgroundColor: AppColors.brandPrimary,
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
           elevation: 0,
         ),
       ),
@@ -584,7 +542,7 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
     final amountStr = _amountController.text.trim();
     if (amountStr.isEmpty || _paidBy == null || _selectedMembers.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please fill all fields', style: GoogleFonts.poppins()), backgroundColor: Colors.orange, behavior: SnackBarBehavior.floating),
+        SnackBar(content: Text('Please fill all fields', style: const TextStyle()), backgroundColor: Colors.orange, behavior: SnackBarBehavior.floating),
       );
       return;
     }
@@ -635,14 +593,14 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
             Center(
               child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
             ),
-            const SizedBox(height: 20),
-            Text('Mark as Paid', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Mark as Paid', style: Theme.of(context).textTheme.headlineMedium!),
+            const SizedBox(height: AppSpacing.xxs),
             Text(
               widget.isEditing ? 'Edit hotel payment' : 'Hotel accommodation',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Amount + currency
             Row(
               children: [
@@ -651,27 +609,27 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
                   child: TextField(
                     controller: _amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    style: GoogleFonts.poppins(fontSize: 14),
+                    style: Theme.of(context).textTheme.bodyMedium!,
                     decoration: InputDecoration(
                       hintText: 'Amount paid',
-                      hintStyle: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 14),
-                      prefixIcon: const Icon(Icons.attach_money_rounded, size: 20, color: AppTheme.primaryColor),
+                      hintStyle: Theme.of(context).textTheme.bodyMedium!.copyWith(color: context.ew.textSecondary),
+                      prefixIcon: const Icon(Icons.attach_money_rounded, size: 20, color: AppColors.brandPrimary),
                       filled: true,
-                      fillColor: const Color(0xFFF8F5FF),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      fillColor: AppColors.lightSurfaceVariant,
+                      border: OutlineInputBorder(borderRadius: AppRadius.borderLg, borderSide: BorderSide.none),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(color: const Color(0xFFF8F5FF), borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(color: AppColors.lightSurfaceVariant, borderRadius: AppRadius.borderLg),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _currency,
                         isExpanded: true,
-                        style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textPrimary),
+                        style: Theme.of(context).textTheme.bodyMedium!,
                         items: _currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                         onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
                       ),
@@ -680,10 +638,10 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Paid by
-            Text('Who paid?', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            Text('Who paid?', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: context.ew.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -694,18 +652,18 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppTheme.primaryColor : const Color(0xFFF8F5FF),
+                      color: selected ? AppColors.brandPrimary : AppColors.lightSurfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(m.displayName, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: selected ? Colors.white : AppTheme.textPrimary)),
+                    child: Text(m.displayName, style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500, color: selected ? Colors.white : context.ew.textPrimary)),
                   ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Paid for
-            Text('Paid for', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            Text('Paid for', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: context.ew.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -724,7 +682,7 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? const Color(0xFF4CAF50) : const Color(0xFFF8F5FF),
+                      color: selected ? AppColors.success : AppColors.lightSurfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -732,16 +690,16 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
                       children: [
                         if (selected) ...[
                           const Icon(Icons.check_rounded, size: 14, color: Colors.white),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xxs),
                         ],
-                        Text(m.displayName, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: selected ? Colors.white : AppTheme.textPrimary)),
+                        Text(m.displayName, style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500, color: selected ? Colors.white : context.ew.textPrimary)),
                       ],
                     ),
                   ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -749,12 +707,12 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade600,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                   elevation: 0,
                 ),
                 child: _isSaving
                     ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                    : Text(widget.isEditing ? 'Update Payment' : 'Confirm Payment', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                    : Text(widget.isEditing ? 'Update Payment' : 'Confirm Payment', style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.white)),
               ),
             ),
           ],
@@ -763,3 +721,4 @@ class _HotelMarkPaidSheetState extends State<_HotelMarkPaidSheet> {
     );
   }
 }
+

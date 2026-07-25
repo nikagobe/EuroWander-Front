@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../core/theme/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/fork_wizard_provider.dart';
 
@@ -21,7 +21,7 @@ class StepChooseDates extends StatelessWidget {
       builder: (context, provider, _) {
         if (provider.isLoading) {
           return const Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryColor),
+            child: CircularProgressIndicator(color: AppColors.brandPrimary),
           );
         }
 
@@ -50,10 +50,10 @@ class StepChooseDates extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.borderMd,
                     border: Border.all(
                       color: provider.startDate != null
-                          ? AppTheme.primaryColor
+                          ? AppColors.brandPrimary
                           : Colors.grey.withOpacity(0.3),
                     ),
                   ),
@@ -62,8 +62,8 @@ class StepChooseDates extends StatelessWidget {
                       Icon(
                         Icons.calendar_today,
                         color: provider.startDate != null
-                            ? AppTheme.primaryColor
-                            : AppTheme.textSecondary,
+                            ? AppColors.brandPrimary
+                            : context.ew.textSecondary,
                       ),
                       const SizedBox(width: 12),
                       Text(
@@ -74,8 +74,8 @@ class StepChooseDates extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           color: provider.startDate != null
-                              ? AppTheme.textPrimary
-                              : AppTheme.textSecondary,
+                              ? context.ew.textPrimary
+                              : context.ew.textSecondary,
                         ),
                       ),
                     ],
@@ -100,10 +100,10 @@ class StepChooseDates extends StatelessWidget {
                       ? () => _confirmDate(context, provider)
                       : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: AppColors.brandPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.borderMd,
                     ),
                     disabledBackgroundColor: Colors.grey.withOpacity(0.3),
                   ),
@@ -137,8 +137,8 @@ class StepChooseDates extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+        borderRadius: AppRadius.borderMd,
+        border: Border.all(color: AppColors.brandPrimary.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,7 +165,7 @@ class StepChooseDates extends StatelessWidget {
                 '(${leg.days} days)',
                 style: const TextStyle(
                   fontSize: 13,
-                  color: AppTheme.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
             );
@@ -195,7 +195,7 @@ class StepChooseDates extends StatelessWidget {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: AppTheme.primaryColor,
+                  primary: AppColors.brandPrimary,
                 ),
           ),
           child: child!,
@@ -234,3 +234,4 @@ class StepChooseDates extends StatelessWidget {
     }
   }
 }
+

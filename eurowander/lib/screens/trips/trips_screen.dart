@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/trip.dart';
 import '../../providers/trip_provider.dart';
+import '../../widgets/widgets.dart';
 import 'create_trip_screen.dart';
 
 class TripsScreen extends StatelessWidget {
@@ -17,24 +18,28 @@ class TripsScreen extends StatelessWidget {
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 'My Trips',
                 style: Theme.of(context).textTheme.headlineLarge,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Plan your next adventure',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               Expanded(
                 child: trips.isEmpty
-                    ? _buildEmptyState(context)
+                    ? EmptyState(
+                        icon: Icons.luggage_outlined,
+                        title: 'No trips yet',
+                        subtitle: 'Tap + to create your first trip',
+                      )
                     : _buildTripList(context, trips),
               ),
             ],
@@ -55,52 +60,53 @@ class TripsScreen extends StatelessWidget {
 
   Widget _buildTripList(BuildContext context, List<Trip> trips) {
     final dateFormat = DateFormat('MMM dd');
+    final ew = context.ew;
+
     return ListView.separated(
       itemCount: trips.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.sm),
       itemBuilder: (context, index) {
         final trip = trips[index];
         return Card(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.location_on, color: AppTheme.primaryColor, size: 20),
-                    const SizedBox(width: 8),
+                    const Icon(Icons.location_on, color: AppColors.brandPrimary, size: 20),
+                    const SizedBox(width: AppSpacing.xs),
                     Expanded(
                       child: Text(
                         trip.destination,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.primaryColor,
+                              color: AppColors.brandPrimary,
                             ),
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xxs),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: AppColors.brandPrimary.withOpacity(0.1),
+                        borderRadius: AppRadius.borderMd,
                       ),
                       child: Text(
                         '${trip.durationInDays} days',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppTheme.primaryColor,
-                              fontSize: 12,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: AppColors.brandPrimary,
                               fontWeight: FontWeight.w500,
                             ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   trip.title,
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   '${dateFormat.format(trip.startDate)} - ${dateFormat.format(trip.endDate)}',
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -110,33 +116,6 @@ class TripsScreen extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.luggage_outlined,
-            size: 80,
-            color: AppTheme.textSecondary.withOpacity(0.4),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'No trips yet',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Tap + to create your first trip',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-        ],
-      ),
     );
   }
 }

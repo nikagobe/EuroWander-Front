@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/template.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/template_provider.dart';
+import '../../widgets/widgets.dart';
 import 'create_template/create_template_screen.dart';
-import 'template_detail_screen.dart';
 
 class MyTemplatesScreen extends StatefulWidget {
   const MyTemplatesScreen({super.key});
@@ -37,86 +36,7 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  // Custom app bar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-                            ),
-                            child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            'My Templates',
-                            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Tab bar
-                  TabBar(
-                    controller: _tabController,
-                    labelColor: AppTheme.primaryColor,
-                    unselectedLabelColor: AppTheme.textSecondary,
-                    indicatorColor: AppTheme.primaryColor,
-                    tabs: const [
-                      Tab(text: 'Published'),
-                      Tab(text: 'Drafts'),
-                    ],
-                  ),
-                  // Content
-                  Expanded(
-                    child: Consumer<TemplateProvider>(
-                      builder: (context, provider, _) {
-                        if (provider.isLoadingMine) {
-                          return const Center(
-                            child: CircularProgressIndicator(color: AppTheme.primaryColor),
-                          );
-                        }
-
-                        return TabBarView(
-                          controller: _tabController,
-                          children: [
-                            _buildList(provider.myPublished, 'published'),
-                            _buildList(provider.myDrafts, 'draft'),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return AppScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -126,37 +46,58 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
             ),
           );
         },
-        backgroundColor: AppTheme.primaryColor,
+        backgroundColor: AppColors.brandPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
         label: const Text('Create Template'),
+      ),
+      child: Column(
+        children: [
+          const EWAppBar(title: 'My Templates'),
+          // Tab bar
+          TabBar(
+            controller: _tabController,
+            labelColor: AppColors.brandPrimary,
+            unselectedLabelColor: context.ew.textSecondary,
+            indicatorColor: AppColors.brandPrimary,
+            tabs: const [
+              Tab(text: 'Published'),
+              Tab(text: 'Drafts'),
+            ],
+          ),
+          // Content
+          Expanded(
+            child: Consumer<TemplateProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoadingMine) {
+                  return const ShimmerList();
+                }
+
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildList(provider.myPublished, 'published'),
+                    _buildList(provider.myDrafts, 'draft'),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildList(List<TemplateListItem> templates, String status) {
     if (templates.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              status == 'published' ? Icons.public : Icons.edit_note,
-              size: 48,
-              color: AppTheme.textSecondary.withOpacity(0.5),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              status == 'published' ? 'No published templates' : 'No drafts yet',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ],
-        ),
+      return EmptyState(
+        icon: status == 'published' ? Icons.public : Icons.edit_note,
+        title: status == 'published' ? 'No published templates' : 'No drafts yet',
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       itemCount: templates.length,
       itemBuilder: (context, index) {
         final template = templates[index];
@@ -166,20 +107,11 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
   }
 
   Widget _buildTemplateItem(TemplateListItem template, String status) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    final theme = Theme.of(context);
+
+    return EWCard(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -188,7 +120,7 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
               Expanded(
                 child: Text(
                   template.title,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: theme.textTheme.titleMedium,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -196,20 +128,20 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
               _buildStatusBadge(status),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: AppSpacing.xxs),
           if (template.legCities.isNotEmpty)
             Text(
               '${template.legCities.join(" → ")} • ${template.totalDays} days',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium,
             ),
           if (status == 'published') ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.xxs),
             Text(
               '🍴 ${template.forkCount} forks • ❤️ ${template.likeCount}',
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: theme.textTheme.bodyMedium,
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           _buildActions(template, status),
         ],
       ),
@@ -285,7 +217,7 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
       icon: Icon(icon, size: 16),
       label: Text(label, style: const TextStyle(fontSize: 12)),
       style: TextButton.styleFrom(
-        foregroundColor: color ?? AppTheme.primaryColor,
+        foregroundColor: color ?? AppColors.brandPrimary,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,

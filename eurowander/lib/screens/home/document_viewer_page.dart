@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/document.dart';
 import '../../utils/pdf_viewer.dart' as pdf_viewer;
@@ -74,19 +73,16 @@ class _DocumentViewerPageState extends State<DocumentViewerPage> {
                         children: [
                           Text(
                             widget.document.displayName,
-                            style: GoogleFonts.poppins(
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
                           Text(
                             '${widget.document.categoryLabel} · ${widget.document.formattedSize}',
-                            style: GoogleFonts.poppins(
+                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.white70,
-                              fontSize: 12,
                             ),
                           ),
                         ],
@@ -131,7 +127,7 @@ class _DocumentViewerPageState extends State<DocumentViewerPage> {
               ),
             );
           },
-          errorBuilder: (_, __, ___) => const Center(
+          errorBuilder: (_, _, _) => const Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [

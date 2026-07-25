@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/constants/app_constants.dart';
@@ -769,7 +768,7 @@ class ApiService {
       'size_bytes': sizeBytes,
       'category': category,
       'visibility': visibility,
-      if (name != null) 'name': name,
+      'name': ?name,
     };
     _logRequest('POST', uri, body: body);
     final response = await http.post(uri, headers: _authHeaders(token), body: jsonEncode(body));
@@ -864,7 +863,7 @@ class ApiService {
       'file_name': fileName,
       'content_type': contentType,
       'size_bytes': sizeBytes,
-      if (caption != null) 'caption': caption,
+      'caption': ?caption,
     };
     _logRequest('POST', uri, body: body);
     final response = await http.post(uri, headers: _authHeaders(token), body: jsonEncode(body));

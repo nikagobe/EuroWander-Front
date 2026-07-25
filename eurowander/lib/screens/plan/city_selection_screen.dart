@@ -192,17 +192,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8F5FF),
-              Color(0xFFEDE7F6),
-              Color(0xFFF3E5F5),
-            ],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
         child: SafeArea(
           child: Column(
             children: [
@@ -236,7 +226,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                         height: 1.2,
                       ),
                     ),
@@ -291,7 +281,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                         height: 1.2,
                       ),
                     ),
@@ -328,12 +318,12 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         height: 28,
         child: Container(
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor,
+            color: AppColors.brandPrimary,
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 3),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.3),
+                color: AppColors.brandPrimary.withOpacity(0.3),
                 blurRadius: 8,
               ),
             ],
@@ -348,12 +338,12 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         height: 28,
         child: Container(
           decoration: BoxDecoration(
-            color: AppTheme.secondaryColor,
+            color: AppColors.brandSecondary,
             shape: BoxShape.circle,
             border: Border.all(color: Colors.white, width: 3),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.secondaryColor.withOpacity(0.3),
+                color: AppColors.brandSecondary.withOpacity(0.3),
                 blurRadius: 8,
               ),
             ],
@@ -373,7 +363,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.08),
+            color: AppColors.brandPrimary.withOpacity(0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -400,7 +390,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                 Polyline(
                   points: arcPoints,
                   strokeWidth: 3,
-                  color: AppTheme.primaryColor,
+                  color: AppColors.brandPrimary,
                   pattern: const StrokePattern.dotted(),
                 ),
               ],
@@ -436,7 +426,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
               child: const Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 18,
-                color: AppTheme.textPrimary,
+                color: AppColors.lightTextPrimary,
               ),
             ),
           ),
@@ -446,7 +436,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
+              color: AppColors.lightTextPrimary,
             ),
           ),
         ],
@@ -462,7 +452,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
+            color: AppColors.brandPrimary.withOpacity(0.06),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -491,7 +481,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                   width: 2,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor.withOpacity(0.2),
+                    color: AppColors.brandPrimary.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(1),
                   ),
                 ),
@@ -528,7 +518,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: AppTheme.primaryColor,
+              primary: AppColors.brandPrimary,
               onPrimary: Colors.white,
               surface: Colors.white,
             ),
@@ -554,7 +544,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
+            color: AppColors.brandPrimary.withOpacity(0.06),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -580,7 +570,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
+            color: AppColors.brandPrimary.withOpacity(0.06),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -592,13 +582,13 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
+              color: AppColors.brandPrimary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.person_rounded,
               size: 18,
-              color: AppTheme.primaryColor,
+              color: AppColors.brandPrimary,
             ),
           ),
           const SizedBox(width: 10),
@@ -611,7 +601,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textSecondary,
+                    color: AppColors.lightTextSecondary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -621,7 +611,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimary,
+                    color: AppColors.lightTextPrimary,
                   ),
                 ),
               ],
@@ -629,7 +619,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
           ),
           Container(
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.06),
+              color: AppColors.brandPrimary.withOpacity(0.06),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -644,7 +634,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     height: 36,
                     decoration: BoxDecoration(
                       color: _adults > 1
-                          ? AppTheme.primaryColor.withOpacity(0.1)
+                          ? AppColors.brandPrimary.withOpacity(0.1)
                           : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -652,7 +642,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                       Icons.remove_rounded,
                       size: 18,
                       color: _adults > 1
-                          ? AppTheme.primaryColor
+                          ? AppColors.brandPrimary
                           : Colors.grey.shade400,
                     ),
                   ),
@@ -664,7 +654,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                 ),
@@ -677,7 +667,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     height: 36,
                     decoration: BoxDecoration(
                       color: _adults < 9
-                          ? AppTheme.primaryColor.withOpacity(0.1)
+                          ? AppColors.brandPrimary.withOpacity(0.1)
                           : Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -685,7 +675,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                       Icons.add_rounded,
                       size: 18,
                       color: _adults < 9
-                          ? AppTheme.primaryColor
+                          ? AppColors.brandPrimary
                           : Colors.grey.shade400,
                     ),
                   ),
@@ -725,7 +715,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         decoration: BoxDecoration(
           gradient: isReady
               ? const LinearGradient(
-                  colors: [AppTheme.primaryColor, Color(0xFF8B5CF6), AppTheme.secondaryColor],
+                  colors: [AppColors.brandPrimary, Color(0xFF8B5CF6), AppColors.brandSecondary],
                 )
               : null,
           color: isReady ? null : Colors.grey.shade300,
@@ -733,7 +723,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
           boxShadow: isReady
               ? [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    color: AppColors.brandPrimary.withOpacity(0.3),
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
@@ -780,14 +770,14 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: isSelected
-                  ? AppTheme.primaryColor.withOpacity(0.1)
+                  ? AppColors.brandPrimary.withOpacity(0.1)
                   : Colors.grey.shade100,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               icon,
               size: 18,
-              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+              color: isSelected ? AppColors.brandPrimary : AppColors.lightTextSecondary,
             ),
           ),
           const SizedBox(width: 10),
@@ -800,7 +790,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textSecondary,
+                    color: AppColors.lightTextSecondary,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -811,7 +801,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                     color: isSelected
-                        ? AppTheme.textPrimary
+                        ? AppColors.lightTextPrimary
                         : Colors.grey.shade400,
                   ),
                 ),
@@ -845,7 +835,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
               height: 44,
               decoration: BoxDecoration(
                 color: selectedCity != null
-                    ? AppTheme.primaryColor.withOpacity(0.1)
+                    ? AppColors.brandPrimary.withOpacity(0.1)
                     : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -853,8 +843,8 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                 icon,
                 size: 20,
                 color: selectedCity != null
-                    ? AppTheme.primaryColor
-                    : AppTheme.textSecondary,
+                    ? AppColors.brandPrimary
+                    : AppColors.lightTextSecondary,
               ),
             ),
             const SizedBox(width: 12),
@@ -867,7 +857,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textSecondary,
+                      color: AppColors.lightTextSecondary,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -879,7 +869,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textPrimary,
+                      color: AppColors.lightTextPrimary,
                     ),
                     decoration: InputDecoration(
                       hintText: hint,
@@ -901,7 +891,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppTheme.primaryColor,
+                  color: AppColors.brandPrimary,
                 ),
               ),
           ],
@@ -941,7 +931,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                   Icon(
                     Icons.location_on_outlined,
                     size: 16,
-                    color: AppTheme.primaryColor.withOpacity(0.7),
+                    color: AppColors.brandPrimary.withOpacity(0.7),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -953,14 +943,14 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textPrimary,
+                            color: AppColors.lightTextPrimary,
                           ),
                         ),
                         Text(
                           '${city.country} · ${city.description}',
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: AppTheme.textSecondary,
+                            color: AppColors.lightTextSecondary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,

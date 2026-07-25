@@ -55,7 +55,7 @@ class HotelPickCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                   child: photoUrl.isNotEmpty
                       ? Image.network(photoUrl, width: 56, height: 56, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _placeholder())
+                          errorBuilder: (_, _, _) => _placeholder())
                       : _placeholder(),
                 ),
                 const SizedBox(width: 12),

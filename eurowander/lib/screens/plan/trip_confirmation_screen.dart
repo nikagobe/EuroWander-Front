@@ -10,6 +10,7 @@ import '../../models/bus.dart';
 import '../../models/flight.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 
 class TripConfirmationScreen extends StatefulWidget {
   final FlightOffer selectedFlight;
@@ -145,16 +146,16 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
           style: GoogleFonts.poppins(fontSize: 15),
           decoration: InputDecoration(
             hintText: 'Enter trip name',
-            hintStyle: GoogleFonts.poppins(color: AppTheme.textSecondary),
+            hintStyle: GoogleFonts.poppins(color: AppColors.lightTextSecondary),
             filled: true,
-            fillColor: const Color(0xFFF8F5FF),
+            fillColor: AppColors.lightSurfaceVariant,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.5),
+              borderSide: const BorderSide(color: AppColors.brandPrimary, width: 1.5),
             ),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
@@ -164,7 +165,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
             onPressed: () => Navigator.of(ctx).pop(null),
             child: Text(
               'Cancel',
-              style: GoogleFonts.poppins(color: AppTheme.textSecondary),
+              style: GoogleFonts.poppins(color: AppColors.lightTextSecondary),
             ),
           ),
           ElevatedButton(
@@ -173,7 +174,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
               Navigator.of(ctx).pop(text.isEmpty ? _getDefaultTripName() : text);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: AppColors.brandPrimary,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -241,82 +242,27 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
     final bounds = _getBounds(mapPoints);
     final totalPrice = selectedFlight.price + (returnFlight?.price ?? 0) + (busTransit?.price ?? 0);
 
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8F5FF),
-              Color(0xFFEDE7F6),
-              Color(0xFFF3E5F5),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
+    return AppScaffold(
+      child: Column(
+        children: [
+          EWAppBar(title: 'Trip Summary'),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // App bar
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.05),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              size: 18,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          'Trip Summary',
-                          style: GoogleFonts.poppins(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 16),
-                          // Map
-                          if (mapPoints.length >= 2)
-                            Container(
-                              height: 200,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: AppTheme.primaryColor.withOpacity(0.1),
-                                    blurRadius: 16,
+                  const SizedBox(height: AppSpacing.md),
+                  // Map
+                  if (mapPoints.length >= 2)
+                    Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        borderRadius: AppRadius.borderXl,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.brandPrimary.withOpacity(0.1),
+                            blurRadius: 16,
                                     offset: const Offset(0, 6),
                                   ),
                                 ],
@@ -373,12 +319,12 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                                colors: [AppColors.brandPrimary, AppColors.brandSecondary],
                               ),
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppTheme.primaryColor.withOpacity(0.3),
+                                  color: AppColors.brandPrimary.withOpacity(0.3),
                                   blurRadius: 16,
                                   offset: const Offset(0, 8),
                                 ),
@@ -427,7 +373,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(vertical: 18),
                               decoration: BoxDecoration(
-                                color: AppTheme.textPrimary,
+                                color: AppColors.lightTextPrimary,
                                 borderRadius: BorderRadius.circular(18),
                               ),
                               child: Center(
@@ -458,24 +404,20 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
-    );
+          );
   }
 
   Widget _buildSectionLabel(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppTheme.primaryColor),
+        Icon(icon, size: 18, color: AppColors.brandPrimary),
         const SizedBox(width: 8),
         Text(
           title,
           style: GoogleFonts.poppins(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+            color: AppColors.lightTextPrimary,
           ),
         ),
       ],
@@ -496,7 +438,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.06),
+            color: AppColors.brandPrimary.withOpacity(0.06),
             blurRadius: 24,
             offset: const Offset(0, 8),
           ),
@@ -510,19 +452,19 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.05),
+              color: AppColors.brandPrimary.withOpacity(0.05),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
               children: [
-                Icon(Icons.calendar_today_rounded, size: 14, color: AppTheme.primaryColor.withOpacity(0.7)),
+                Icon(Icons.calendar_today_rounded, size: 14, color: AppColors.brandPrimary.withOpacity(0.7)),
                 const SizedBox(width: 8),
                 Text(
                   depDate,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.primaryColor,
+                    color: AppColors.brandPrimary,
                   ),
                 ),
               ],
@@ -558,7 +500,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     if (flight.legs.isNotEmpty)
@@ -566,7 +508,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                         flight.legs.first.flightNumber,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: AppTheme.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                   ],
@@ -577,7 +519,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
+                  color: AppColors.brandPrimary,
                 ),
               ),
             ],
@@ -596,7 +538,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
@@ -604,7 +546,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.primaryColor,
+                        color: AppColors.brandPrimary,
                       ),
                     ),
                     Text(
@@ -613,7 +555,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                           : (flight.legs.isNotEmpty ? flight.legs.first.departureAirportName : ''),
                       style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -629,7 +571,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       '${durationHrs}h ${durationMins}m',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -637,7 +579,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       width: 50,
                       height: 2,
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
+                        color: AppColors.brandPrimary.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(1),
                       ),
                     ),
@@ -662,7 +604,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
@@ -670,7 +612,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.secondaryColor,
+                        color: AppColors.brandSecondary,
                       ),
                     ),
                     Text(
@@ -679,7 +621,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                           : (flight.legs.isNotEmpty ? flight.legs.last.arrivalAirportName : ''),
                       style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                       textAlign: TextAlign.end,
                       maxLines: 1,
@@ -789,14 +731,14 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
                       bus.depName,
                       style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -812,7 +754,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       bus.duration,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -847,14 +789,14 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                        color: AppColors.lightTextPrimary,
                       ),
                     ),
                     Text(
                       bus.arrName,
                       style: GoogleFonts.poppins(
                         fontSize: 10,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                       textAlign: TextAlign.end,
                       maxLines: 2,
@@ -909,13 +851,13 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
     for (int i = 0; i < selectedFlight.legs.length; i++) {
       final leg = selectedFlight.legs[i];
       if (i == 0 && leg.departureLat != null) {
-        addMarker(LatLng(leg.departureLat!, leg.departureLng!), AppTheme.primaryColor, icon: Icons.flight_takeoff);
+        addMarker(LatLng(leg.departureLat!, leg.departureLng!), AppColors.brandPrimary, icon: Icons.flight_takeoff);
       }
       if (leg.arrivalLat != null) {
         if (i < selectedFlight.legs.length - 1) {
           addMarker(LatLng(leg.arrivalLat!, leg.arrivalLng!), Colors.orange.shade600, size: 20, icon: Icons.circle);
         } else {
-          addMarker(LatLng(leg.arrivalLat!, leg.arrivalLng!), AppTheme.secondaryColor, icon: Icons.flight_land);
+          addMarker(LatLng(leg.arrivalLat!, leg.arrivalLng!), AppColors.brandSecondary, icon: Icons.flight_land);
         }
       }
     }
@@ -925,13 +867,13 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
       for (int i = 0; i < returnFlight!.legs.length; i++) {
         final leg = returnFlight!.legs[i];
         if (i == 0 && leg.departureLat != null) {
-          addMarker(LatLng(leg.departureLat!, leg.departureLng!), AppTheme.secondaryColor, icon: Icons.flight_takeoff);
+          addMarker(LatLng(leg.departureLat!, leg.departureLng!), AppColors.brandSecondary, icon: Icons.flight_takeoff);
         }
         if (leg.arrivalLat != null) {
           if (i < returnFlight!.legs.length - 1) {
             addMarker(LatLng(leg.arrivalLat!, leg.arrivalLng!), Colors.orange.shade600, size: 20, icon: Icons.circle);
           } else {
-            addMarker(LatLng(leg.arrivalLat!, leg.arrivalLng!), AppTheme.primaryColor, icon: Icons.flight_land);
+            addMarker(LatLng(leg.arrivalLat!, leg.arrivalLng!), AppColors.brandPrimary, icon: Icons.flight_land);
           }
         }
       }
@@ -942,8 +884,8 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
 
   List<Polyline<Object>> _buildPolylines(List<LatLng> points) {
     final polylines = <Polyline<Object>>[];
-    final outboundColors = [AppTheme.primaryColor, const Color(0xFFE91E63), const Color(0xFF00BCD4)];
-    final returnColors = [AppTheme.secondaryColor, const Color(0xFFFF9800), const Color(0xFF4CAF50)];
+    final outboundColors = [AppColors.brandPrimary, const Color(0xFFE91E63), const Color(0xFF00BCD4)];
+    final returnColors = [AppColors.brandSecondary, const Color(0xFFFF9800), const Color(0xFF4CAF50)];
 
     // Outbound legs
     for (int i = 0; i < selectedFlight.legs.length; i++) {
@@ -985,7 +927,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
           label,
           style: GoogleFonts.poppins(
             fontSize: 11,
-            color: AppTheme.textSecondary,
+            color: AppColors.lightTextSecondary,
           ),
         ),
         const SizedBox(height: 2),
@@ -994,7 +936,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+            color: AppColors.lightTextPrimary,
           ),
         ),
       ],

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/playlist.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/playlist_provider.dart';
+import '../../widgets/widgets.dart';
 import 'playlist_builder_screen.dart';
 import 'playlist_detail_screen.dart';
 
@@ -30,66 +30,56 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Playlists'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const PlaylistBuilderScreen()),
-              );
-              _loadData();
-            },
+    return AppScaffold(
+      child: Column(
+        children: [
+          EWAppBar(
+            title: 'My Playlists',
+            trailing: [
+              EWIconButton(
+                icon: Icons.add,
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PlaylistBuilderScreen()),
+                  );
+                  _loadData();
+                },
+              ),
+            ],
           ),
-        ],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 480),
-          child: Consumer<PlaylistProvider>(
-            builder: (context, provider, _) {
-          if (provider.isLoadingMine) {
-            return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
-          }
-          if (provider.myPlaylists.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.playlist_add, size: 64, color: Colors.grey.shade300),
-                  const SizedBox(height: 16),
-                  Text("You haven't created any playlists yet",
-                      style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: () async {
+          Expanded(
+            child: Consumer<PlaylistProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoadingMine) {
+                  return const ShimmerList();
+                }
+                if (provider.myPlaylists.isEmpty) {
+                  return EmptyState(
+                    icon: Icons.playlist_add,
+                    title: "You haven't created any playlists yet",
+                    actionLabel: 'Create Playlist',
+                    onAction: () async {
                       await Navigator.push(
                         context,
                         MaterialPageRoute(builder: (_) => const PlaylistBuilderScreen()),
                       );
                       _loadData();
                     },
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create Playlist'),
-                  ),
-                ],
-              ),
-            );
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: provider.myPlaylists.length,
-            itemBuilder: (context, index) {
-              final playlist = provider.myPlaylists[index];
-              return _buildPlaylistTile(playlist);
-            },
-          );
-        },
+                  );
+                }
+                return ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  itemCount: provider.myPlaylists.length,
+                  itemBuilder: (context, index) {
+                    final playlist = provider.myPlaylists[index];
+                    return _buildPlaylistTile(playlist);
+                  },
+                );
+              },
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -105,7 +95,7 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
           color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.borderMd,
         ),
         child: const Icon(Icons.delete, color: Colors.white),
       ),
@@ -140,10 +130,10 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
         }
       },
       child: Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.borderMd,
           onTap: () async {
             await Navigator.push(
               context,
@@ -152,7 +142,7 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
             _loadData();
           },
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(AppSpacing.sm),
             child: Row(
               children: [
                 // Thumbnail
@@ -163,27 +153,27 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
                     height: 56,
                     child: playlist.coverPhotoUrl.isNotEmpty
                         ? Image.network(playlist.coverPhotoUrl, fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Container(
-                              color: AppTheme.primaryColor.withOpacity(0.2),
-                              child: const Icon(Icons.playlist_play, color: AppTheme.primaryColor),
+                            errorBuilder: (_, _, _) => Container(
+                              color: AppColors.brandPrimary.withOpacity(0.2),
+                              child: const Icon(Icons.playlist_play, color: AppColors.brandPrimary),
                             ))
                         : Container(
-                            color: AppTheme.primaryColor.withOpacity(0.2),
-                            child: const Icon(Icons.playlist_play, color: AppTheme.primaryColor),
+                            color: AppColors.brandPrimary.withOpacity(0.2),
+                            child: const Icon(Icons.playlist_play, color: AppColors.brandPrimary),
                           ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(playlist.title,
-                          style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600),
+                          style: Theme.of(context).textTheme.labelLarge,
                           maxLines: 1, overflow: TextOverflow.ellipsis),
                       const SizedBox(height: 2),
                       Text('${playlist.city} • ${vibe.displayName}',
-                          style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                          style: TextStyle(fontSize: 12, color: context.ew.textSecondary)),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -192,14 +182,14 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
                           Icon(
                             playlist.id.isNotEmpty ? Icons.public : Icons.lock,
                             size: 14,
-                            color: AppTheme.textSecondary,
+                            color: context.ew.textSecondary,
                           ),
                         ],
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: AppTheme.textSecondary),
+                const Icon(Icons.chevron_right, color: AppColors.lightTextSecondary),
               ],
             ),
           ),

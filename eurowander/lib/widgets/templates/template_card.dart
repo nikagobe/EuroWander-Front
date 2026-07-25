@@ -42,7 +42,7 @@ class TemplateCard extends StatelessWidget {
                       height: 140,
                       width: double.infinity,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildPlaceholderCover(),
+                      errorBuilder: (_, _, _) => _buildPlaceholderCover(),
                     )
                   : _buildPlaceholderCover(),
             ),

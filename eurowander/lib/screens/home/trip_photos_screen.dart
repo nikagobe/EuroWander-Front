@@ -1,10 +1,10 @@
-import 'dart:typed_data';
+﻿import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/widgets.dart';
 import '../../models/photo.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
@@ -170,12 +170,12 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(ctx).viewInsets.bottom,
         ),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.xl)),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -190,40 +190,34 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 'Upload Photo',
-                style: GoogleFonts.poppins(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(ctx).textTheme.headlineSmall,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 fileName,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  color: AppTheme.textSecondary,
-                ),
+                style: Theme.of(ctx).textTheme.bodyMedium,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
               TextField(
                 controller: captionController,
                 decoration: InputDecoration(
                   labelText: 'Caption (optional)',
                   labelStyle: GoogleFonts.poppins(fontSize: 14),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.borderMd,
                   ),
                   contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.sm,
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -240,18 +234,17 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: AppColors.brandPrimary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.borderMd,
                     ),
                   ),
                   child: Text(
                     'Upload',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                    style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -276,7 +269,6 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
     setState(() => _isUploading = true);
 
     try {
-      // Step 1: Get presigned upload URL
       final uploadData = await _apiService.requestPhotoUploadUrl(
         token: token,
         tripId: widget.trip.id,
@@ -288,14 +280,12 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
       final uploadUrl = uploadData['upload_url'] as String;
       final fileKey = uploadData['file_key'] as String;
 
-      // Step 2: Upload file to presigned URL
       await _apiService.uploadFileToPresignedUrl(
         uploadUrl: uploadUrl,
         fileBytes: fileBytes,
         contentType: contentType,
       );
 
-      // Step 3: Confirm upload
       await _apiService.confirmPhotoUpload(
         token: token,
         tripId: widget.trip.id,
@@ -312,7 +302,6 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
         );
       }
 
-      // Reset and reload
       setState(() {
         _photos.clear();
         _skip = 0;
@@ -412,150 +401,43 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF8F5FF), Colors.white],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildHeader(),
-                  Expanded(
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _photos.isEmpty
-                            ? _buildEmptyState()
-                            : _buildPhotoGrid(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+    final ew = context.ew;
+    final theme = Theme.of(context);
 
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Photos',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          if (_isUploading)
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          else
-            GestureDetector(
-              onTap: _uploadPhoto,
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primaryColor, Color(0xFF8B5CF6)],
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.add_photo_alternate_rounded, color: Colors.white, size: 22),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
+    return AppScaffold(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: const Icon(
-              Icons.photo_library_rounded,
-              size: 40,
-              color: AppTheme.primaryColor,
-            ),
+          EWAppBar(
+            title: 'Photos',
+            trailing: [
+              if (_isUploading)
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                EWIconButton(
+                  icon: Icons.add_photo_alternate_rounded,
+                  onTap: _uploadPhoto,
+                  backgroundColor: AppColors.brandPrimary,
+                  iconColor: Colors.white,
+                ),
+            ],
           ),
-          const SizedBox(height: 24),
-          Text(
-            'No photos yet',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Capture and share your\ntrip memories',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: _uploadPhoto,
-            icon: const Icon(Icons.add_photo_alternate_rounded),
-            label: Text(
-              'Upload Photo',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
+          Expanded(
+            child: _isLoading
+                ? const ShimmerList()
+                : _photos.isEmpty
+                    ? EmptyState(
+                        icon: Icons.photo_library_rounded,
+                        title: 'No photos yet',
+                        subtitle: 'Capture and share your\ntrip memories',
+                        iconColor: AppColors.brandPrimary,
+                        actionLabel: 'Upload Photo',
+                        onAction: _uploadPhoto,
+                      )
+                    : _buildPhotoGrid(),
           ),
         ],
       ),
@@ -565,7 +447,7 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
   Widget _buildPhotoGrid() {
     return GridView.builder(
       controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: AppSpacing.paddingHorizontalXl,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         crossAxisSpacing: 4,
@@ -576,7 +458,7 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
         if (index == _photos.length) {
           return const Center(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(AppSpacing.md),
               child: CircularProgressIndicator(strokeWidth: 2),
             ),
           );
@@ -595,7 +477,7 @@ class _TripPhotosScreenState extends State<TripPhotosScreen> {
                 ? Image.network(
                     url,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const Center(
+                    errorBuilder: (_, _, _) => const Center(
                       child: Icon(Icons.broken_image_rounded, color: Colors.grey),
                     ),
                   )
@@ -649,6 +531,8 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -670,7 +554,7 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
                         child: Image.network(
                           url,
                           fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) => const Icon(
+                          errorBuilder: (_, _, _) => const Icon(
                             Icons.broken_image_rounded,
                             color: Colors.white54,
                             size: 64,
@@ -681,14 +565,13 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
               );
             },
           ),
-          // Top bar
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -698,11 +581,7 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
                     ),
                     Text(
                       '${_currentIndex + 1} / ${widget.photos.length}',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      style: theme.textTheme.titleMedium?.copyWith(color: Colors.white),
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 28),
@@ -717,7 +596,6 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
               ),
             ),
           ),
-          // Caption
           if (widget.photos[_currentIndex].caption != null)
             Positioned(
               bottom: 0,
@@ -725,7 +603,7 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
               right: 0,
               child: SafeArea(
                 child: Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.all(AppSpacing.lg),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.bottomCenter,
@@ -738,16 +616,12 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
                   ),
                   child: Text(
                     widget.photos[_currentIndex].caption!,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 14,
-                    ),
+                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white),
                     textAlign: TextAlign.center,
                   ),
                 ),
               ),
             ),
-          // Navigation arrows
           if (_currentIndex > 0)
             Positioned(
               left: 8,

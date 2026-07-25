@@ -7,6 +7,7 @@ import '../../models/finance.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 
 class TripFinancesScreen extends StatefulWidget {
   final SavedTrip trip;
@@ -64,149 +65,95 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildAppBar(context),
-                  Expanded(
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-                        : _error != null
-                            ? _buildError()
-                            : RefreshIndicator(
-                                onRefresh: _loadData,
-                                color: AppTheme.primaryColor,
-                                child: _buildContent(),
-                              ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return AppScaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddExpenseSheet,
-        backgroundColor: AppTheme.primaryColor,
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
-        label: Text(
-          'Add Expense',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: Colors.white),
-        ),
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Add Expense'),
       ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Text(
-            'Finances',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+          const EWAppBar(title: 'Finances'),
+          Expanded(
+            child: _isLoading
+                ? const ShimmerList()
+                : _error != null
+                    ? _buildError(context)
+                    : RefreshIndicator(
+                        onRefresh: _loadData,
+                        color: AppColors.brandPrimary,
+                        child: _buildContent(context),
+                      ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildError() {
+  Widget _buildError(BuildContext context) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.error_outline_rounded, size: 48, color: Colors.red.shade300),
-          const SizedBox(height: 12),
-          Text('Failed to load finances', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Failed to load finances', style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: AppSpacing.sm),
           ElevatedButton(onPressed: _loadData, child: const Text('Retry')),
         ],
       ),
     );
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(BuildContext context) {
     final summary = _summary!;
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: AppSpacing.paddingHorizontalXl,
       children: [
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.xs),
         // Debts section - who owes whom
         if (summary.debts.isNotEmpty) ...[
-          _buildSectionTitle('Settlements', Icons.swap_horiz_rounded),
-          const SizedBox(height: 12),
-          ...summary.debts.map(_buildDebtCard),
-          const SizedBox(height: 24),
+          _buildSectionTitle(context, 'Settlements', Icons.swap_horiz_rounded),
+          const SizedBox(height: AppSpacing.sm),
+          ...summary.debts.map((d) => _buildDebtCard(context, d)),
+          const SizedBox(height: AppSpacing.xl),
         ],
         // Balances section
         if (summary.balances.isNotEmpty) ...[
-          _buildSectionTitle('Balances', Icons.account_balance_wallet_rounded),
-          const SizedBox(height: 12),
-          _buildBalancesCard(summary.balances),
-          const SizedBox(height: 24),
+          _buildSectionTitle(context, 'Balances', Icons.account_balance_wallet_rounded),
+          const SizedBox(height: AppSpacing.sm),
+          _buildBalancesCard(context, summary.balances),
+          const SizedBox(height: AppSpacing.xl),
         ],
         // Expenses list
-        _buildSectionTitle('Expenses', Icons.receipt_long_rounded),
-        const SizedBox(height: 12),
+        _buildSectionTitle(context, 'Expenses', Icons.receipt_long_rounded),
+        const SizedBox(height: AppSpacing.sm),
         if (summary.expenses.isEmpty)
-          _buildEmptyExpenses()
+          _buildEmptyExpenses(context)
         else
-          ...summary.expenses.map(_buildExpenseCard),
+          ...summary.expenses.map((e) => _buildExpenseCard(context, e)),
         const SizedBox(height: 100),
       ],
     );
   }
 
-  Widget _buildSectionTitle(String title, IconData icon) {
+  Widget _buildSectionTitle(BuildContext context, String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppTheme.primaryColor),
-        const SizedBox(width: 8),
-        Text(title, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+        Icon(icon, size: 18, color: AppColors.brandPrimary),
+        const SizedBox(width: AppSpacing.xs),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
       ],
     );
   }
 
-  Widget _buildDebtCard(Debt debt) {
+  Widget _buildDebtCard(BuildContext context, Debt debt) {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: context.ew.cardColor,
+        borderRadius: AppRadius.borderLg,
         boxShadow: [
           BoxShadow(color: Colors.red.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4)),
         ],
@@ -218,23 +165,17 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: Colors.red.shade50,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.borderMd,
             ),
             child: Icon(Icons.arrow_forward_rounded, color: Colors.red.shade400, size: 20),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  debt.fromDisplayName,
-                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-                ),
-                Text(
-                  'owes ${debt.toDisplayName}',
-                  style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
-                ),
+                Text(debt.fromDisplayName, style: Theme.of(context).textTheme.labelLarge),
+                Text('owes ${debt.toDisplayName}', style: Theme.of(context).textTheme.bodySmall),
               ],
             ),
           ),
@@ -262,14 +203,14 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
     }
   }
 
-  Widget _buildBalancesCard(List<Balance> balances) {
+  Widget _buildBalancesCard(BuildContext context, List<Balance> balances) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: context.ew.cardColor,
+        borderRadius: AppRadius.borderLg,
         boxShadow: [
-          BoxShadow(color: AppTheme.primaryColor.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4)),
+          BoxShadow(color: AppColors.brandPrimary.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -298,11 +239,11 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
                     b.displayName,
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: AppTheme.textPrimary),
+                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500, color: context.ew.textPrimary),
                   ),
                 ),
                 Column(
@@ -327,8 +268,9 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
     );
   }
 
-  Widget _buildExpenseCard(Expense expense) {
+  Widget _buildExpenseCard(BuildContext context, Expense expense) {
     final isTicket = expense.isTicket;
+
     return Dismissible(
       key: Key(expense.id),
       direction: expense.isManual ? DismissDirection.endToStart : DismissDirection.none,
@@ -338,7 +280,7 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         decoration: BoxDecoration(
           color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.borderLg,
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
@@ -347,12 +289,12 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
         onTap: expense.isManual ? () => _showEditExpenseSheet(expense) : null,
         child: Container(
           margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
+            color: context.ew.cardColor,
+            borderRadius: AppRadius.borderLg,
             boxShadow: [
-              BoxShadow(color: AppTheme.primaryColor.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 4)),
+              BoxShadow(color: AppColors.brandPrimary.withOpacity(0.05), blurRadius: 12, offset: const Offset(0, 4)),
             ],
           ),
           child: Row(
@@ -362,28 +304,28 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
                 height: 40,
                 decoration: BoxDecoration(
                   color: isTicket ? const Color(0xFFF3E5F5) : const Color(0xFFE8F5E9),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.borderMd,
                 ),
                 child: Icon(
                   isTicket ? Icons.flight_rounded : Icons.receipt_rounded,
                   size: 20,
-                  color: isTicket ? AppTheme.primaryColor : Colors.green.shade600,
+                  color: isTicket ? AppColors.brandPrimary : Colors.green.shade600,
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: AppSpacing.sm),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       expense.name,
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+                      style: Theme.of(context).textTheme.labelLarge,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       'Paid by ${_memberName(expense.paidBy)} · ${expense.eligibleMemberIds.length} member(s)',
-                      style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary),
+                      style: Theme.of(context).textTheme.labelSmall,
                     ),
                   ],
                 ),
@@ -393,17 +335,17 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
                 children: [
                   Text(
                     '${_currencySymbol(expense.currency)}${expense.amount.toStringAsFixed(2)}',
-                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                    style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.brandPrimary),
                   ),
                   Text(
                     DateFormat('MMM d').format(expense.createdAt),
-                    style: GoogleFonts.poppins(fontSize: 10, color: AppTheme.textSecondary),
+                    style: GoogleFonts.poppins(fontSize: 10, color: context.ew.textSecondary),
                   ),
                 ],
               ),
               if (expense.isManual) ...[
-                const SizedBox(width: 8),
-                Icon(Icons.edit_outlined, size: 14, color: AppTheme.textSecondary),
+                const SizedBox(width: AppSpacing.xs),
+                Icon(Icons.edit_outlined, size: 14, color: context.ew.textSecondary),
               ],
             ],
           ),
@@ -412,26 +354,20 @@ class _TripFinancesScreenState extends State<TripFinancesScreen> {
     );
   }
 
-  Widget _buildEmptyExpenses() {
+  Widget _buildEmptyExpenses(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(32),
+      padding: const EdgeInsets.all(AppSpacing.xxl),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: context.ew.cardColor,
+        borderRadius: AppRadius.borderLg,
       ),
       child: Column(
         children: [
           Icon(Icons.receipt_long_rounded, size: 48, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text(
-            'No expenses yet',
-            style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Tap "Add Expense" to track spending',
-            style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
-          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text('No expenses yet', style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: AppSpacing.xxs),
+          Text('Tap "Add Expense" to track spending', style: Theme.of(context).textTheme.bodySmall),
         ],
       ),
     );
@@ -597,16 +533,16 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.ew.cardColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       child: SingleChildScrollView(
         padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          left: AppSpacing.xl,
+          right: AppSpacing.xl,
+          top: AppSpacing.md,
+          bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -622,12 +558,12 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               _isEditing ? 'Edit Expense' : 'Add Expense',
-              style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+              style: Theme.of(context).textTheme.headlineMedium,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Name field
             _buildTextField(_nameController, 'Expense name', Icons.label_outline_rounded),
             const SizedBox(height: 14),
@@ -637,21 +573,21 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                 Expanded(
                   flex: 2,
                   child: _buildTextField(_amountController, 'Amount', Icons.attach_money_rounded,
-                      keyboardType: TextInputType.numberWithOptions(decimal: true)),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8F5FF),
-                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.lightSurfaceVariant,
+                      borderRadius: AppRadius.borderLg,
                     ),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _currency,
                         isExpanded: true,
-                        style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textPrimary),
+                        style: GoogleFonts.poppins(fontSize: 14, color: context.ew.textPrimary),
                         items: _currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                         onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
                       ),
@@ -660,13 +596,13 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Paid by
-            Text('Paid by', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            Text('Paid by', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: context.ew.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: widget.members.map((m) {
                 final selected = _paidBy == m.userId;
                 return GestureDetector(
@@ -674,7 +610,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppTheme.primaryColor : const Color(0xFFF8F5FF),
+                      color: selected ? AppColors.brandPrimary : AppColors.lightSurfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -682,20 +618,20 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: selected ? Colors.white : AppTheme.textPrimary,
+                        color: selected ? Colors.white : context.ew.textPrimary,
                       ),
                     ),
                   ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Split between
-            Text('Split between', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            Text('Split between', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: context.ew.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: widget.members.map((m) {
                 final selected = _selectedMembers.contains(m.userId);
                 return GestureDetector(
@@ -711,7 +647,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? const Color(0xFF4CAF50) : const Color(0xFFF8F5FF),
+                      color: selected ? AppColors.success : AppColors.lightSurfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -719,14 +655,14 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                       children: [
                         if (selected) ...[
                           const Icon(Icons.check_rounded, size: 14, color: Colors.white),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xxs),
                         ],
                         Text(
                           m.displayName,
                           style: GoogleFonts.poppins(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: selected ? Colors.white : AppTheme.textPrimary,
+                            color: selected ? Colors.white : context.ew.textPrimary,
                           ),
                         ),
                       ],
@@ -735,7 +671,7 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             // Save button
             SizedBox(
               width: double.infinity,
@@ -743,8 +679,8 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  backgroundColor: AppColors.brandPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                   elevation: 0,
                 ),
                 child: _isSaving
@@ -765,12 +701,15 @@ class _AddExpenseSheetState extends State<_AddExpenseSheet> {
       style: GoogleFonts.poppins(fontSize: 14),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 14),
-        prefixIcon: Icon(icon, size: 20, color: AppTheme.primaryColor),
+        hintStyle: GoogleFonts.poppins(color: context.ew.textSecondary, fontSize: 14),
+        prefixIcon: Icon(icon, size: 20, color: AppColors.brandPrimary),
         filled: true,
-        fillColor: const Color(0xFFF8F5FF),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+        fillColor: AppColors.lightSurfaceVariant,
+        border: OutlineInputBorder(borderRadius: AppRadius.borderLg, borderSide: BorderSide.none),
       ),
     );
   }
 }
+
+
+

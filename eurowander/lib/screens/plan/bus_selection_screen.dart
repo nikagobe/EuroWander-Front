@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/bus.dart';
 import '../../models/flight.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 import 'trip_confirmation_screen.dart';
 
 class BusSelectionScreen extends StatefulWidget {
@@ -105,10 +105,10 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: AppTheme.primaryColor,
+              primary: AppColors.brandPrimary,
               onPrimary: Colors.white,
               surface: Colors.white,
-              onSurface: AppTheme.textPrimary,
+              onSurface: AppColors.lightTextPrimary,
             ),
           ),
           child: child!,
@@ -126,93 +126,32 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8F5FF),
-              Color(0xFFEDE7F6),
-              Color(0xFFF3E5F5),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildAppBar(),
-                  _buildRouteHeader(),
-                  Expanded(child: _buildBody()),
-                  _buildBottomButtons(),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return AppScaffold(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Bus Transit',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
+          EWAppBar(title: 'Bus Transit'),
+          _buildRouteHeader(),
+          Expanded(child: _buildBody()),
+          _buildBottomButtons(),
         ],
       ),
     );
   }
 
   Widget _buildRouteHeader() {
+    final ew = context.ew;
+    final theme = Theme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: ew.cardColor,
+          borderRadius: AppRadius.borderLg,
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.06),
+              color: AppColors.brandPrimary.withOpacity(0.06),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -231,65 +170,56 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                   ),
                   child: const Icon(Icons.directions_bus_rounded, color: Color(0xFFFF9800), size: 22),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         '${widget.originCityName} → ${widget.departureCityName}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
-                        ),
+                        style: theme.textTheme.labelLarge?.copyWith(color: ew.textPrimary),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         'Inter-city transit',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppTheme.textSecondary,
-                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(color: ew.textSecondary),
                       ),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             GestureDetector(
               onTap: _pickDate,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.primaryColor.withOpacity(0.2)),
+                  color: AppColors.brandPrimary.withOpacity(0.06),
+                  borderRadius: AppRadius.borderMd,
+                  border: Border.all(color: AppColors.brandPrimary.withOpacity(0.2)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_today_rounded, size: 16, color: AppTheme.primaryColor),
+                    const Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.brandPrimary),
                     const SizedBox(width: 10),
                     Text(
                       DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.primaryColor,
+                        color: AppColors.brandPrimary,
                       ),
                     ),
                     const Spacer(),
                     Text(
                       'Change',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
+                      style: theme.textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.primaryColor.withOpacity(0.7),
+                        color: AppColors.brandPrimary.withOpacity(0.7),
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.arrow_drop_down_rounded, size: 20, color: AppTheme.primaryColor.withOpacity(0.7)),
+                    const SizedBox(width: AppSpacing.xxs),
+                    Icon(Icons.arrow_drop_down_rounded, size: 20, color: AppColors.brandPrimary.withOpacity(0.7)),
                   ],
                 ),
               ),
@@ -301,32 +231,31 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
   }
 
   Widget _buildBody() {
+    final ew = context.ew;
+    final theme = Theme.of(context);
+
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+        child: CircularProgressIndicator(color: AppColors.brandPrimary),
       );
     }
     if (_error != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 'Failed to search buses',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textPrimary,
-                ),
+                style: theme.textTheme.titleMedium?.copyWith(color: ew.textPrimary),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 _error!,
-                style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                style: theme.textTheme.bodySmall?.copyWith(color: ew.textSecondary),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -335,27 +264,14 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
       );
     }
     if (_buses.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.directions_bus_outlined, size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            Text(
-              'No bus routes found',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ],
-        ),
+      return EmptyState(
+        icon: Icons.directions_bus_outlined,
+        title: 'No bus routes found',
       );
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
       itemCount: _buses.length,
       itemBuilder: (context, index) => _buildBusCard(_buses[index]),
     );
@@ -365,24 +281,26 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
     final isSelected = _selectedBus == bus;
     final depTime = _formatTime(bus.depTime);
     final arrTime = _formatTime(bus.arrTime);
+    final ew = context.ew;
+    final theme = Theme.of(context);
 
     return GestureDetector(
       onTap: () => setState(() => _selectedBus = bus),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: ew.cardColor,
+          borderRadius: AppRadius.borderLg,
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+            color: isSelected ? AppColors.brandPrimary : Colors.transparent,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? AppTheme.primaryColor.withOpacity(0.12)
+                  ? AppColors.brandPrimary.withOpacity(0.12)
                   : Colors.black.withOpacity(0.04),
               blurRadius: isSelected ? 16 : 8,
               offset: const Offset(0, 4),
@@ -396,7 +314,7 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
                   decoration: BoxDecoration(
                     color: const Color(0xFF4CAF50).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
@@ -405,10 +323,10 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.directions_bus, size: 14, color: Color(0xFF4CAF50)),
-                      const SizedBox(width: 4),
+                      const SizedBox(width: AppSpacing.xxs),
                       Text(
                         bus.segments.isNotEmpty ? bus.segments.first.product.toUpperCase() : 'BUS',
-                        style: GoogleFonts.poppins(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: const Color(0xFF4CAF50),
@@ -423,25 +341,23 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                   children: [
                     Text(
                       '€${(bus.totalPrice ?? bus.price).toStringAsFixed(2)}',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.primaryColor,
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: AppColors.brandPrimary,
                       ),
                     ),
                     if (bus.adults > 1 && bus.pricePerPerson != null)
                       Text(
                         '€${bus.pricePerPerson!.toStringAsFixed(2)}/person',
-                        style: GoogleFonts.poppins(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 11,
-                          color: AppTheme.textSecondary,
+                          color: ew.textSecondary,
                         ),
                       ),
                   ],
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.sm),
             // Route row
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,17 +368,15 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                     children: [
                       Text(
                         depTime,
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: ew.textPrimary,
                         ),
                       ),
                       Text(
                         bus.depName,
-                        style: GoogleFonts.poppins(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 11,
-                          color: AppTheme.textSecondary,
+                          color: ew.textSecondary,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -476,9 +390,9 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                     children: [
                       Text(
                         bus.duration,
-                        style: GoogleFonts.poppins(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 11,
-                          color: AppTheme.textSecondary,
+                          color: ew.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 3),
@@ -493,7 +407,7 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                       const SizedBox(height: 3),
                       Text(
                         bus.changeovers == 0 ? 'Direct' : '${bus.changeovers} change(s)',
-                        style: GoogleFonts.poppins(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 10,
                           color: bus.changeovers == 0
                               ? Colors.green.shade600
@@ -510,17 +424,15 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                     children: [
                       Text(
                         arrTime,
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          color: ew.textPrimary,
                         ),
                       ),
                       Text(
                         bus.arrName,
-                        style: GoogleFonts.poppins(
+                        style: theme.textTheme.bodySmall?.copyWith(
                           fontSize: 11,
-                          color: AppTheme.textSecondary,
+                          color: ew.textSecondary,
                         ),
                         textAlign: TextAlign.end,
                         maxLines: 2,
@@ -533,16 +445,16 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
             ),
             // Additional info
             if (bus.additionalInfo.isNotEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
                 decoration: BoxDecoration(
                   color: Colors.red.shade50,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
                   bus.additionalInfo,
-                  style: GoogleFonts.poppins(
+                  style: theme.textTheme.bodySmall?.copyWith(
                     fontSize: 10,
                     fontWeight: FontWeight.w500,
                     color: Colors.red.shade700,
@@ -561,17 +473,17 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                 ),
                 child: Column(
                   children: bus.segments.map((seg) => Padding(
-                    padding: const EdgeInsets.only(bottom: 4),
+                    padding: const EdgeInsets.only(bottom: AppSpacing.xxs),
                     child: Row(
                       children: [
                         Icon(Icons.circle, size: 6, color: Colors.grey.shade400),
-                        const SizedBox(width: 8),
+                        const SizedBox(width: AppSpacing.xs),
                         Expanded(
                           child: Text(
                             '${_formatTime(seg.depTime)} ${seg.depName} → ${_formatTime(seg.arrTime)} ${seg.arrName}',
-                            style: GoogleFonts.poppins(
+                            style: theme.textTheme.bodySmall?.copyWith(
                               fontSize: 10,
-                              color: AppTheme.textSecondary,
+                              color: ew.textSecondary,
                             ),
                           ),
                         ),
@@ -588,8 +500,11 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
   }
 
   Widget _buildBottomButtons() {
+    final ew = context.ew;
+    final theme = Theme.of(context);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -611,12 +526,12 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [AppTheme.primaryColor, Color(0xFF8B5CF6), AppTheme.secondaryColor],
+                    colors: [AppColors.brandPrimary, Color(0xFF8B5CF6), AppColors.brandSecondary],
                   ),
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: AppRadius.borderXl,
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      color: AppColors.brandPrimary.withOpacity(0.3),
                       blurRadius: 16,
                       offset: const Offset(0, 8),
                     ),
@@ -625,9 +540,7 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                 child: Center(
                   child: Text(
                     'Continue',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                    style: theme.textTheme.titleMedium?.copyWith(
                       color: Colors.white,
                     ),
                   ),
@@ -649,19 +562,18 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
             },
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 16),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                color: ew.cardColor,
+                borderRadius: AppRadius.borderXl,
                 border: Border.all(color: Colors.grey.shade300),
               ),
               child: Center(
                 child: Text(
                   'Skip Bus Transit',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textSecondary,
+                    color: ew.textSecondary,
                   ),
                 ),
               ),

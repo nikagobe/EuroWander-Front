@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/template_provider.dart';
+import '../../widgets/widgets.dart';
 import '../../widgets/templates/template_card.dart';
 import 'template_detail_screen.dart';
 
@@ -55,61 +55,15 @@ class _TemplateDiscoveryScreenState extends State<TemplateDiscoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeader(),
-                  _buildSearchBar(),
-                  _buildTagFilters(),
-                  _buildSortRow(),
-                  Expanded(child: _buildTemplateList()),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return AppScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Trip Templates',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-            ),
-          ),
+          const EWAppBar(title: 'Trip Templates'),
+          _buildSearchBar(),
+          _buildTagFilters(),
+          _buildSortRow(),
+          Expanded(child: _buildTemplateList()),
         ],
       ),
     );
@@ -117,20 +71,20 @@ class _TemplateDiscoveryScreenState extends State<TemplateDiscoveryScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Search templates...',
-          prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary),
+          prefixIcon: Icon(Icons.search, color: context.ew.textSecondary),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: context.ew.cardColor,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.borderMd,
             borderSide: BorderSide.none,
           ),
           contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         ),
         onSubmitted: (value) {
           context.read<TemplateProvider>().setDestinationFilter(
@@ -146,9 +100,9 @@ class _TemplateDiscoveryScreenState extends State<TemplateDiscoveryScreen> {
       height: 40,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
         itemCount: _tags.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.xs),
         itemBuilder: (context, index) {
           final tag = _tags[index];
           final isSelected = _selectedTag == tag;
@@ -163,20 +117,20 @@ class _TemplateDiscoveryScreenState extends State<TemplateDiscoveryScreen> {
                   .read<TemplateProvider>()
                   .setTagsFilter(_selectedTag);
             },
-            selectedColor: AppTheme.primaryColor.withOpacity(0.15),
-            checkmarkColor: AppTheme.primaryColor,
+            selectedColor: AppColors.brandPrimary.withOpacity(0.15),
+            checkmarkColor: AppColors.brandPrimary,
             labelStyle: TextStyle(
-              color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+              color: isSelected ? AppColors.brandPrimary : context.ew.textSecondary,
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
             ),
-            backgroundColor: Colors.white,
+            backgroundColor: context.ew.cardColor,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: AppRadius.borderXl,
             ),
             side: BorderSide(
               color: isSelected
-                  ? AppTheme.primaryColor
+                  ? AppColors.brandPrimary
                   : Colors.grey.withOpacity(0.3),
             ),
           );
@@ -189,13 +143,13 @@ class _TemplateDiscoveryScreenState extends State<TemplateDiscoveryScreen> {
     return Consumer<TemplateProvider>(
       builder: (context, provider, _) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.xs),
           child: Row(
             children: [
               _buildSortChip('Newest', 'newest', provider),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.xs),
               _buildSortChip('Most Forked', 'most_forked', provider),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.xs),
               _buildSortChip('Popular', 'most_liked', provider),
             ],
           ),
@@ -209,22 +163,21 @@ class _TemplateDiscoveryScreenState extends State<TemplateDiscoveryScreen> {
     return GestureDetector(
       onTap: () => provider.setSortBy(value),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          color: isSelected ? AppColors.brandPrimary : context.ew.cardColor,
+          borderRadius: AppRadius.borderLg,
           border: Border.all(
             color: isSelected
-                ? AppTheme.primaryColor
+                ? AppColors.brandPrimary
                 : Colors.grey.withOpacity(0.3),
           ),
         ),
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
             fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : AppTheme.textSecondary,
+            color: isSelected ? Colors.white : context.ew.textSecondary,
           ),
         ),
       ),
@@ -235,43 +188,28 @@ class _TemplateDiscoveryScreenState extends State<TemplateDiscoveryScreen> {
     return Consumer<TemplateProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading && provider.templates.isEmpty) {
-          return const Center(
-            child: CircularProgressIndicator(color: AppTheme.primaryColor),
-          );
+          return const ShimmerList();
         }
 
         if (provider.templates.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('🗺️', style: TextStyle(fontSize: 48)),
-                const SizedBox(height: 16),
-                Text(
-                  'No templates found',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Be the first to share a trip template!',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
-            ),
+          return const EmptyState(
+            icon: Icons.map_outlined,
+            title: 'No templates found',
+            subtitle: 'Be the first to share a trip template!',
           );
         }
 
         return ListView.builder(
           controller: _scrollController,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xs),
           itemCount: provider.templates.length + (provider.hasMore ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == provider.templates.length) {
               return const Padding(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(AppSpacing.md),
                 child: Center(
                   child:
-                      CircularProgressIndicator(color: AppTheme.primaryColor),
+                      CircularProgressIndicator(color: AppColors.brandPrimary),
                 ),
               );
             }

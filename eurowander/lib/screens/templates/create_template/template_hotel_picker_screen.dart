@@ -1,13 +1,12 @@
-import 'dart:async';
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../core/theme/app_theme.dart';
 import '../../../models/hotel.dart';
 import '../../../models/template.dart';
 import '../../../services/api_service.dart';
+import '../../../widgets/widgets.dart';
 import 'template_hotel_detail_screen.dart';
 
 /// Full-screen hotel search for template creation.
@@ -91,7 +90,7 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
     try {
       List<HotelOffer> results;
       if (_nameFilter != null && _nameFilter!.length >= 2) {
-        // Name search — dedicated endpoint
+        // Name search â€” dedicated endpoint
         final cityPrefix = _destination?.cityName ?? widget.city;
         results = await _apiService.searchHotelsByName(
           query: '$cityPrefix ${_nameFilter!}'.trim(),
@@ -205,11 +204,11 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
             child: Container(
               width: 42, height: 42,
               decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))]),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
+              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppColors.lightTextPrimary),
             ),
           ),
           const SizedBox(width: 16),
-          Expanded(child: Text('Hotels in ${widget.city}', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
+          Expanded(child: Text('Hotels in ${widget.city}', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.lightTextPrimary))),
         ],
       ),
     );
@@ -222,7 +221,7 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
       decoration: BoxDecoration(color: const Color(0xFFFFF3E0), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.4))),
       child: Row(
         children: [
-          const Text('⭐', style: TextStyle(fontSize: 16)),
+          const Text('â­', style: TextStyle(fontSize: 16)),
           const SizedBox(width: 8),
           Expanded(child: Text('${_pickedHotels.length} hotel${_pickedHotels.length == 1 ? '' : 's'} recommended', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFFE65100)))),
         ],
@@ -232,7 +231,7 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
 
   Widget _buildBody() {
     if (!_hasSearched) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+      return const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary));
     }
 
     return Row(
@@ -248,12 +247,12 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
                 style: GoogleFonts.poppins(fontSize: 13),
                 decoration: InputDecoration(
                   hintText: 'Search by hotel name...',
-                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-                  prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textSecondary),
+                  hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppColors.lightTextSecondary),
+                  prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.lightTextSecondary),
                   suffixIcon: _nameFilter != null && _nameFilter!.isNotEmpty
                       ? GestureDetector(
                           onTap: () { _nameController.clear(); setState(() => _nameFilter = null); _searchHotels(); },
-                          child: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+                          child: const Icon(Icons.close, size: 18, color: AppColors.lightTextSecondary),
                         )
                       : null,
                   filled: true, fillColor: Colors.white,
@@ -273,14 +272,14 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
             // Hotel list or loading/empty state
             Expanded(
               child: _isSearching
-                  ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary))
                   : _hotels.isEmpty
                       ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                           Icon(Icons.hotel_rounded, size: 48, color: Colors.grey.shade300),
                           const SizedBox(height: 8),
-                          Text('No hotels found', style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary)),
+                          Text('No hotels found', style: GoogleFonts.poppins(fontSize: 14, color: AppColors.lightTextSecondary)),
                           const SizedBox(height: 4),
-                          Text('Try a different name or filters', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                          Text('Try a different name or filters', style: GoogleFonts.poppins(fontSize: 12, color: AppColors.lightTextSecondary)),
                         ]))
                       : ListView.builder(
                           controller: _listScrollController,
@@ -306,7 +305,7 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
         children: [
           _pageBtn(Icons.chevron_left_rounded, _currentPage > 1 ? () => _searchHotels(page: _currentPage - 1) : null),
           const SizedBox(width: 16),
-          Text('Page $_currentPage', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          Text('Page $_currentPage', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.lightTextPrimary)),
           const SizedBox(width: 16),
           _pageBtn(Icons.chevron_right_rounded, _hasMorePages ? () => _searchHotels(page: _currentPage + 1) : null),
         ],
@@ -316,7 +315,7 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
 
   Widget _pageBtn(IconData icon, VoidCallback? onTap) {
     final ok = onTap != null;
-    return GestureDetector(onTap: onTap, child: Container(width: 36, height: 36, decoration: BoxDecoration(color: ok ? AppTheme.primaryColor : Colors.grey.shade200, borderRadius: BorderRadius.circular(10)), child: Icon(icon, size: 22, color: ok ? Colors.white : Colors.grey.shade400)));
+    return GestureDetector(onTap: onTap, child: Container(width: 36, height: 36, decoration: BoxDecoration(color: ok ? AppColors.brandPrimary : Colors.grey.shade200, borderRadius: BorderRadius.circular(10)), child: Icon(icon, size: 22, color: ok ? Colors.white : Colors.grey.shade400)));
   }
 
   Widget _buildMap() {
@@ -324,7 +323,7 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
     return ClipRRect(
       child: FlutterMap(
         mapController: _mapController,
-        options: MapOptions(initialCenter: bounds.center, initialZoom: 12, onTap: (_, __) => setState(() => _selectedHotelIndex = null)),
+        options: MapOptions(initialCenter: bounds.center, initialZoom: 12, onTap: (_, _) => setState(() => _selectedHotelIndex = null)),
         children: [
           TileLayer(urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', userAgentPackageName: 'com.eurowander.app'),
           MarkerLayer(
@@ -338,12 +337,12 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
                   onTap: () { setState(() => _selectedHotelIndex = i); _mapController.move(LatLng(h.latitude, h.longitude), 14); _scrollToHotel(i); },
                   child: Container(
                     decoration: BoxDecoration(
-                      color: picked ? const Color(0xFFFF9800) : sel ? AppTheme.primaryColor : Colors.white,
+                      color: picked ? const Color(0xFFFF9800) : sel ? AppColors.brandPrimary : Colors.white,
                       shape: BoxShape.circle,
-                      border: Border.all(color: picked ? const Color(0xFFFF9800) : sel ? AppTheme.primaryColor : Colors.orange.shade400, width: 2),
+                      border: Border.all(color: picked ? const Color(0xFFFF9800) : sel ? AppColors.brandPrimary : Colors.orange.shade400, width: 2),
                       boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 6, offset: const Offset(0, 2))],
                     ),
-                    child: Center(child: picked ? const Icon(Icons.star_rounded, size: 16, color: Colors.white) : Text('€${h.pricePerNight.toInt()}', style: GoogleFonts.poppins(fontSize: sel ? 10 : 8, fontWeight: FontWeight.w700, color: sel ? Colors.white : Colors.orange.shade700))),
+                    child: Center(child: picked ? const Icon(Icons.star_rounded, size: 16, color: Colors.white) : Text('â‚¬${h.pricePerNight.toInt()}', style: GoogleFonts.poppins(fontSize: sel ? 10 : 8, fontWeight: FontWeight.w700, color: sel ? Colors.white : Colors.orange.shade700))),
                   ),
                 ),
               );
@@ -373,43 +372,43 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white, borderRadius: BorderRadius.circular(16),
-          border: isSel ? Border.all(color: AppTheme.primaryColor, width: 1.5) : isPicked ? Border.all(color: const Color(0xFFFF9800).withOpacity(0.6), width: 1.5) : null,
-          boxShadow: [BoxShadow(color: isSel ? AppTheme.primaryColor.withOpacity(0.12) : Colors.black.withOpacity(0.04), blurRadius: isSel ? 16 : 10, offset: const Offset(0, 4))],
+          border: isSel ? Border.all(color: AppColors.brandPrimary, width: 1.5) : isPicked ? Border.all(color: const Color(0xFFFF9800).withOpacity(0.6), width: 1.5) : null,
+          boxShadow: [BoxShadow(color: isSel ? AppColors.brandPrimary.withOpacity(0.12) : Colors.black.withOpacity(0.04), blurRadius: isSel ? 16 : 10, offset: const Offset(0, 4))],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(hotel.photoUrl, width: 100, height: 100, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Container(width: 100, height: 100, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.hotel_rounded, size: 32, color: Colors.grey.shade400))),
+              child: Image.network(hotel.photoUrl, width: 100, height: 100, fit: BoxFit.cover, errorBuilder: (_, _, _) => Container(width: 100, height: 100, decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)), child: Icon(Icons.hotel_rounded, size: 32, color: Colors.grey.shade400))),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(hotel.name, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
+                  Text(hotel.name, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.lightTextPrimary), maxLines: 2, overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 4),
                   if (hotel.stars > 0) Row(children: List.generate(hotel.stars, (_) => const Icon(Icons.star_rounded, size: 14, color: Colors.amber))),
                   const SizedBox(height: 4),
                   if (hotel.reviewScore > 0) Row(children: [
                     Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2), decoration: BoxDecoration(color: _reviewColor(hotel.reviewScore), borderRadius: BorderRadius.circular(4)), child: Text(hotel.reviewScore.toStringAsFixed(1), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white))),
                     const SizedBox(width: 6),
-                    Expanded(child: Text('${hotel.reviewScoreWord} · ${hotel.reviewCount} reviews', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                    Expanded(child: Text('${hotel.reviewScoreWord} Â· ${hotel.reviewCount} reviews', style: GoogleFonts.poppins(fontSize: 11, color: AppColors.lightTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
                   ]),
                   const SizedBox(height: 8),
                   Row(children: [
-                    Text('€${hotel.pricePerNight.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-                    Text(' / night', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+                    Text('â‚¬${hotel.pricePerNight.toStringAsFixed(0)}', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.brandPrimary)),
+                    Text(' / night', style: GoogleFonts.poppins(fontSize: 11, color: AppColors.lightTextSecondary)),
                   ]),
-                  if (hotel.priceExcluded > 0) Padding(padding: const EdgeInsets.only(top: 2), child: Text('+ €${hotel.priceExcluded.toStringAsFixed(2)} taxes', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500))),
+                  if (hotel.priceExcluded > 0) Padding(padding: const EdgeInsets.only(top: 2), child: Text('+ â‚¬${hotel.priceExcluded.toStringAsFixed(2)} taxes', style: GoogleFonts.poppins(fontSize: 11, color: Colors.grey.shade500))),
                   const SizedBox(height: 10),
                   // Two buttons: Details + Recommend
                   Row(children: [
                     Expanded(
                       child: SizedBox(height: 32, child: OutlinedButton(
                         onPressed: () => _openDetail(hotel),
-                        style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: const BorderSide(color: AppTheme.primaryColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: EdgeInsets.zero),
+                        style: OutlinedButton.styleFrom(foregroundColor: AppColors.brandPrimary, side: const BorderSide(color: AppColors.brandPrimary), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: EdgeInsets.zero),
                         child: Text('Details', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
                       )),
                     ),
@@ -419,7 +418,7 @@ class _TemplateHotelPickerScreenState extends State<TemplateHotelPickerScreen> {
                         onPressed: () => _togglePick(hotel),
                         icon: Icon(isPicked ? Icons.star_rounded : Icons.star_border_rounded, size: 14),
                         label: Text(isPicked ? 'Recommended' : 'Recommend', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600)),
-                        style: ElevatedButton.styleFrom(backgroundColor: isPicked ? const Color(0xFFFF9800) : AppTheme.primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0, padding: EdgeInsets.zero),
+                        style: ElevatedButton.styleFrom(backgroundColor: isPicked ? const Color(0xFFFF9800) : AppColors.brandPrimary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0, padding: EdgeInsets.zero),
                       )),
                     ),
                   ]),

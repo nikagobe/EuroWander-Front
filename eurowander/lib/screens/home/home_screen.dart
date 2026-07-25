@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 import '../plan/city_selection_screen.dart';
 import '../playlists/playlist_discovery_screen.dart';
 import '../playlists/my_playlists_screen.dart';
@@ -49,290 +49,189 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8F5FF),
-              Color(0xFFEDE7F6),
-              Color(0xFFF3E5F5),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 24),
-                        _buildHeader(context),
-                        const SizedBox(height: 24),
-                        _buildPlanButton(context),
-                        const SizedBox(height: 12),
-                        _buildPlaylistButtons(context),
-                        const SizedBox(height: 10),
-                        _buildTemplateButtons(context),
-                        const SizedBox(height: 28),
-                        Text(
-                          'My Trips',
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                      ],
-                    ),
-                  ),
-                  Expanded(child: _buildTripsList()),
-                ],
-              ),
+    return AppScaffold(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: AppSpacing.paddingHorizontalXl,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: AppSpacing.xl),
+                _buildHeader(context),
+                const SizedBox(height: AppSpacing.xl),
+                _buildPlanButton(context),
+                const SizedBox(height: AppSpacing.sm),
+                _buildQuickActions(context),
+                const SizedBox(height: AppSpacing.xxl),
+                SectionHeader(
+                  title: 'My Trips',
+                  subtitle: _trips.isNotEmpty
+                      ? '${_trips.length} adventure${_trips.length == 1 ? '' : 's'}'
+                      : null,
+                ),
+                const SizedBox(height: AppSpacing.xxs),
+              ],
             ),
           ),
-        ),
+          Expanded(child: _buildTripsList()),
+        ],
       ),
     );
   }
 
+  // ────────────────────────────────────────────────────────────
+  // Header
+  // ────────────────────────────────────────────────────────────
+
   Widget _buildHeader(BuildContext context) {
+    final ew = context.ew;
+
     return Row(
       children: [
         Container(
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-            ),
-            borderRadius: BorderRadius.circular(13),
+            gradient: AppColors.primaryGradient,
+            borderRadius: AppRadius.borderMd,
           ),
           child: const Icon(Icons.public_rounded, color: Colors.white, size: 24),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.sm),
         Expanded(
           child: Text(
             'EuroWander',
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
-            ),
+            style: Theme.of(context).textTheme.headlineLarge,
           ),
         ),
-        GestureDetector(
-          onTap: () {
-            context.read<AuthProvider>().logout();
-          },
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.logout_rounded, size: 18, color: AppTheme.textSecondary),
-          ),
+        EWIconButton(
+          icon: Icons.logout_rounded,
+          iconColor: ew.textSecondary,
+          size: 40,
+          tooltip: 'Log out',
+          onTap: () => context.read<AuthProvider>().logout(),
         ),
       ],
     );
   }
 
+  // ────────────────────────────────────────────────────────────
+  // CTA Button
+  // ────────────────────────────────────────────────────────────
+
   Widget _buildPlanButton(BuildContext context) {
-    return GestureDetector(
+    return GradientButton(
+      label: 'Plan New Trip',
+      icon: Icons.add_circle_outline_rounded,
       onTap: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const CitySelectionScreen()),
         );
         _loadTrips();
       },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [AppTheme.primaryColor, Color(0xFF8B5CF6), AppTheme.secondaryColor],
-          ),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.3),
-              blurRadius: 16,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    );
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Quick Action Grid
+  // ────────────────────────────────────────────────────────────
+
+  Widget _buildQuickActions(BuildContext context) {
+    return Column(
+      children: [
+        Row(
           children: [
-            const Icon(Icons.add_circle_outline_rounded, color: Colors.white, size: 22),
-            const SizedBox(width: 10),
-            Text(
-              'Plan New Trip',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
+            Expanded(
+              child: OutlineActionButton(
+                label: 'Playlists',
+                icon: Icons.explore_rounded,
+                color: AppColors.brandPrimary,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen()),
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: OutlineActionButton(
+                label: 'My Playlists',
+                icon: Icons.playlist_play_rounded,
+                color: AppColors.brandSecondary,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyPlaylistsScreen()),
+                ),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildPlaylistButtons(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen())),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.explore_rounded, color: AppTheme.primaryColor, size: 18),
-                  const SizedBox(width: 6),
-                  Text('Playlists', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
-                ],
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            Expanded(
+              child: OutlineActionButton(
+                label: 'Templates',
+                icon: Icons.compass_calibration_rounded,
+                color: AppColors.brandAmber,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen()),
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPlaylistsScreen())),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppTheme.secondaryColor.withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.playlist_play_rounded, color: AppTheme.secondaryColor, size: 18),
-                  const SizedBox(width: 6),
-                  Text('My Playlists', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.secondaryColor)),
-                ],
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: OutlineActionButton(
+                label: 'My Templates',
+                icon: Icons.dashboard_customize_rounded,
+                color: AppColors.brandDeepOrange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyTemplatesScreen()),
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildTemplateButtons(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen())),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.compass_calibration_rounded, color: Color(0xFFFF9800), size: 18),
-                  const SizedBox(width: 6),
-                  Text('Templates', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFFF9800))),
-                ],
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyTemplatesScreen())),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFFE65100).withOpacity(0.3)),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.dashboard_customize_rounded, color: Color(0xFFE65100), size: 18),
-                  const SizedBox(width: 6),
-                  Text('My Templates', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFE65100))),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  // ────────────────────────────────────────────────────────────
+  // Trips List
+  // ────────────────────────────────────────────────────────────
 
   Widget _buildTripsList() {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppTheme.primaryColor),
-      );
+      return const ShimmerList(itemCount: 4);
     }
+
     if (_trips.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.luggage_outlined, size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            Text(
-              'No trips yet',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Plan your first European adventure!',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-            ),
-          ],
-        ),
+      return EmptyState(
+        icon: Icons.luggage_outlined,
+        title: 'No trips yet',
+        subtitle: 'Plan your first European adventure!',
+        actionLabel: 'Get Started',
+        onAction: () async {
+          await Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const CitySelectionScreen()),
+          );
+          _loadTrips();
+        },
       );
     }
+
     return RefreshIndicator(
       onRefresh: _loadTrips,
-      color: AppTheme.primaryColor,
+      color: AppColors.brandPrimary,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.xs,
+        ),
         itemCount: _trips.length,
         itemBuilder: (context, index) => _buildTripCard(_trips[index]),
       ),
@@ -340,77 +239,62 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTripCard(SavedTrip trip) {
+    final ew = context.ew;
     final destination = trip.outboundFlight?.legs.last.arrivalAirport ?? '';
     final departureDate = _formatDate(trip.outboundFlight?.legs.first.departureTime);
 
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => TripDetailScreen(trip: trip)),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: EWCard(
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => TripDetailScreen(trip: trip)),
+          );
+        },
         child: Row(
           children: [
             Container(
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(14),
+                color: AppColors.brandPrimary.withOpacity(0.10),
+                borderRadius: AppRadius.borderMd,
               ),
               child: const Icon(
                 Icons.flight_takeoff_rounded,
-                color: AppTheme.primaryColor,
+                color: AppColors.brandPrimary,
                 size: 22,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     trip.name,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.titleMedium,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: AppSpacing.xxxs),
                   Row(
                     children: [
                       if (destination.isNotEmpty) ...[
-                        Icon(Icons.location_on_outlined, size: 13, color: AppTheme.textSecondary),
-                        const SizedBox(width: 3),
+                        Icon(Icons.location_on_outlined, size: 13, color: ew.textSecondary),
+                        const SizedBox(width: AppSpacing.xxxs),
                         Text(
                           destination,
-                          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: AppSpacing.sm),
                       ],
                       if (departureDate != null) ...[
-                        Icon(Icons.calendar_today_outlined, size: 12, color: AppTheme.textSecondary),
-                        const SizedBox(width: 3),
+                        Icon(Icons.calendar_today_outlined, size: 12, color: ew.textSecondary),
+                        const SizedBox(width: AppSpacing.xxxs),
                         Text(
                           departureDate,
-                          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary),
+                          style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
                     ],
@@ -418,8 +302,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded, color: AppTheme.textSecondary, size: 20),
+            const SizedBox(width: AppSpacing.xs),
+            Icon(Icons.chevron_right_rounded, color: ew.textTertiary, size: 20),
           ],
         ),
       ),

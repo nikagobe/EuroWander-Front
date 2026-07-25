@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/playlist.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/playlist_provider.dart';
+import '../../widgets/widgets.dart';
 import 'playlist_detail_screen.dart';
 import 'playlist_builder_screen.dart';
 
@@ -73,32 +73,7 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildAppBar(),
-                  _buildSearchBar(),
-                  _buildFilterRow(),
-                  _buildSortRow(),
-                  Expanded(child: _buildPlaylistGrid()),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return AppScaffold(
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.push(
           context,
@@ -106,34 +81,13 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
         ),
         child: const Icon(Icons.add),
       ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Discover Playlists',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-            ),
-          ),
+          const EWAppBar(title: 'Discover Playlists'),
+          _buildSearchBar(),
+          _buildFilterRow(),
+          _buildSortRow(),
+          Expanded(child: _buildPlaylistGrid()),
         ],
       ),
     );
@@ -141,12 +95,12 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xxs),
       child: TextField(
         controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Search by city, country or keyword...',
-          prefixIcon: const Icon(Icons.search, color: AppTheme.textSecondary),
+          prefixIcon: Icon(Icons.search, color: context.ew.textSecondary),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, size: 18),
@@ -156,10 +110,10 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
                   },
                 )
               : null,
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          border: OutlineInputBorder(borderRadius: AppRadius.borderMd, borderSide: BorderSide.none),
           filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          fillColor: context.ew.cardColor,
+          contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         ),
         onSubmitted: (_) => _applyFilters(),
       ),
@@ -168,33 +122,33 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
 
   Widget _buildFilterRow() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
       child: Row(
         children: [
           // Vibe dropdown
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _selectedVibe != null ? AppTheme.primaryColor : Colors.grey.shade300),
+                color: context.ew.cardColor,
+                borderRadius: AppRadius.borderMd,
+                border: Border.all(color: _selectedVibe != null ? AppColors.brandPrimary : Colors.grey.shade300),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<PlaylistVibe?>(
                   value: _selectedVibe,
-                  hint: Text('Vibe', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
+                  hint: Text('Vibe', style: Theme.of(context).textTheme.bodySmall),
                   isExpanded: true,
                   isDense: true,
                   icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
                   items: [
                     DropdownMenuItem<PlaylistVibe?>(
                       value: null,
-                      child: Text('All Vibes', style: GoogleFonts.poppins(fontSize: 13)),
+                      child: Text('All Vibes', style: Theme.of(context).textTheme.bodySmall),
                     ),
                     ...PlaylistVibe.values.map((v) => DropdownMenuItem(
                       value: v,
-                      child: Text(v.displayName, style: GoogleFonts.poppins(fontSize: 13)),
+                      child: Text(v.displayName, style: Theme.of(context).textTheme.bodySmall),
                     )),
                   ],
                   onChanged: (v) {
@@ -205,31 +159,31 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppSpacing.xs),
           // Budget dropdown
           Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _selectedBudgetTier != null ? AppTheme.primaryColor : Colors.grey.shade300),
+                color: context.ew.cardColor,
+                borderRadius: AppRadius.borderMd,
+                border: Border.all(color: _selectedBudgetTier != null ? AppColors.brandPrimary : Colors.grey.shade300),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<BudgetTier?>(
                   value: _selectedBudgetTier,
-                  hint: Text('Budget', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
+                  hint: Text('Budget', style: Theme.of(context).textTheme.bodySmall),
                   isExpanded: true,
                   isDense: true,
                   icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 20),
                   items: [
                     DropdownMenuItem<BudgetTier?>(
                       value: null,
-                      child: Text('All Budgets', style: GoogleFonts.poppins(fontSize: 13)),
+                      child: Text('All Budgets', style: Theme.of(context).textTheme.bodySmall),
                     ),
                     ...BudgetTier.values.map((b) => DropdownMenuItem(
                       value: b,
-                      child: Text(b.displayName, style: GoogleFonts.poppins(fontSize: 13)),
+                      child: Text(b.displayName, style: Theme.of(context).textTheme.bodySmall),
                     )),
                   ],
                   onChanged: (b) {
@@ -247,13 +201,13 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
 
   Widget _buildSortRow() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xxs),
       child: Row(
         children: [
           _buildSortChip('Popular', 'popular'),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           _buildSortChip('Newest', 'newest'),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           _buildSortChip('Top Rated', 'top_rated'),
         ],
       ),
@@ -268,18 +222,18 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
         _applyFilters();
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primaryColor : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300),
+          color: isSelected ? AppColors.brandPrimary : context.ew.cardColor,
+          borderRadius: AppRadius.borderLg,
+          border: Border.all(color: isSelected ? AppColors.brandPrimary : Colors.grey.shade300),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: isSelected ? Colors.white : AppTheme.textSecondary,
+            color: isSelected ? Colors.white : context.ew.textSecondary,
           ),
         ),
       ),
@@ -290,35 +244,28 @@ class _PlaylistDiscoveryScreenState extends State<PlaylistDiscoveryScreen> {
     return Consumer<PlaylistProvider>(
       builder: (context, provider, _) {
         if (provider.isSearching && provider.searchResults.isEmpty) {
-          return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+          return const ShimmerList();
         }
         if (provider.searchResults.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.playlist_play_rounded, size: 64, color: Colors.grey.shade300),
-                const SizedBox(height: 16),
-                Text('No playlists found', style: GoogleFonts.poppins(color: AppTheme.textSecondary)),
-                const SizedBox(height: 8),
-                Text('Try adjusting your filters', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
-              ],
-            ),
+          return EmptyState(
+            icon: Icons.playlist_play_rounded,
+            title: 'No playlists found',
+            subtitle: 'Try adjusting your filters',
           );
         }
         return ListView.builder(
           controller: _scrollController,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.xs),
           itemCount: provider.searchResults.length + (provider.hasMore ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == provider.searchResults.length) {
               return const Padding(
-                padding: EdgeInsets.all(16),
-                child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)),
+                padding: EdgeInsets.all(AppSpacing.md),
+                child: Center(child: CircularProgressIndicator(color: AppColors.brandPrimary)),
               );
             }
             return Padding(
-              padding: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
               child: PlaylistCard(
                 playlist: provider.searchResults[index],
                 onTap: () => Navigator.push(
@@ -352,26 +299,23 @@ class PlaylistCard extends StatelessWidget {
       child: Container(
         height: 200,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4)),
-          ],
+          borderRadius: AppRadius.borderLg,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.borderLg,
           child: Stack(
             fit: StackFit.expand,
             children: [
               // Background image
               playlist.coverPhotoUrl.isNotEmpty
                   ? Image.network(playlist.coverPhotoUrl, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: AppTheme.primaryColor.withOpacity(0.3),
+                      errorBuilder: (_, _, _) => Container(
+                        color: AppColors.brandPrimary.withOpacity(0.3),
                         child: const Icon(Icons.playlist_play, size: 48, color: Colors.white),
                       ),
                     )
                   : Container(
-                      color: AppTheme.primaryColor.withOpacity(0.3),
+                      color: AppColors.brandPrimary.withOpacity(0.3),
                       child: const Icon(Icons.playlist_play, size: 48, color: Colors.white),
                     ),
               // Gradient overlay
@@ -390,7 +334,7 @@ class PlaylistCard extends StatelessWidget {
                 left: 12,
                 child: Row(
                   children: [
-                    _buildBadge(vibe.displayName, AppTheme.primaryColor.withOpacity(0.9)),
+                    _buildBadge(vibe.displayName, AppColors.brandPrimary.withOpacity(0.9)),
                     const SizedBox(width: 6),
                     _buildBadge(budget.displayName, Colors.amber.shade700.withOpacity(0.9)),
                   ],
@@ -406,14 +350,14 @@ class PlaylistCard extends StatelessWidget {
                   children: [
                     Text(
                       playlist.title,
-                      style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '${playlist.city}, ${playlist.country}',
-                      style: GoogleFonts.poppins(fontSize: 12, color: Colors.white70),
+                      style: const TextStyle(fontSize: 12, color: Colors.white70),
                     ),
                     const SizedBox(height: 6),
                     Row(
@@ -441,8 +385,8 @@ class PlaylistCard extends StatelessWidget {
 
   Widget _buildBadge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(12)),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs, vertical: AppSpacing.xxs),
+      decoration: BoxDecoration(color: color, borderRadius: AppRadius.borderMd),
       child: Text(text, style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
     );
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../widgets/widgets.dart';
 import '../../models/saved_trip.dart';
 import '../../models/schedule.dart';
 import '../../providers/auth_provider.dart';
@@ -83,98 +83,38 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8F5FF),
-              Color(0xFFEDE7F6),
-              Color(0xFFF3E5F5),
+    return AppScaffold(
+      child: Column(
+        children: [
+          EWAppBar(
+            title: 'Schedule',
+            trailing: [
+              GestureDetector(
+                onTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => SchedulePlannerScreen(trip: widget.trip)),
+                  );
+                  _loadSchedule();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(colors: [AppColors.brandPrimary, const Color(0xFF8B5CF6)]),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.edit_calendar_rounded, size: 16, color: Colors.white),
+                      const SizedBox(width: AppSpacing.xxs),
+                      Text('Plan', style: Theme.of(context).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600, color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildAppBar(context),
-                  Expanded(child: _buildBody()),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                size: 18,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Schedule',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: () async {
-              await Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => SchedulePlannerScreen(trip: widget.trip)),
-              );
-              _loadSchedule();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: [AppTheme.primaryColor, const Color(0xFF8B5CF6)]),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.edit_calendar_rounded, size: 16, color: Colors.white),
-                  const SizedBox(width: 4),
-                  Text('Plan', style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
-                ],
-              ),
-            ),
-          ),
+          Expanded(child: _buildBody()),
         ],
       ),
     );
@@ -192,15 +132,12 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'Failed to load schedule',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+                style: Theme.of(context).textTheme.titleMedium!,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               TextButton(
                 onPressed: _loadSchedule,
                 child: const Text('Retry'),
@@ -217,24 +154,17 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.calendar_today_rounded, size: 48, color: AppTheme.primaryColor.withOpacity(0.5)),
-              const SizedBox(height: 16),
+              Icon(Icons.calendar_today_rounded, size: 48, color: AppColors.brandPrimary.withOpacity(0.5)),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 'No schedule yet',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textSecondary,
-                ),
+                style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textSecondary),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 'Add attractions and restaurants to your trip to see them here.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: AppTheme.textSecondary,
-                ),
+                style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
               ),
             ],
           ),
@@ -277,12 +207,12 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [AppTheme.primaryColor, const Color(0xFF8B5CF6)],
+                colors: [AppColors.brandPrimary, const Color(0xFF8B5CF6)],
               ),
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppRadius.borderLg,
               boxShadow: [
                 BoxShadow(
-                  color: AppTheme.primaryColor.withOpacity(0.3),
+                  color: AppColors.brandPrimary.withOpacity(0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -298,41 +228,30 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
                   ),
                   child: Text(
                     dayNumber,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Text(
                   dayLabel,
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
+                  style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.white),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           // Time slots
           if (groupedItems.isEmpty)
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: AppRadius.borderLg,
               ),
               child: Center(
                 child: Text(
                   'No activities planned',
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: AppTheme.textSecondary,
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
                 ),
               ),
             )
@@ -362,11 +281,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
                 const SizedBox(width: 6),
                 Text(
                   _getSlotLabel(slot),
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: _getSlotColor(slot),
-                  ),
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: _getSlotColor(slot)),
                 ),
               ],
             ),
@@ -390,7 +305,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         decoration: BoxDecoration(
           color: Colors.red.shade400,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.borderLg,
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
@@ -416,7 +331,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.borderLg,
             border: item.isAuto
                 ? Border.all(color: _getItemTypeColor(item.itemType).withOpacity(0.3))
                 : null,
@@ -444,7 +359,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
                 color: _getItemTypeColor(item.itemType),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             // Content
             Expanded(
               child: Column(
@@ -452,11 +367,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
                 children: [
                   Text(
                     item.title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.labelLarge!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -464,10 +375,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
                     const SizedBox(height: 2),
                     Text(
                       item.subtitle,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: AppTheme.textSecondary,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -477,7 +385,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
             ),
             // Time indicator (only for items with a specific time)
             if (hasTime) ...[
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -486,11 +394,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
                 ),
                 child: Text(
                   _extractTime(item),
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: _getItemTypeColor(item.itemType),
-                  ),
+                  style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w500, color: _getItemTypeColor(item.itemType)),
                 ),
               ),
             ],
@@ -500,7 +404,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
               Icon(
                 Icons.lock_outline_rounded,
                 size: 14,
-                color: AppTheme.textSecondary.withOpacity(0.5),
+                color: context.ew.textSecondary.withOpacity(0.5),
               ),
             ],
           ],
@@ -687,7 +591,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
       case 'night':
         return const Color(0xFF1E3A5F);
       default:
-        return AppTheme.textSecondary;
+        return context.ew.textSecondary;
     }
   }
 
@@ -714,19 +618,19 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
   Color _getItemTypeColor(String itemType) {
     switch (itemType.toLowerCase()) {
       case 'flight':
-        return const Color(0xFF2196F3);
+        return AppColors.info;
       case 'bus':
       case 'transit':
-        return const Color(0xFF4CAF50);
+        return AppColors.success;
       case 'hotel_checkin':
       case 'hotel_checkout':
-        return const Color(0xFFFF9800);
+        return AppColors.brandAmber;
       case 'attraction':
-        return const Color(0xFFFF5722);
+        return AppColors.restaurant;
       case 'restaurant':
         return const Color(0xFF795548);
       default:
-        return AppTheme.primaryColor;
+        return AppColors.brandPrimary;
     }
   }
 }
@@ -774,17 +678,17 @@ class _RescheduleSheetState extends State<_RescheduleSheet> {
           Center(
             child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
           ),
-          const SizedBox(height: 20),
-          Text('Move "${widget.item.title}"', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-          const SizedBox(height: 16),
-          Text('Day', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.lg),
+          Text('Move "${widget.item.title}"', style: Theme.of(context).textTheme.titleMedium!, maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: AppSpacing.md),
+          Text('Day', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500)),
+          const SizedBox(height: AppSpacing.xs),
           SizedBox(
             height: 56,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: widget.days.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.xs),
               itemBuilder: (context, index) {
                 final day = widget.days[index];
                 final isSelected = day.date == _selectedDate;
@@ -795,14 +699,14 @@ class _RescheduleSheetState extends State<_RescheduleSheet> {
                   child: Container(
                     width: 52,
                     decoration: BoxDecoration(
-                      color: isSelected ? AppTheme.primaryColor : Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
+                      color: isSelected ? AppColors.brandPrimary : Colors.grey.shade100,
+                      borderRadius: AppRadius.borderMd,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(dt != null ? DateFormat('EEE').format(dt) : '', style: GoogleFonts.poppins(fontSize: 10, color: isSelected ? Colors.white70 : AppTheme.textSecondary)),
-                        Text(dt != null ? DateFormat('d').format(dt) : day.date, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : AppTheme.textPrimary)),
+                        Text(dt != null ? DateFormat('EEE').format(dt) : '', style: Theme.of(context).textTheme.labelSmall!.copyWith(color: isSelected ? Colors.white70 : context.ew.textSecondary)),
+                        Text(dt != null ? DateFormat('d').format(dt) : day.date, style: Theme.of(context).textTheme.titleMedium!.copyWith(color: isSelected ? Colors.white : context.ew.textPrimary)),
                       ],
                     ),
                   ),
@@ -810,9 +714,9 @@ class _RescheduleSheetState extends State<_RescheduleSheet> {
               },
             ),
           ),
-          const SizedBox(height: 16),
-          Text('Time slot', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.md),
+          Text('Time slot', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w500)),
+          const SizedBox(height: AppSpacing.xs),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -822,12 +726,12 @@ class _RescheduleSheetState extends State<_RescheduleSheet> {
                 label: Text(slot[0].toUpperCase() + slot.substring(1)),
                 selected: isSelected,
                 onSelected: (_) => setState(() => _selectedSlot = slot),
-                selectedColor: AppTheme.primaryColor,
-                labelStyle: GoogleFonts.poppins(fontSize: 13, color: isSelected ? Colors.white : AppTheme.textPrimary),
+                selectedColor: AppColors.brandPrimary,
+                labelStyle: Theme.of(context).textTheme.bodySmall!.copyWith(color: isSelected ? Colors.white : context.ew.textPrimary),
               );
             }).toList(),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: AppSpacing.xl),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -836,17 +740,17 @@ class _RescheduleSheetState extends State<_RescheduleSheet> {
                 await widget.onConfirm(_selectedDate, _selectedSlot);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
+                backgroundColor: AppColors.brandPrimary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
               ),
               child: _saving
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Move', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
+                  : Text('Move', style: Theme.of(context).textTheme.titleMedium!),
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
         ],
       ),
     );

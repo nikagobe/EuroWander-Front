@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/hotel.dart';
 import '../../models/saved_trip.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 
 class HotelDetailScreen extends StatefulWidget {
   final int hotelId;
@@ -117,23 +118,13 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-              : _details == null
-                  ? _buildError()
-                  : _buildContent(),
-        ),
-      ),
+    return AppScaffold(
+      maxWidth: double.infinity,
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary))
+          : _details == null
+              ? _buildError()
+              : _buildContent(),
     );
   }
 
@@ -143,12 +134,12 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.error_outline_rounded, size: 56, color: Colors.grey.shade400),
-          const SizedBox(height: 12),
-          Text('Failed to load hotel details', style: GoogleFonts.poppins(fontSize: 16, color: AppTheme.textSecondary)),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Failed to load hotel details', style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textSecondary)),
+          const SizedBox(height: AppSpacing.md),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Go Back', style: GoogleFonts.poppins(color: AppTheme.primaryColor)),
+            child: Text('Go Back', style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: AppColors.brandPrimary)),
           ),
         ],
       ),
@@ -159,7 +150,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
     final hotel = _details!;
     return Column(
       children: [
-        _buildAppBar(hotel),
+        EWAppBar(title: hotel.name),
         Expanded(
           child: Center(
             child: ConstrainedBox(
@@ -204,38 +195,6 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
     );
   }
 
-  Widget _buildAppBar(HotelDetails hotel) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              hotel.name,
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPhotoGallery(HotelDetails hotel) {
     if (hotel.photos.isEmpty) {
       return Container(
@@ -252,7 +211,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: hotel.photos.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () => _openPhotoViewer(hotel.photos, index),
@@ -263,7 +222,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
                 width: 300,
                 height: 220,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
+                errorBuilder: (_, _, _) => Container(
                   width: 300,
                   height: 220,
                   color: Colors.grey.shade200,
@@ -282,7 +241,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black87,
-        pageBuilder: (context, _, __) => _PhotoViewerPage(
+        pageBuilder: (context, _, _) => _PhotoViewerPage(
           photos: photos,
           initialIndex: initialIndex,
         ),
@@ -291,12 +250,14 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
   }
 
   Widget _buildHeader(HotelDetails hotel) {
+    final theme = Theme.of(context);
+    final ew = context.ew;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           hotel.name,
-          style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+          style: theme.textTheme.headlineSmall!.copyWith(fontWeight: FontWeight.w700, color: ew.textPrimary),
         ),
         const SizedBox(height: 6),
         if (hotel.stars > 0)
@@ -610,7 +571,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: room.photos.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
                 itemBuilder: (context, i) {
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(8),
@@ -619,7 +580,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
                       width: 100,
                       height: 80,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         width: 100,
                         height: 80,
                         color: Colors.grey.shade200,
@@ -636,10 +597,12 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
   }
 
   Widget _buildBottomBar(HotelDetails hotel) {
+    final theme = Theme.of(context);
+    final ew = context.ew;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: ew.cardColor,
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))],
       ),
       child: Center(
@@ -653,25 +616,25 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
                 children: [
                   Text(
                     '€${hotel.priceTotal.toStringAsFixed(2)}',
-                    style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                    style: theme.textTheme.headlineMedium!.copyWith(fontWeight: FontWeight.bold, color: AppColors.brandPrimary),
                   ),
-                  Text('total', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                  Text('total', style: theme.textTheme.bodySmall!.copyWith(color: ew.textSecondary)),
                 ],
               ),
-              const SizedBox(width: 20),
+              const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: SizedBox(
                   height: 50,
                   child: ElevatedButton(
                     onPressed: _isSaving ? null : _saveHotelToTrip,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      backgroundColor: AppColors.brandPrimary,
+                      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                       elevation: 0,
                     ),
                     child: _isSaving
                         ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text('Save to Trip', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+                        : Text('Save to Trip', style: theme.textTheme.titleMedium!.copyWith(color: Colors.white)),
                   ),
                 ),
               ),
@@ -739,7 +702,7 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
                   child: Image.network(
                     widget.photos[index],
                     fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
+                    errorBuilder: (_, _, _) => const Icon(
                       Icons.broken_image_rounded,
                       size: 64,
                       color: Colors.white54,

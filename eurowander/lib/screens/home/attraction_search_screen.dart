@@ -7,6 +7,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/attraction.dart';
 import '../../models/saved_trip.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 import 'attraction_detail_screen.dart';
 
 class AttractionSearchScreen extends StatefulWidget {
@@ -165,36 +166,13 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(),
-              Expanded(
-                child: _hasSearched ? _buildResultsView() : _buildSearchForm(),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return AppScaffold(
+      maxWidth: double.infinity,
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () {
+          EWAppBar(
+            title: _hasSearched ? 'Attractions in ${_selectedDestination?.name ?? ''}' : 'Find Attractions',
+            onBack: () {
               if (_hasSearched) {
                 setState(() {
                   _hasSearched = false;
@@ -205,24 +183,9 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
                 Navigator.of(context).pop();
               }
             },
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
           ),
-          const SizedBox(width: 16),
           Expanded(
-            child: Text(
-              _hasSearched ? 'Attractions in ${_selectedDestination?.name ?? ''}' : 'Find Attractions',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-              overflow: TextOverflow.ellipsis,
-            ),
+            child: _hasSearched ? _buildResultsView() : _buildSearchForm(),
           ),
         ],
       ),
@@ -230,17 +193,19 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
   }
 
   Widget _buildSearchForm() {
+    final ew = context.ew;
+    final theme = Theme.of(context);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: AppSpacing.paddingHorizontalXl,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
-              Text('City', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.md),
+              Text('City', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
               TextField(
                 controller: _searchController,
                 onChanged: _onSearchChanged,
@@ -271,7 +236,7 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: _destinations.length,
-                    separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                    separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey.shade100),
                     itemBuilder: (context, index) {
                       final dest = _destinations[index];
                       return ListTile(
@@ -284,10 +249,10 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
                     },
                   ),
                 ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
               // Sort option
-              Text('Sort by', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-              const SizedBox(height: 8),
+              Text('Sort by', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
+              const SizedBox(height: AppSpacing.xs),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
@@ -307,7 +272,7 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
               // Search button
               SizedBox(
                 width: double.infinity,
@@ -315,15 +280,15 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
                 child: ElevatedButton(
                   onPressed: _selectedDestination != null ? () => _searchAttractions() : null,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
+                    backgroundColor: AppColors.brandPrimary,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                     elevation: 0,
                   ),
-                  child: Text('Search Attractions', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
+                  child: Text('Search Attractions', style: theme.textTheme.titleMedium!.copyWith(color: Colors.white)),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: AppSpacing.xl),
             ],
           ),
         ),
@@ -333,18 +298,12 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
 
   Widget _buildResultsView() {
     if (_isSearching) {
-      return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+      return const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary));
     }
     if (_attractions.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.attractions_rounded, size: 56, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            Text('No attractions found', style: GoogleFonts.poppins(fontSize: 16, color: AppTheme.textSecondary)),
-          ],
-        ),
+      return const EmptyState(
+        icon: Icons.attractions_rounded,
+        title: 'No attractions found',
       );
     }
 
@@ -445,7 +404,7 @@ class _AttractionSearchScreenState extends State<AttractionSearchScreen> {
               borderRadius: BorderRadius.circular(12),
               child: attraction.photoUrl.isNotEmpty
                   ? Image.network(attraction.photoUrl, width: 80, height: 80, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(width: 80, height: 80, color: Colors.grey.shade200, child: const Icon(Icons.attractions_rounded)))
+                      errorBuilder: (_, _, _) => Container(width: 80, height: 80, color: Colors.grey.shade200, child: const Icon(Icons.attractions_rounded)))
                   : Container(width: 80, height: 80, color: Colors.grey.shade200, child: const Icon(Icons.attractions_rounded)),
             ),
             const SizedBox(width: 12),

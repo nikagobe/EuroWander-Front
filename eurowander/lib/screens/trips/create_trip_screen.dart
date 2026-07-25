@@ -42,7 +42,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: AppTheme.primaryColor,
+                  primary: AppColors.brandPrimary,
                 ),
           ),
           child: child!,
@@ -88,13 +88,14 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
   @override
   Widget build(BuildContext context) {
     final dateFormat = DateFormat('MMM dd, yyyy');
+    final ew = context.ew;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Trip'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Form(
           key: _formKey,
           child: Column(
@@ -115,7 +116,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Destination
               TextFormField(
@@ -132,7 +133,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Date Pickers
               Row(
@@ -144,7 +145,7 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                       onTap: () => _selectDate(context, isStart: true),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: _DatePickerField(
                       label: 'End Date',
@@ -155,17 +156,17 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                 ],
               ),
               if (_startDate != null && _endDate != null) ...[
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.xs),
                 Text(
                   '${_endDate!.difference(_startDate!).inDays + 1} days',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppTheme.primaryColor,
+                        color: AppColors.brandPrimary,
                         fontWeight: FontWeight.w500,
                       ),
                   textAlign: TextAlign.center,
                 ),
               ],
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.md),
 
               // Description
               TextFormField(
@@ -178,13 +179,13 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
                 ),
                 maxLines: 3,
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
 
               // Submit Button
               ElevatedButton(
                 onPressed: _submitForm,
                 child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 4),
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xxs),
                   child: Text('Create Trip'),
                 ),
               ),
@@ -209,9 +210,11 @@ class _DatePickerField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ew = context.ew;
+
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.borderMd,
       child: InputDecorator(
         decoration: InputDecoration(
           labelText: label,
@@ -220,7 +223,7 @@ class _DatePickerField extends StatelessWidget {
         child: Text(
           value ?? 'Select',
           style: TextStyle(
-            color: value != null ? AppTheme.textPrimary : AppTheme.textSecondary,
+            color: value != null ? ew.textPrimary : ew.textSecondary,
           ),
         ),
       ),

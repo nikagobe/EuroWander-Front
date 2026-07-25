@@ -1,5 +1,5 @@
+// ignore_for_file: unused_element, unused_local_variable
 import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/city.dart';
 import '../../models/flight.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 import 'bus_selection_screen.dart';
 import 'trip_confirmation_screen.dart';
 import 'return_flight_options_screen.dart';
@@ -85,38 +86,12 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFF8F5FF),
-              Color(0xFFEDE7F6),
-              Color(0xFFF3E5F5),
-            ],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
         child: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    _buildBackButton(context),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Available Flights',
-                      style: GoogleFonts.poppins(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
+              EWAppBar(title: 'Available Flights'),
+              const SizedBox(height: AppSpacing.sm),
               Expanded(
                 child: isWide
                     ? _buildWideLayout()
@@ -190,7 +165,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     // Build polylines and markers for all legs
     final polylines = <Polyline<Object>>[];
     final markers = <Marker>[];
-    final legColors = [AppTheme.primaryColor, const Color(0xFFE91E63), const Color(0xFF00BCD4), const Color(0xFFFF9800)];
+    final legColors = [AppColors.brandPrimary, const Color(0xFFE91E63), const Color(0xFF00BCD4), const Color(0xFFFF9800)];
 
     if (_selectedFlight != null && _selectedFlight!.legs.isNotEmpty) {
       final legs = _selectedFlight!.legs;
@@ -217,10 +192,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             height: 24,
             child: Container(
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
+                color: AppColors.brandPrimary,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)],
+                boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.3), blurRadius: 6)],
               ),
             ),
           ));
@@ -252,10 +227,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             height: 24,
             child: Container(
               decoration: BoxDecoration(
-                color: AppTheme.secondaryColor,
+                color: AppColors.brandSecondary,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)],
+                boxShadow: [BoxShadow(color: AppColors.brandSecondary.withOpacity(0.3), blurRadius: 6)],
               ),
             ),
           ));
@@ -267,7 +242,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         Polyline(
           points: _generateArc(originLatLng, destLatLng),
           strokeWidth: 3,
-          color: AppTheme.primaryColor,
+          color: AppColors.brandPrimary,
           pattern: const StrokePattern.dotted(),
         ),
       );
@@ -278,10 +253,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           height: 24,
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.primaryColor,
+              color: AppColors.brandPrimary,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)],
+              boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.3), blurRadius: 6)],
             ),
           ),
         ),
@@ -291,10 +266,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           height: 24,
           child: Container(
             decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
+              color: AppColors.brandSecondary,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 3),
-              boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)],
+              boxShadow: [BoxShadow(color: AppColors.brandSecondary.withOpacity(0.3), blurRadius: 6)],
             ),
           ),
         ),
@@ -332,7 +307,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.08),
+              color: AppColors.brandPrimary.withOpacity(0.08),
               blurRadius: 16,
               offset: const Offset(0, 4),
             ),
@@ -414,7 +389,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         child: const Icon(
           Icons.arrow_back_ios_new_rounded,
           size: 18,
-          color: AppTheme.textPrimary,
+          color: AppColors.lightTextPrimary,
         ),
       ),
     );
@@ -473,7 +448,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     // Build polylines and markers for all legs (multi-leg support)
     final polylines = <Polyline<Object>>[];
     final markers = <Marker>[];
-    final legColors = [AppTheme.primaryColor, const Color(0xFFE91E63), const Color(0xFF00BCD4), const Color(0xFFFF9800)];
+    final legColors = [AppColors.brandPrimary, const Color(0xFFE91E63), const Color(0xFF00BCD4), const Color(0xFFFF9800)];
 
     LatLng zoomOrigin = originLatLng;
     LatLng zoomDest = destLatLng;
@@ -504,10 +479,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             height: 28,
             child: Container(
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor,
+                color: AppColors.brandPrimary,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)],
+                boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.3), blurRadius: 6)],
               ),
             ),
           ));
@@ -537,10 +512,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             height: 28,
             child: Container(
               decoration: BoxDecoration(
-                color: AppTheme.secondaryColor,
+                color: AppColors.brandSecondary,
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)],
+                boxShadow: [BoxShadow(color: AppColors.brandSecondary.withOpacity(0.3), blurRadius: 6)],
               ),
             ),
           ));
@@ -549,10 +524,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
 
       if (!hasCoords) {
         // Fallback if legs have no coordinates
-        polylines.add(Polyline(points: _generateArc(originLatLng, destLatLng), strokeWidth: 3, color: AppTheme.primaryColor, pattern: const StrokePattern.dotted()));
+        polylines.add(Polyline(points: _generateArc(originLatLng, destLatLng), strokeWidth: 3, color: AppColors.brandPrimary, pattern: const StrokePattern.dotted()));
         markers.addAll([
-          Marker(point: originLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)]))),
-          Marker(point: destLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppTheme.secondaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)]))),
+          Marker(point: originLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.3), blurRadius: 6)]))),
+          Marker(point: destLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppColors.brandSecondary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppColors.brandSecondary.withOpacity(0.3), blurRadius: 6)]))),
         ]);
       }
 
@@ -578,10 +553,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
       }
     } else {
       // No flight selected - single arc
-      polylines.add(Polyline(points: _generateArc(originLatLng, destLatLng), strokeWidth: 3, color: AppTheme.primaryColor, pattern: const StrokePattern.dotted()));
+      polylines.add(Polyline(points: _generateArc(originLatLng, destLatLng), strokeWidth: 3, color: AppColors.brandPrimary, pattern: const StrokePattern.dotted()));
       markers.addAll([
-        Marker(point: originLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppTheme.primaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 6)]))),
-        Marker(point: destLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppTheme.secondaryColor, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppTheme.secondaryColor.withOpacity(0.3), blurRadius: 6)]))),
+        Marker(point: originLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppColors.brandPrimary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.3), blurRadius: 6)]))),
+        Marker(point: destLatLng, width: 28, height: 28, child: Container(decoration: BoxDecoration(color: AppColors.brandSecondary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 3), boxShadow: [BoxShadow(color: AppColors.brandSecondary.withOpacity(0.3), blurRadius: 6)]))),
       ]);
     }
 
@@ -593,7 +568,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryColor.withOpacity(0.08),
+            color: AppColors.brandPrimary.withOpacity(0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -631,7 +606,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primaryColor.withOpacity(0.05),
+              color: AppColors.brandPrimary.withOpacity(0.05),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -648,14 +623,14 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                   Text(
                     widget.origin.country,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
@@ -664,13 +639,13 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
+                color: AppColors.brandPrimary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.arrow_forward_rounded,
                 size: 16,
-                color: AppTheme.primaryColor,
+                color: AppColors.brandPrimary,
               ),
             ),
             Expanded(
@@ -682,14 +657,14 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                   Text(
                     widget.destination.country,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                   ),
                 ],
@@ -704,7 +679,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
   Widget _buildBody() {
     if (_isLoading) {
       return const Center(
-        child: CircularProgressIndicator(color: AppTheme.primaryColor),
+        child: CircularProgressIndicator(color: AppColors.brandPrimary),
       );
     }
     if (_error != null) {
@@ -721,7 +696,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: AppTheme.textSecondary,
+                  color: AppColors.lightTextSecondary,
                 ),
               ),
             ],
@@ -740,7 +715,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
               'No flights found for this route',
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppColors.lightTextSecondary,
               ),
             ),
           ],
@@ -823,12 +798,12 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           padding: const EdgeInsets.symmetric(vertical: 18),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
-              colors: [AppTheme.primaryColor, Color(0xFF8B5CF6), AppTheme.secondaryColor],
+              colors: [AppColors.brandPrimary, Color(0xFF8B5CF6), AppColors.brandSecondary],
             ),
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.3),
+                color: AppColors.brandPrimary.withOpacity(0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 8),
               ),
@@ -875,14 +850,14 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+            color: isSelected ? AppColors.brandPrimary : Colors.transparent,
             width: 2,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? AppTheme.primaryColor.withOpacity(0.15)
-                  : AppTheme.primaryColor.withOpacity(0.05),
+                  ? AppColors.brandPrimary.withOpacity(0.15)
+                  : AppColors.brandPrimary.withOpacity(0.05),
               blurRadius: isSelected ? 20 : 16,
               offset: const Offset(0, 4),
             ),
@@ -920,7 +895,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                   if (flight.legs.isNotEmpty)
@@ -928,7 +903,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                       flight.legs.first.flightNumber,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary,
+                        color: AppColors.lightTextSecondary,
                       ),
                     ),
                 ],
@@ -941,7 +916,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                        colors: [AppColors.brandPrimary, AppColors.brandSecondary],
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -961,7 +936,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                         '€${flight.pricePerPerson!.toStringAsFixed(0)}/person',
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: AppTheme.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                     ),
@@ -982,7 +957,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                   Text(
@@ -990,7 +965,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                   ),
                   if (flight.departureCityName.isNotEmpty)
@@ -998,7 +973,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                       flight.departureCityName,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary.withOpacity(0.7),
+                        color: AppColors.lightTextSecondary.withOpacity(0.7),
                       ),
                     ),
                 ],
@@ -1013,7 +988,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                         durationStr,
                         style: GoogleFonts.poppins(
                           fontSize: 11,
-                          color: AppTheme.textSecondary,
+                          color: AppColors.lightTextSecondary,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1023,14 +998,14 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                           Container(
                             height: 2,
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor.withOpacity(0.2),
+                              color: AppColors.brandPrimary.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(1),
                             ),
                           ),
                           Icon(
                             Icons.flight_rounded,
                             size: 16,
-                            color: AppTheme.primaryColor.withOpacity(0.6),
+                            color: AppColors.brandPrimary.withOpacity(0.6),
                           ),
                         ],
                       ),
@@ -1085,7 +1060,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                      color: AppColors.lightTextPrimary,
                     ),
                   ),
                   Text(
@@ -1093,7 +1068,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textSecondary,
+                      color: AppColors.lightTextSecondary,
                     ),
                   ),
                   if (flight.arrivalCityName.isNotEmpty)
@@ -1101,7 +1076,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                       flight.arrivalCityName,
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textSecondary.withOpacity(0.7),
+                        color: AppColors.lightTextSecondary.withOpacity(0.7),
                       ),
                     ),
                 ],
@@ -1120,7 +1095,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                 Container(
                   padding: const EdgeInsets.all(4),
                   decoration: const BoxDecoration(
-                    color: AppTheme.primaryColor,
+                    color: AppColors.brandPrimary,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -1161,7 +1136,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
         text,
         style: GoogleFonts.poppins(
           fontSize: 11,
-          color: AppTheme.textSecondary,
+          color: AppColors.lightTextSecondary,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -1177,3 +1152,4 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     return dateTimeStr;
   }
 }
+

@@ -1,13 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import '../../core/theme/app_theme.dart';
 import '../../models/playlist.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/playlist_provider.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 
 class ImportWizardSheet extends StatefulWidget {
   final Playlist playlist;
@@ -81,8 +80,8 @@ class _ImportWizardSheetState extends State<ImportWizardSheet> {
           ),
           const SizedBox(height: 16),
           Text(
-            _step == 3 ? '🎉 Import Complete!' : 'Import to Trip',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+            _step == 3 ? 'ðŸŽ‰ Import Complete!' : 'Import to Trip',
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 16),
           if (_error != null) ...[
@@ -96,7 +95,7 @@ class _ImportWizardSheetState extends State<ImportWizardSheet> {
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.all(32),
-              child: CircularProgressIndicator(color: AppTheme.primaryColor),
+              child: CircularProgressIndicator(color: AppColors.brandPrimary),
             )
           else
             _buildStep(),
@@ -118,12 +117,12 @@ class _ImportWizardSheetState extends State<ImportWizardSheet> {
 
   Widget _buildPickTrip() {
     if (_trips.isEmpty) {
-      return const Text('No trips found. Create a trip first.', style: TextStyle(color: AppTheme.textSecondary));
+      return const Text('No trips found. Create a trip first.', style: TextStyle(color: AppColors.lightTextSecondary));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Select a trip:', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+        Text('Select a trip:', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         ...(_trips.map((trip) {
           String subtitle = trip.name;
@@ -133,7 +132,7 @@ class _ImportWizardSheetState extends State<ImportWizardSheet> {
           }
           return ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.flight_takeoff_rounded, color: AppTheme.primaryColor),
+            leading: const Icon(Icons.flight_takeoff_rounded, color: AppColors.brandPrimary),
             title: Text(trip.name, style: const TextStyle(fontWeight: FontWeight.w500)),
             subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
             trailing: const Icon(Icons.chevron_right),
@@ -161,7 +160,7 @@ class _ImportWizardSheetState extends State<ImportWizardSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Pick start date:', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+        Text('Pick start date:', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         if (_startDate != null)
           Text(
@@ -239,7 +238,7 @@ class _ImportWizardSheetState extends State<ImportWizardSheet> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Preview:', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500)),
+        Text('Preview:', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 8),
         Text('Trip: ${_selectedTrip?.name}', style: const TextStyle(fontSize: 13)),
         Text('Start: ${DateFormat('MMM d, yyyy').format(_startDate!)}', style: const TextStyle(fontSize: 13)),
@@ -274,7 +273,7 @@ class _ImportWizardSheetState extends State<ImportWizardSheet> {
       children: [
         const Icon(Icons.check_circle, color: Colors.green, size: 56),
         const SizedBox(height: 12),
-        Text('Imported $_importedCount items!', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+        Text('Imported $_importedCount items!', style: Theme.of(context).textTheme.titleMedium),
         const SizedBox(height: 16),
         SizedBox(
           width: double.infinity,

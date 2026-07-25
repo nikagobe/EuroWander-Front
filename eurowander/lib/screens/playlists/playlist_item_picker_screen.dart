@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -67,7 +67,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
   // Selection state
   int _selectedDay = 1;
   String _timeSlot = 'morning';
-  List<PlaylistItem> _addedItems = [];
+  final List<PlaylistItem> _addedItems = [];
 
   // Custom item
   final _customNameController = TextEditingController();
@@ -298,8 +298,8 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                     _buildDayAndTimeRow(),
                     TabBar(
                       controller: _tabController,
-                      labelColor: AppTheme.primaryColor,
-                      unselectedLabelColor: AppTheme.textSecondary,
+                      labelColor: AppColors.brandPrimary,
+                      unselectedLabelColor: context.ew.textSecondary,
                       tabs: const [
                         Tab(text: 'Attractions'),
                         Tab(text: 'Restaurants'),
@@ -328,7 +328,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
 
   Widget _buildAppBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
       child: Row(
         children: [
           GestureDetector(
@@ -336,32 +336,32 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
             child: Container(
               width: 42, height: 42,
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: context.ew.cardColor,
+                borderRadius: AppRadius.borderMd,
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
+              child: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: context.ew.textPrimary),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Text(
               'Add Items',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
+              style: Theme.of(context).textTheme.headlineSmall,
             ),
           ),
           if (_addedItems.isNotEmpty)
             GestureDetector(
               onTap: _goBack,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor,
+                  color: AppColors.brandPrimary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   'Done (${_addedItems.length})',
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 13, color: Colors.white),
                 ),
               ),
             ),
@@ -372,7 +372,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
 
   Widget _buildSearchSection() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -380,24 +380,24 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
             controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Search city...',
-              prefixIcon: const Icon(Icons.location_city, color: AppTheme.textSecondary),
+              prefixIcon: Icon(Icons.location_city, color: context.ew.textSecondary),
               suffixIcon: _isSearchingDestinations
                   ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)))
                   : null,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              border: OutlineInputBorder(borderRadius: AppRadius.borderMd, borderSide: BorderSide.none),
               filled: true,
-              fillColor: Colors.white,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              fillColor: context.ew.cardColor,
+              contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
             ),
             onChanged: _onSearchChanged,
           ),
           if (_destinations.isNotEmpty)
             Container(
               constraints: const BoxConstraints(maxHeight: 180),
-              margin: const EdgeInsets.only(top: 4),
+              margin: const EdgeInsets.only(top: AppSpacing.xxs),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                color: context.ew.cardColor,
+                borderRadius: AppRadius.borderMd,
                 boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8)],
               ),
               child: ListView.builder(
@@ -407,7 +407,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                   final dest = _destinations[i];
                   return ListTile(
                     dense: true,
-                    leading: const Icon(Icons.location_on_outlined, size: 18, color: AppTheme.primaryColor),
+                    leading: const Icon(Icons.location_on_outlined, size: 18, color: AppColors.brandPrimary),
                     title: Text(dest.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                     subtitle: Text(dest.secondaryText, style: const TextStyle(fontSize: 12)),
                     onTap: () => _selectDestination(dest),
@@ -433,7 +433,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
           onTap: () => setState(() => _expandedAttractionIndex = _expandedAttractionIndex == i ? null : i),
           child: Container(
             decoration: BoxDecoration(
-              color: isExpanded ? AppTheme.primaryColor : Colors.deepOrange,
+              color: isExpanded ? AppColors.brandPrimary : Colors.deepOrange,
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white, width: 2),
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4)],
@@ -475,7 +475,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
           // Day selector
           Row(
             children: [
-              Text('Day:', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
+              Text('Day:', style: const TextStyle(fontSize: 13, color: AppColors.lightTextSecondary)),
               const SizedBox(width: 8),
               Expanded(
                 child: SizedBox(
@@ -494,13 +494,13 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                             width: 36, height: 32,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: isSelected ? AppTheme.primaryColor : Colors.white,
+                              color: isSelected ? AppColors.brandPrimary : Colors.white,
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300),
+                              border: Border.all(color: isSelected ? AppColors.brandPrimary : Colors.grey.shade300),
                             ),
                             child: Text(
                               '$day',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : AppTheme.textSecondary),
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : AppColors.lightTextSecondary),
                             ),
                           ),
                         ),
@@ -515,7 +515,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
           // Time slot selector
           Row(
             children: [
-              Text('Time:', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
+              Text('Time:', style: const TextStyle(fontSize: 13, color: AppColors.lightTextSecondary)),
               const SizedBox(width: 8),
               ...['morning', 'midday', 'evening', 'night'].map((slot) {
                 final isSelected = _timeSlot == slot;
@@ -526,13 +526,13 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isSelected ? AppTheme.primaryColor : Colors.white,
+                        color: isSelected ? AppColors.brandPrimary : Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300),
+                        border: Border.all(color: isSelected ? AppColors.brandPrimary : Colors.grey.shade300),
                       ),
                       child: Text(
                         slot[0].toUpperCase() + slot.substring(1),
-                        style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : AppTheme.textSecondary),
+                        style: TextStyle(fontSize: 11, color: isSelected ? Colors.white : AppColors.lightTextSecondary),
                       ),
                     ),
                   ),
@@ -565,15 +565,15 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
             style: GoogleFonts.poppins(fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Search attractions by name...',
-              hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-              prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textSecondary),
+              hintStyle: const TextStyle(fontSize: 13, color: AppColors.lightTextSecondary),
+              prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.lightTextSecondary),
               suffixIcon: _attractionNameFilter != null && _attractionNameFilter!.isNotEmpty
                   ? GestureDetector(
                       onTap: () {
                         _attractionNameController.clear();
                         setState(() { _attractionNameFilter = null; _attractionNameResults = []; });
                       },
-                      child: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+                      child: const Icon(Icons.close, size: 18, color: AppColors.lightTextSecondary),
                     )
                   : null,
               filled: true, fillColor: Colors.white,
@@ -593,7 +593,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
         // List
         Expanded(
           child: isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+              ? const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary))
               : displayList.isEmpty
                   ? _buildEmptyPrompt(isNameSearching ? 'No attractions matching "$_attractionNameFilter"' : 'No attractions found')
                   : NotificationListener<ScrollNotification>(
@@ -613,7 +613,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                         itemCount: displayList.length + (!isNameSearching && _attractionPage < _attractionTotalPages ? 1 : 0),
                         itemBuilder: (context, index) {
                           if (index == displayList.length) {
-                            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)));
+                            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppColors.brandPrimary)));
                           }
                           return _buildAttractionCard(displayList[index], index);
                         },
@@ -656,15 +656,15 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
             style: GoogleFonts.poppins(fontSize: 13),
             decoration: InputDecoration(
               hintText: 'Filter restaurants by name...',
-              hintStyle: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
-              prefixIcon: const Icon(Icons.search, size: 18, color: AppTheme.textSecondary),
+              hintStyle: const TextStyle(fontSize: 13, color: AppColors.lightTextSecondary),
+              prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.lightTextSecondary),
               suffixIcon: _restaurantNameFilter != null && _restaurantNameFilter!.isNotEmpty
                   ? GestureDetector(
                       onTap: () {
                         _restaurantNameController.clear();
                         setState(() => _restaurantNameFilter = null);
                       },
-                      child: const Icon(Icons.close, size: 18, color: AppTheme.textSecondary),
+                      child: const Icon(Icons.close, size: 18, color: AppColors.lightTextSecondary),
                     )
                   : null,
               filled: true, fillColor: Colors.white,
@@ -683,7 +683,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
         // List
         Expanded(
           child: isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
+              ? const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary))
               : displayList.isEmpty
                   ? _buildEmptyPrompt(isNameFiltering ? 'No restaurants matching "$_restaurantNameFilter"' : 'No restaurants found')
                   : NotificationListener<ScrollNotification>(
@@ -703,7 +703,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                         itemCount: displayList.length + (!isNameFiltering && _restaurantPage < _restaurantTotalPages ? 1 : 0),
                         itemBuilder: (context, index) {
                           if (index == displayList.length) {
-                            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppTheme.primaryColor)));
+                            return const Padding(padding: EdgeInsets.all(16), child: Center(child: CircularProgressIndicator(color: AppColors.brandPrimary)));
                           }
                           return _buildRestaurantCard(displayList[index], index);
                         },
@@ -720,9 +720,9 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Add Custom Item', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text('Add Custom Item', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
-          Text('Add a custom spot that isn\'t in our database', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+          Text('Add a custom spot that isn''t in our database', style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 16),
           TextField(
             controller: _customNameController,
@@ -742,13 +742,13 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
           const SizedBox(height: 12),
           Row(
             children: [
-              Text('Duration:', style: GoogleFonts.poppins(fontSize: 13)),
+              Text('Duration:', style: const TextStyle(fontSize: 13)),
               const SizedBox(width: 12),
               IconButton(
                 icon: const Icon(Icons.remove_circle_outline, size: 22),
                 onPressed: () { if (_customDuration > 15) setState(() => _customDuration -= 15); },
               ),
-              Text('${_customDuration} min', style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600)),
+              Text('$_customDuration min', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               IconButton(
                 icon: const Icon(Icons.add_circle_outline, size: 22),
                 onPressed: () => setState(() => _customDuration += 15),
@@ -767,7 +767,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
           ),
           if (_addedItems.where((i) => i.itemType == 'custom').isNotEmpty) ...[
             const SizedBox(height: 24),
-            Text('Added custom items:', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
+            Text('Added custom items:', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
             const SizedBox(height: 8),
             ..._addedItems.where((i) => i.itemType == 'custom').map((item) => Container(
               margin: const EdgeInsets.only(bottom: 6),
@@ -782,7 +782,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                   const Icon(Icons.push_pin_rounded, size: 16, color: Colors.amber),
                   const SizedBox(width: 8),
                   Expanded(child: Text(item.name, style: const TextStyle(fontSize: 13))),
-                  Text('Day ${item.dayNumber}', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                  Text('Day ${item.dayNumber}', style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary)),
                 ],
               ),
             )),
@@ -818,7 +818,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                     child: SizedBox(
                       width: 56, height: 56,
                       child: a.photoUrl.isNotEmpty
-                          ? Image.network(a.photoUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholderIcon(Icons.attractions_rounded, Colors.deepOrange))
+                          ? Image.network(a.photoUrl, fit: BoxFit.cover, errorBuilder: (_, _, _) => _placeholderIcon(Icons.attractions_rounded, Colors.deepOrange))
                           : _placeholderIcon(Icons.attractions_rounded, Colors.deepOrange),
                     ),
                   ),
@@ -827,19 +827,19 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(a.name, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        Text(a.category, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(a.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(a.category, style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                         Row(
                           children: [
                             const Icon(Icons.star, size: 12, color: Colors.amber),
                             Text(' ${a.rating}', style: const TextStyle(fontSize: 11)),
-                            Text(' (${a.numReviews})', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                            Text(' (${a.numReviews})', style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary)),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: AppTheme.textSecondary),
+                  Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: AppColors.lightTextSecondary),
                 ],
               ),
             ),
@@ -863,7 +863,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(a.photoUrl, height: 140, width: double.infinity, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                  errorBuilder: (_, _, _) => const SizedBox.shrink()),
             ),
           const SizedBox(height: 10),
           // Details
@@ -883,8 +883,8 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
               icon: Icon(isAdded ? Icons.check : Icons.add, size: 18),
               label: Text(isAdded ? 'Added' : 'Add to Day $_selectedDay'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isAdded ? Colors.grey.shade300 : AppTheme.primaryColor,
-                foregroundColor: isAdded ? AppTheme.textSecondary : Colors.white,
+                backgroundColor: isAdded ? Colors.grey.shade300 : AppColors.brandPrimary,
+                foregroundColor: isAdded ? AppColors.lightTextSecondary : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),
@@ -915,7 +915,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                     child: SizedBox(
                       width: 56, height: 56,
                       child: r.photoUrl.isNotEmpty
-                          ? Image.network(r.photoUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholderIcon(Icons.restaurant_rounded, Colors.green))
+                          ? Image.network(r.photoUrl, fit: BoxFit.cover, errorBuilder: (_, _, _) => _placeholderIcon(Icons.restaurant_rounded, Colors.green))
                           : _placeholderIcon(Icons.restaurant_rounded, Colors.green),
                     ),
                   ),
@@ -924,19 +924,19 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(r.name, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                        Text(r.cuisine, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(r.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(r.cuisine, style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                         Row(
                           children: [
                             const Icon(Icons.star, size: 12, color: Colors.amber),
                             Text(' ${r.rating}', style: const TextStyle(fontSize: 11)),
-                            Text(' (${r.numReviews})', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                            Text(' (${r.numReviews})', style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary)),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: AppTheme.textSecondary),
+                  Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: AppColors.lightTextSecondary),
                 ],
               ),
             ),
@@ -959,7 +959,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Image.network(r.photoUrl, height: 140, width: double.infinity, fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                  errorBuilder: (_, _, _) => const SizedBox.shrink()),
             ),
           const SizedBox(height: 10),
           if (r.cuisine.isNotEmpty)
@@ -979,8 +979,8 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
               icon: Icon(isAdded ? Icons.check : Icons.add, size: 18),
               label: Text(isAdded ? 'Added' : 'Add to Day $_selectedDay'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isAdded ? Colors.grey.shade300 : AppTheme.primaryColor,
-                foregroundColor: isAdded ? AppTheme.textSecondary : Colors.white,
+                backgroundColor: isAdded ? Colors.grey.shade300 : AppColors.brandPrimary,
+                foregroundColor: isAdded ? AppColors.lightTextSecondary : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),
@@ -995,9 +995,9 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         children: [
-          Icon(icon, size: 16, color: AppTheme.textSecondary),
+          Icon(icon, size: 16, color: AppColors.lightTextSecondary),
           const SizedBox(width: 8),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 12, color: AppTheme.textPrimary))),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 12, color: AppColors.lightTextPrimary))),
         ],
       ),
     );
@@ -1005,7 +1005,7 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
 
   Widget _buildEmptyPrompt(String text) {
     return Center(
-      child: Text(text, style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textSecondary)),
+      child: Text(text, style: const TextStyle(fontSize: 14, color: AppColors.lightTextSecondary)),
     );
   }
 
@@ -1013,3 +1013,5 @@ class _PlaylistItemPickerScreenState extends State<PlaylistItemPickerScreen> wit
     return Container(color: color.withOpacity(0.1), child: Icon(icon, color: color, size: 28));
   }
 }
+
+

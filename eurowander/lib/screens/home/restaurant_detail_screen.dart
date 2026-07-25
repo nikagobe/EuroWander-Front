@@ -10,6 +10,7 @@ import '../../models/restaurant.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
   final String contentId;
@@ -102,34 +103,24 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor))
-              : _details == null
-                  ? _buildError()
-                  : _buildContent(),
-        ),
-      ),
+    return AppScaffold(
+      maxWidth: double.infinity,
       bottomNavigationBar: (!_isLoading && _details != null)
           ? _buildAddToTripBar()
           : null,
+      child: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary))
+          : _details == null
+              ? _buildError()
+              : _buildContent(),
     );
   }
 
   Widget _buildAddToTripBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.ew.cardColor,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
@@ -146,15 +137,15 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
             label: Text(
               'Add to Trip',
-              style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.white),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
+              backgroundColor: AppColors.brandPrimary,
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 32),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(50)),
+              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: AppSpacing.xxl),
+              shape: RoundedRectangleBorder(borderRadius: AppRadius.borderPill),
               elevation: 4,
-              shadowColor: AppTheme.primaryColor.withOpacity(0.4),
+              shadowColor: AppColors.brandPrimary.withOpacity(0.4),
             ),
           ),
         ),
@@ -244,12 +235,12 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.error_outline_rounded, size: 56, color: Colors.grey.shade400),
-          const SizedBox(height: 12),
-          Text('Failed to load restaurant details', style: GoogleFonts.poppins(fontSize: 16, color: AppTheme.textSecondary)),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.sm),
+          Text('Failed to load restaurant details', style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textSecondary)),
+          const SizedBox(height: AppSpacing.md),
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Go Back', style: GoogleFonts.poppins(color: AppTheme.primaryColor)),
+            child: Text('Go Back', style: Theme.of(context).textTheme.bodyMedium!.copyWith(color: AppColors.brandPrimary)),
           ),
         ],
       ),
@@ -260,7 +251,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     final restaurant = _details!;
     return Column(
       children: [
-        _buildAppBar(restaurant),
+        EWAppBar(title: restaurant.name),
         Expanded(
           child: Center(
             child: ConstrainedBox(
@@ -310,38 +301,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     );
   }
 
-  Widget _buildAppBar(RestaurantDetail restaurant) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              restaurant.name,
-              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPhotoGallery(RestaurantDetail restaurant) {
     if (restaurant.photos.isEmpty) {
       return Container(
@@ -372,7 +331,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     child: Image.network(
                       restaurant.photos[index].url,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         color: Colors.grey.shade200,
                         child: Icon(Icons.broken_image_rounded, size: 48, color: Colors.grey.shade400),
                       ),
@@ -457,7 +416,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       PageRouteBuilder(
         opaque: false,
         barrierColor: Colors.black87,
-        pageBuilder: (context, _, __) => _PhotoViewerPage(
+        pageBuilder: (context, _, _) => _PhotoViewerPage(
           photos: photos.map((p) => p.url).toList(),
           initialIndex: initialIndex,
         ),
@@ -466,12 +425,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 
   Widget _buildHeader(RestaurantDetail restaurant) {
+    final theme = Theme.of(context);
+    final ew = context.ew;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           restaurant.name,
-          style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.textPrimary),
+          style: theme.textTheme.headlineSmall!.copyWith(fontWeight: FontWeight.w700, color: ew.textPrimary),
         ),
         const SizedBox(height: 6),
         Row(
@@ -507,10 +468,10 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   Widget _buildInfoCard(RestaurantDetail restaurant) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: context.ew.cardColor,
+        borderRadius: AppRadius.borderLg,
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
@@ -771,7 +732,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: _nearbyRestaurants.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                  separatorBuilder: (_, _) => const SizedBox(width: 10),
                   itemBuilder: (context, index) {
                     final nearby = _nearbyRestaurants[index];
                     return GestureDetector(
@@ -863,7 +824,7 @@ class _PhotoViewerPageState extends State<_PhotoViewerPage> {
               child: Image.network(
                 widget.photos[index],
                 fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white54, size: 64),
+                errorBuilder: (_, _, _) => const Icon(Icons.broken_image, color: Colors.white54, size: 64),
               ),
             ),
           );
@@ -943,7 +904,7 @@ class _RestaurantAddToTripSheetState extends State<_RestaurantAddToTripSheet> {
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: days.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
                 final day = days[index];
                 final isSelected = _selectedDate != null &&

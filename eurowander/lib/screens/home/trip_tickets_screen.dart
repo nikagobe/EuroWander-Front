@@ -1,3 +1,4 @@
+// ignore_for_file: unused_element, unused_local_variable
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -7,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 
 class TripTicketsScreen extends StatefulWidget {
   final SavedTrip trip;
@@ -72,7 +74,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
           content: Text('Failed to get booking link: $e'),
           backgroundColor: Colors.red.shade600,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderMd),
         ),
       );
     } finally {
@@ -130,100 +132,59 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildAppBar(context),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 16),
-                          if (_trip.outboundFlight != null) ...[
-                            _buildSectionLabel('Outbound Flight', Icons.flight_takeoff_rounded),
-                            const SizedBox(height: 12),
-                            _buildFlightCard(_trip.outboundFlight!, 'outbound'),
-                          ],
-                          if (_trip.busJourney != null) ...[
-                            const SizedBox(height: 24),
-                            _buildSectionLabel('Bus Transit', Icons.directions_bus_rounded),
-                            const SizedBox(height: 12),
-                            _buildBusCard(),
-                          ],
-                          if (_trip.returnFlight != null) ...[
-                            const SizedBox(height: 24),
-                            _buildSectionLabel('Return Flight', Icons.flight_land_rounded),
-                            const SizedBox(height: 12),
-                            _buildFlightCard(_trip.returnFlight!, 'return'),
-                          ],
-                          const SizedBox(height: 24),
-                          _buildPriceSummary(),
-                          const SizedBox(height: 32),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return AppScaffold(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2)),
+          const EWAppBar(title: 'Tickets'),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: AppSpacing.paddingHorizontalXl,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: AppSpacing.md),
+                  if (_trip.outboundFlight != null) ...[
+                    _buildSectionLabel(context, 'Outbound Flight', Icons.flight_takeoff_rounded),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildFlightCard(context, _trip.outboundFlight!, 'outbound'),
+                  ],
+                  if (_trip.busJourney != null) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionLabel(context, 'Bus Transit', Icons.directions_bus_rounded),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildBusCard(context),
+                  ],
+                  if (_trip.returnFlight != null) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildSectionLabel(context, 'Return Flight', Icons.flight_land_rounded),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildFlightCard(context, _trip.returnFlight!, 'return'),
+                  ],
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildPriceSummary(context),
+                  const SizedBox(height: AppSpacing.xxl),
                 ],
               ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
             ),
           ),
-          const SizedBox(width: 16),
-          Text('Tickets', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
         ],
       ),
     );
   }
 
-  Widget _buildSectionLabel(String title, IconData icon) {
+  Widget _buildSectionLabel(BuildContext context, String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: AppTheme.primaryColor),
-        const SizedBox(width: 8),
-        Text(title, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+        Icon(icon, size: 18, color: AppColors.brandPrimary),
+        const SizedBox(width: AppSpacing.xs),
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
       ],
     );
   }
 
-  Widget _buildFlightCard(dynamic flight, String flightType) {
+  Widget _buildFlightCard(BuildContext context, dynamic flight, String flightType) {
+    final ew = context.ew;
+    final theme = Theme.of(context);
     final legs = flight.legs as List;
     if (legs.isEmpty) return const SizedBox.shrink();
 
@@ -232,13 +193,13 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
     final bool isPaid = flight.isPaid == true;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: ew.cardColor,
+        borderRadius: AppRadius.borderXl,
         border: isPaid ? Border.all(color: Colors.green.shade300, width: 1.5) : null,
         boxShadow: [
-          BoxShadow(color: AppTheme.primaryColor.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 4)),
+          BoxShadow(color: AppColors.brandPrimary.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -256,7 +217,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
               child: Row(
                 children: [
                   Icon(Icons.check_circle_rounded, size: 16, color: Colors.green.shade600),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
                       'Paid · ${flight.paidCurrency ?? '€'}${flight.paidCurrency != null && flight.paidCurrency != 'EUR' ? ' ' : ''}${flight.actualPaidAmount?.toStringAsFixed(2) ?? ''}',
@@ -275,7 +236,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.edit_rounded, size: 12, color: Colors.green.shade700),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xxs),
                           Text('Edit', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
                         ],
                       ),
@@ -293,7 +254,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                   flight.airlineLogo,
                   width: 32,
                   height: 32,
-                  errorBuilder: (_, _, _) => Container(
+                  errorBuilder: (_, __, ___) => Container(
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(8)),
@@ -306,18 +267,18 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(firstLeg.airline, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-                    Text(firstLeg.flightNumber, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
+                    Text(firstLeg.airline, style: theme.textTheme.labelLarge),
+                    Text(firstLeg.flightNumber, style: theme.textTheme.labelSmall),
                   ],
                 ),
               ),
               Text(
                 '€${flight.price.toStringAsFixed(0)}',
-                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.brandPrimary),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: AppSpacing.md),
           // Route
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,12 +287,12 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_formatFlightTime(flight.departureTime), style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                    Text(_formatShortDate(flight.departureTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
-                    Text(flight.departureAirportId, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+                    Text(_formatFlightTime(flight.departureTime), style: theme.textTheme.headlineSmall),
+                    Text(_formatShortDate(flight.departureTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.brandPrimary)),
+                    Text(flight.departureAirportId, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
                     Text(
                       flight.departureAirportName.isNotEmpty ? flight.departureAirportName : firstLeg.departureAirportName,
-                      style: GoogleFonts.poppins(fontSize: 10, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      style: GoogleFonts.poppins(fontSize: 10, color: ew.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
@@ -339,10 +300,10 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                 padding: const EdgeInsets.only(top: 6),
                 child: Column(
                   children: [
-                    Text('${flight.totalDuration ~/ 60}h ${flight.totalDuration % 60}m', style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
-                    const SizedBox(height: 4),
-                    Container(width: 50, height: 2, decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.3), borderRadius: BorderRadius.circular(1))),
-                    const SizedBox(height: 4),
+                    Text('${flight.totalDuration ~/ 60}h ${flight.totalDuration % 60}m', style: theme.textTheme.labelSmall),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Container(width: 50, height: 2, decoration: BoxDecoration(color: AppColors.brandPrimary.withOpacity(0.3), borderRadius: BorderRadius.circular(1))),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       flight.stops == 0 ? 'Direct' : '${flight.stops} stop(s)',
                       style: GoogleFonts.poppins(fontSize: 10, color: flight.stops == 0 ? Colors.green.shade600 : Colors.orange.shade700, fontWeight: FontWeight.w500),
@@ -354,30 +315,30 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(_formatFlightTime(flight.arrivalTime), style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                    Text(_formatShortDate(flight.arrivalTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
-                    Text(flight.arrivalAirportId, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+                    Text(_formatFlightTime(flight.arrivalTime), style: theme.textTheme.headlineSmall),
+                    Text(_formatShortDate(flight.arrivalTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.brandPrimary)),
+                    Text(flight.arrivalAirportId, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
                     Text(
                       flight.arrivalAirportName.isNotEmpty ? flight.arrivalAirportName : lastLeg.arrivalAirportName,
-                      style: GoogleFonts.poppins(fontSize: 10, color: AppTheme.textSecondary), textAlign: TextAlign.end, maxLines: 1, overflow: TextOverflow.ellipsis),
+                      style: GoogleFonts.poppins(fontSize: 10, color: ew.textSecondary), textAlign: TextAlign.end, maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           // Date + actions
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: const Color(0xFFF8F5FF), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppColors.lightSurfaceVariant, borderRadius: BorderRadius.circular(8)),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.calendar_today_outlined, size: 13, color: AppTheme.primaryColor),
+                    const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.brandPrimary),
                     const SizedBox(width: 6),
-                    Text(_formatFullDate(firstLeg.departureTime), style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
+                    Text(_formatFullDate(firstLeg.departureTime), style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.brandPrimary)),
                   ],
                 ),
               ),
@@ -396,21 +357,21 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.check_circle_outline_rounded, size: 14, color: Colors.green.shade600),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.xxs),
                         Text('Mark as Paid', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
                       ],
                     ),
                   ),
                 ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.xs),
               GestureDetector(
                 onTap: _isLoadingBooking ? null : () => _openBookingLink(flightType),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [AppTheme.primaryColor, Color(0xFF8B5CF6)]),
+                    gradient: const LinearGradient(colors: [AppColors.brandPrimary, Color(0xFF8B5CF6)]),
                     borderRadius: BorderRadius.circular(10),
-                    boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))],
+                    boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))],
                   ),
                   child: _isLoadingBooking
                       ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
@@ -431,17 +392,19 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
     );
   }
 
-  Widget _buildBusCard() {
+  Widget _buildBusCard(BuildContext context) {
+    final ew = context.ew;
+    final theme = Theme.of(context);
     final bus = _trip.busJourney!;
     final bool isPaid = bus.isPaid == true;
 
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: ew.cardColor,
+        borderRadius: AppRadius.borderXl,
         border: isPaid ? Border.all(color: Colors.green.shade300, width: 1.5) : null,
-        boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -458,7 +421,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
               child: Row(
                 children: [
                   Icon(Icons.check_circle_rounded, size: 16, color: Colors.green.shade600),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.xs),
                   Expanded(
                     child: Text(
                       'Paid · ${bus.paidCurrency ?? '€'}${bus.paidCurrency != null && bus.paidCurrency != 'EUR' ? ' ' : ''}${bus.actualPaidAmount?.toStringAsFixed(2) ?? ''}',
@@ -477,7 +440,7 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.edit_rounded, size: 12, color: Colors.green.shade700),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xxs),
                           Text('Edit', style: GoogleFonts.poppins(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
                         ],
                       ),
@@ -490,18 +453,18 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(color: const Color(0xFF4CAF50).withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: AppColors.success.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.directions_bus, size: 14, color: Color(0xFF4CAF50)),
-                    const SizedBox(width: 4),
-                    Text('BUS', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF4CAF50))),
+                    const Icon(Icons.directions_bus, size: 14, color: AppColors.success),
+                    const SizedBox(width: AppSpacing.xxs),
+                    Text('BUS', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.success)),
                   ],
                 ),
               ),
               const Spacer(),
-              Text('€${bus.price.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              Text('€${bus.price.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.brandPrimary)),
             ],
           ),
           const SizedBox(height: 14),
@@ -512,9 +475,9 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(_formatFlightTime(bus.depTime), style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                    Text(_formatShortDate(bus.depTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
-                    Text(bus.depName, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(_formatFlightTime(bus.depTime), style: theme.textTheme.headlineSmall),
+                    Text(_formatShortDate(bus.depTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.brandPrimary)),
+                    Text(bus.depName, style: theme.textTheme.labelSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
@@ -522,10 +485,10 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                 padding: const EdgeInsets.only(top: 6),
                 child: Column(
                   children: [
-                    Text(bus.duration, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary)),
-                    const SizedBox(height: 4),
-                    Container(width: 50, height: 2, decoration: BoxDecoration(color: const Color(0xFFFF9800).withOpacity(0.4), borderRadius: BorderRadius.circular(1))),
-                    const SizedBox(height: 4),
+                    Text(bus.duration, style: theme.textTheme.labelSmall),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Container(width: 50, height: 2, decoration: BoxDecoration(color: AppColors.brandAmber.withOpacity(0.4), borderRadius: BorderRadius.circular(1))),
+                    const SizedBox(height: AppSpacing.xxs),
                     Text(
                       bus.changeovers == 0 ? 'Direct' : '${bus.changeovers} change(s)',
                       style: GoogleFonts.poppins(fontSize: 10, color: bus.changeovers == 0 ? Colors.green.shade600 : Colors.orange.shade700, fontWeight: FontWeight.w500),
@@ -537,26 +500,26 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(_formatFlightTime(bus.arrTime), style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                    Text(_formatShortDate(bus.arrTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
-                    Text(bus.arrName, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary), textAlign: TextAlign.end, maxLines: 2, overflow: TextOverflow.ellipsis),
+                    Text(_formatFlightTime(bus.arrTime), style: theme.textTheme.headlineSmall),
+                    Text(_formatShortDate(bus.arrTime), style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.brandPrimary)),
+                    Text(bus.arrName, style: theme.textTheme.labelSmall, textAlign: TextAlign.end, maxLines: 2, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           Row(
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(color: const Color(0xFFF8F5FF), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppColors.lightSurfaceVariant, borderRadius: BorderRadius.circular(8)),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.calendar_today_outlined, size: 13, color: AppTheme.primaryColor),
+                    const Icon(Icons.calendar_today_outlined, size: 13, color: AppColors.brandPrimary),
                     const SizedBox(width: 6),
-                    Text(_formatFullDate(bus.depTime), style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: AppTheme.primaryColor)),
+                    Text(_formatFullDate(bus.depTime), style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.brandPrimary)),
                   ],
                 ),
               ),
@@ -575,13 +538,13 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(Icons.check_circle_outline_rounded, size: 14, color: Colors.green.shade600),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: AppSpacing.xxs),
                         Text('Mark as Paid', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
                       ],
                     ),
                   ),
                 ),
-              if (!isPaid) const SizedBox(width: 8),
+              if (!isPaid) const SizedBox(width: AppSpacing.xs),
               if (bus.deeplink.isNotEmpty)
                 GestureDetector(
                   onTap: () async {
@@ -593,9 +556,9 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)]),
+                      gradient: const LinearGradient(colors: [AppColors.success, Color(0xFF66BB6A)]),
                       borderRadius: BorderRadius.circular(10),
-                      boxShadow: [BoxShadow(color: const Color(0xFF4CAF50).withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))],
+                      boxShadow: [BoxShadow(color: AppColors.success.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -614,18 +577,18 @@ class _TripTicketsScreenState extends State<TripTicketsScreen> {
     );
   }
 
-  Widget _buildPriceSummary() {
+  Widget _buildPriceSummary(BuildContext context) {
     final outPrice = _trip.outboundFlight?.price ?? 0;
     final retPrice = _trip.returnFlight?.price ?? 0;
     final busPrice = _trip.busJourney?.price ?? 0;
     final total = outPrice + retPrice + busPrice;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.lg),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [AppTheme.primaryColor, AppTheme.secondaryColor]),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 8))],
+        gradient: const LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary]),
+        borderRadius: AppRadius.borderXl,
+        boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.3), blurRadius: 16, offset: const Offset(0, 8))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -777,14 +740,15 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final ew = context.ew;
     return Container(
       constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.75),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: ew.cardColor,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       child: SingleChildScrollView(
-        padding: EdgeInsets.only(left: 24, right: 24, top: 16, bottom: MediaQuery.of(context).viewInsets.bottom + 24),
+        padding: EdgeInsets.only(left: AppSpacing.xl, right: AppSpacing.xl, top: AppSpacing.md, bottom: MediaQuery.of(context).viewInsets.bottom + AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -792,16 +756,16 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
             Center(
               child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
             ),
-            const SizedBox(height: 20),
-            Text('Mark as Paid', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-            const SizedBox(height: 4),
+            const SizedBox(height: AppSpacing.lg),
+            Text('Mark as Paid', style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: AppSpacing.xxs),
             Text(
               widget.isEditing
                   ? 'Edit ${widget.flightType[0].toUpperCase()}${widget.flightType.substring(1)}${widget.flightType == 'bus' ? '' : ' flight'} payment'
                   : '${widget.flightType[0].toUpperCase()}${widget.flightType.substring(1)}${widget.flightType == 'bus' ? '' : ' flight'}',
-              style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Amount + currency
             Row(
               children: [
@@ -813,24 +777,24 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
                     style: GoogleFonts.poppins(fontSize: 14),
                     decoration: InputDecoration(
                       hintText: 'Amount paid',
-                      hintStyle: GoogleFonts.poppins(color: AppTheme.textSecondary, fontSize: 14),
-                      prefixIcon: const Icon(Icons.attach_money_rounded, size: 20, color: AppTheme.primaryColor),
+                      hintStyle: GoogleFonts.poppins(color: ew.textSecondary, fontSize: 14),
+                      prefixIcon: const Icon(Icons.attach_money_rounded, size: 20, color: AppColors.brandPrimary),
                       filled: true,
-                      fillColor: const Color(0xFFF8F5FF),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+                      fillColor: AppColors.lightSurfaceVariant,
+                      border: OutlineInputBorder(borderRadius: AppRadius.borderLg, borderSide: BorderSide.none),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(color: const Color(0xFFF8F5FF), borderRadius: BorderRadius.circular(14)),
+                    decoration: BoxDecoration(color: AppColors.lightSurfaceVariant, borderRadius: AppRadius.borderLg),
                     child: DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
                         value: _currency,
                         isExpanded: true,
-                        style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textPrimary),
+                        style: GoogleFonts.poppins(fontSize: 14, color: ew.textPrimary),
                         items: _currencies.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                         onChanged: (v) => setState(() => _currency = v ?? 'EUR'),
                       ),
@@ -839,13 +803,13 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Paid by
-            Text('Who paid?', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            Text('Who paid?', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: ew.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: widget.members.map((m) {
                 final selected = _paidBy == m.userId;
                 return GestureDetector(
@@ -853,21 +817,21 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? AppTheme.primaryColor : const Color(0xFFF8F5FF),
+                      color: selected ? AppColors.brandPrimary : AppColors.lightSurfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Text(m.displayName, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: selected ? Colors.white : AppTheme.textPrimary)),
+                    child: Text(m.displayName, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: selected ? Colors.white : ew.textPrimary)),
                   ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             // Paid for
-            Text('Paid for', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
-            const SizedBox(height: 8),
+            Text('Paid for', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: ew.textPrimary)),
+            const SizedBox(height: AppSpacing.xs),
             Wrap(
-              spacing: 8,
-              runSpacing: 8,
+              spacing: AppSpacing.xs,
+              runSpacing: AppSpacing.xs,
               children: widget.members.map((m) {
                 final selected = _selectedMembers.contains(m.userId);
                 return GestureDetector(
@@ -883,7 +847,7 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: selected ? const Color(0xFF4CAF50) : const Color(0xFFF8F5FF),
+                      color: selected ? AppColors.success : AppColors.lightSurfaceVariant,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
@@ -891,16 +855,16 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
                       children: [
                         if (selected) ...[
                           const Icon(Icons.check_rounded, size: 14, color: Colors.white),
-                          const SizedBox(width: 4),
+                          const SizedBox(width: AppSpacing.xxs),
                         ],
-                        Text(m.displayName, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: selected ? Colors.white : AppTheme.textPrimary)),
+                        Text(m.displayName, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: selected ? Colors.white : ew.textPrimary)),
                       ],
                     ),
                   ),
                 );
               }).toList(),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppSpacing.xl),
             SizedBox(
               width: double.infinity,
               height: 52,
@@ -908,7 +872,7 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
                 onPressed: _isSaving ? null : _save,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.shade600,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
                   elevation: 0,
                 ),
                 child: _isSaving
@@ -922,3 +886,7 @@ class _MarkPaidSheetState extends State<_MarkPaidSheet> {
     );
   }
 }
+
+
+
+

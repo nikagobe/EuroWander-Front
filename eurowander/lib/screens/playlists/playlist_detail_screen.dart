@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/playlist.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/playlist_provider.dart';
+import '../../widgets/widgets.dart';
 import 'playlist_builder_screen.dart';
 import 'import_wizard_sheet.dart';
 
@@ -35,23 +35,11 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Consumer<PlaylistProvider>(
+    return AppScaffold(
+      child: Consumer<PlaylistProvider>(
                 builder: (context, provider, _) {
                   if (provider.isLoadingDetail) {
-                    return const Center(child: CircularProgressIndicator(color: AppTheme.primaryColor));
+                    return const ShimmerList();
                   }
                   if (provider.detailError != null) {
                     return Center(child: Text('Error: ${provider.detailError}'));
@@ -69,10 +57,6 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     ],
                   );
                 },
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -84,15 +68,15 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           playlist.title,
-          style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         background: Stack(
           fit: StackFit.expand,
           children: [
             playlist.coverPhotoUrl.isNotEmpty
                 ? Image.network(playlist.coverPhotoUrl, fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: AppTheme.primaryColor))
-                : Container(color: AppTheme.primaryColor),
+                    errorBuilder: (_, _, _) => Container(color: AppColors.brandPrimary))
+                : Container(color: AppColors.brandPrimary),
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -109,41 +93,42 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   }
 
   Widget _buildInfoSection(Playlist playlist) {
+    final ew = context.ew;
     final vibes = playlist.vibes.map((v) => PlaylistVibe.fromString(v)).toList();
     final budget = BudgetTier.fromString(playlist.budgetTier);
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Creator
           Text(
             'By ${playlist.creatorFirstName} ${playlist.creatorLastName}',
-            style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary),
+            style: Theme.of(context).textTheme.bodySmall,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: AppSpacing.xs),
           // Description
           if (playlist.description.isNotEmpty)
-            Text(playlist.description, style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textPrimary)),
-          const SizedBox(height: 12),
+            Text(playlist.description, style: TextStyle(fontSize: 14, color: ew.textPrimary)),
+          const SizedBox(height: AppSpacing.sm),
           // Badges
           Wrap(
-            spacing: 8,
+            spacing: AppSpacing.xs,
             runSpacing: 6,
             children: [
-              ...vibes.map((vibe) => _buildChip(vibe.displayName, AppTheme.primaryColor)),
+              ...vibes.map((vibe) => _buildChip(vibe.displayName, AppColors.brandPrimary)),
               _buildChip(budget.displayName, Colors.amber.shade700),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: AppSpacing.sm),
           // Stats row
           Row(
             children: [
               _buildStatItem(Icons.favorite, '${playlist.likeCount} likes'),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               _buildStatItem(Icons.download_rounded, '${playlist.importCount} imports'),
-              const SizedBox(width: 16),
+              const SizedBox(width: AppSpacing.md),
               _buildStatItem(Icons.star_rounded, '${playlist.averageRating.toStringAsFixed(1)} (${playlist.reviewCount})'),
             ],
           ),
@@ -157,7 +142,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     final isOwner = currentUserId == playlist.creatorId;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Row(
         children: [
           Expanded(
@@ -177,7 +162,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             child: _ActionButton(
               icon: Icons.download_rounded,
               label: 'Import',
-              color: AppTheme.primaryColor,
+              color: AppColors.brandPrimary,
               onTap: () => _showImportWizard(playlist),
             ),
           ),
@@ -231,19 +216,20 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
 
   Widget _buildTagsSection(Playlist playlist) {
     if (playlist.tags.isEmpty) return const SizedBox.shrink();
+    final ew = context.ew;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 0),
       child: Wrap(
         spacing: 6,
         runSpacing: 6,
         children: playlist.tags.map((tag) {
           return Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xxs),
             decoration: BoxDecoration(
               color: Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.borderMd,
             ),
-            child: Text('#$tag', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+            child: Text('#$tag', style: TextStyle(fontSize: 12, color: ew.textSecondary)),
           );
         }).toList(),
       ),
@@ -262,10 +248,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
 
       slivers.add(SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.xs),
           child: Text(
             'Day $day',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary),
+            style: Theme.of(context).textTheme.headlineSmall,
           ),
         ),
       ));
@@ -275,14 +261,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
         if (slotItems.isEmpty) continue;
         slivers.add(SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, AppSpacing.xxs),
             child: Row(
               children: [
                 Text(_timeSlotIcon(slot), style: const TextStyle(fontSize: 16)),
                 const SizedBox(width: 6),
                 Text(
                   _timeSlotLabel(slot),
-                  style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textSecondary),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.ew.textSecondary),
                 ),
               ],
             ),
@@ -302,15 +288,15 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   Widget _buildItemCard(PlaylistItem item) {
     final isCustom = item.itemType == 'custom';
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: AppSpacing.xxs),
       decoration: BoxDecoration(
-        color: isCustom ? Colors.amber.shade50 : Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: isCustom ? Colors.amber.shade50 : context.ew.cardColor,
+        borderRadius: AppRadius.borderMd,
         border: isCustom ? Border.all(color: Colors.amber.shade200) : null,
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 4, offset: const Offset(0, 2))],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         child: Row(
           children: [
             // Photo
@@ -321,11 +307,11 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 height: 56,
                 child: item.photoUrl.isNotEmpty
                     ? Image.network(item.photoUrl, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _buildPlaceholderIcon(item))
+                        errorBuilder: (_, _, _) => _buildPlaceholderIcon(item))
                     : _buildPlaceholderIcon(item),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.sm),
             // Info
             Expanded(
               child: Column(
@@ -337,7 +323,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                       Expanded(
                         child: Text(
                           item.name,
-                          style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 13),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -345,15 +331,15 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     ],
                   ),
                   if (item.category.isNotEmpty)
-                    Text(item.category, style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
-                  const SizedBox(height: 4),
+                    Text(item.category, style: TextStyle(fontSize: 11, color: context.ew.textSecondary)),
+                  const SizedBox(height: AppSpacing.xxs),
                   Row(
                     children: [
                       if (item.priceIndicator.isNotEmpty)
                         Text(item.priceIndicator, style: const TextStyle(fontSize: 11, color: Colors.green)),
-                      if (item.priceIndicator.isNotEmpty) const SizedBox(width: 8),
+                      if (item.priceIndicator.isNotEmpty) const SizedBox(width: AppSpacing.xs),
                       Text('~${item.suggestedDurationMinutes}min',
-                          style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+                          style: TextStyle(fontSize: 11, color: context.ew.textSecondary)),
                     ],
                   ),
                 ],
@@ -388,15 +374,15 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     return Consumer<PlaylistProvider>(
       builder: (context, provider, _) {
         return Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Divider(),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.sm),
               Row(
                 children: [
-                  Text('Reviews', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text('Reviews', style: Theme.of(context).textTheme.headlineSmall),
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () => _showAddReviewSheet(),
@@ -405,14 +391,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.xs),
               if (provider.reviews.isEmpty && !provider.isLoadingReviews)
-                const Text('No reviews yet. Be the first!', style: TextStyle(color: AppTheme.textSecondary)),
+                Text('No reviews yet. Be the first!', style: TextStyle(color: context.ew.textSecondary)),
               ...provider.reviews.map((review) => _buildReviewCard(review)),
               if (provider.isLoadingReviews)
                 const Center(child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                  padding: EdgeInsets.all(AppSpacing.md),
+                  child: CircularProgressIndicator(color: AppColors.brandPrimary),
                 )),
               if (provider.hasMoreReviews && !provider.isLoadingReviews)
                 Center(
@@ -425,7 +411,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                     child: const Text('Load more'),
                   ),
                 ),
-              const SizedBox(height: 32),
+              const SizedBox(height: AppSpacing.xxl),
             ],
           ),
         );
@@ -436,11 +422,11 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   Widget _buildReviewCard(PlaylistReview review) {
     final currentUserId = context.read<AuthProvider>().user?.id;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.borderMd,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,7 +434,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
           Row(
             children: [
               Text('${review.userFirstName} ${review.userLastName}',
-                  style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(fontSize: 13)),
               const Spacer(),
               ...List.generate(5, (i) => Icon(
                 i < review.rating ? Icons.star : Icons.star_border,
@@ -476,10 +462,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
               child: Text(review.comment, style: const TextStyle(fontSize: 13)),
             ),
           Padding(
-            padding: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.only(top: AppSpacing.xxs),
             child: Text(
               _formatDate(review.createdAt),
-              style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary),
+              style: TextStyle(fontSize: 11, color: context.ew.textSecondary),
             ),
           ),
         ],
@@ -501,8 +487,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Write a Review', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
+              Text('Write a Review', style: Theme.of(ctx).textTheme.headlineSmall),
+              const SizedBox(height: AppSpacing.md),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (i) => IconButton(
@@ -558,8 +544,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
 
   Widget _buildChip(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: AppSpacing.xxs),
+      decoration: BoxDecoration(color: color.withOpacity(0.15), borderRadius: AppRadius.borderMd),
       child: Text(text, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color)),
     );
   }
@@ -567,9 +553,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
   Widget _buildStatItem(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppTheme.textSecondary),
-        const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+        Icon(icon, size: 16, color: context.ew.textSecondary),
+        const SizedBox(width: AppSpacing.xxs),
+        Text(text, style: TextStyle(fontSize: 12, color: context.ew.textSecondary)),
       ],
     );
   }

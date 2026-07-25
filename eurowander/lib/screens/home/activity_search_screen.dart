@@ -8,6 +8,7 @@ import '../../models/attraction.dart';
 import '../../models/restaurant.dart';
 import '../../models/saved_trip.dart';
 import '../../services/api_service.dart';
+import '../../widgets/widgets.dart';
 import 'attraction_detail_screen.dart';
 import 'restaurant_detail_screen.dart';
 
@@ -159,8 +160,11 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
       }
       if (mounted) {
         setState(() {
-          if (refresh || page != null) _attractions = result.data;
-          else _attractions.addAll(result.data);
+          if (refresh || page != null) {
+            _attractions = result.data;
+          } else {
+            _attractions.addAll(result.data);
+          }
           _attractionTotalPages = result.totalPages;
           _isLoadingAttractions = false;
         });
@@ -208,8 +212,11 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
               priceLevel: a.ticketPrice,
               isSponsored: false,
             )).toList();
-            if (refresh || page != null) _restaurants = mapped;
-            else _restaurants.addAll(mapped);
+            if (refresh || page != null) {
+              _restaurants = mapped;
+            } else {
+              _restaurants.addAll(mapped);
+            }
             _restaurantTotalPages = result.totalPages;
             _isLoadingRestaurants = false;
           });
@@ -224,8 +231,11 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
         );
         if (mounted) {
           setState(() {
-            if (refresh || page != null) _restaurants = result.data;
-            else _restaurants.addAll(result.data);
+            if (refresh || page != null) {
+              _restaurants = result.data;
+            } else {
+              _restaurants.addAll(result.data);
+            }
             _restaurantTotalPages = result.totalPages;
             _updateToken = result.updateToken;
             _isLoadingRestaurants = false;
@@ -282,65 +292,21 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 480),
-              child: Column(
-                children: [
-                  _buildAppBar(),
-                  _buildCitySearch(),
-                  if (_selectedDestination != null) ...[
-                    _buildQuerySearch(),
-                    _buildMap(),
-                    _buildSortRow(),
-                    _buildTabs(),
-                    Expanded(child: _buildTabContent()),
-                  ] else
-                    Expanded(child: _buildEmptyState()),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
+    return AppScaffold(
+      child: Column(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 42, height: 42,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
-              ),
-              child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary),
-            ),
+          EWAppBar(
+            title: _selectedDestination != null ? 'Explore ${_selectedDestination!.name}' : 'Discover Places',
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              _selectedDestination != null ? 'Explore ${_selectedDestination!.name}' : 'Discover Places',
-              style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
+          _buildCitySearch(),
+          if (_selectedDestination != null) ...[
+            _buildQuerySearch(),
+            _buildMap(),
+            _buildSortRow(),
+            _buildTabs(),
+            Expanded(child: _buildTabContent()),
+          ] else
+            Expanded(child: _buildEmptyState()),
         ],
       ),
     );
@@ -394,7 +360,7 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: _destinations.length,
-                separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade100),
+                separatorBuilder: (_, _) => Divider(height: 1, color: Colors.grey.shade100),
                 itemBuilder: (_, i) {
                   final dest = _destinations[i];
                   return ListTile(
@@ -557,16 +523,10 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.travel_explore_rounded, size: 56, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text('Search for a city to explore', style: GoogleFonts.poppins(fontSize: 15, color: AppTheme.textSecondary)),
-          Text('attractions and restaurants', style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary)),
-        ],
-      ),
+    return const EmptyState(
+      icon: Icons.travel_explore_rounded,
+      title: 'Search for a city to explore',
+      subtitle: 'attractions and restaurants',
     );
   }
 
@@ -622,7 +582,7 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
               child: SizedBox(
                 width: 72, height: 72,
                 child: a.photoUrl.isNotEmpty
-                    ? Image.network(a.photoUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder(Icons.attractions_rounded, Colors.deepOrange))
+                    ? Image.network(a.photoUrl, fit: BoxFit.cover, errorBuilder: (_, _, _) => _placeholder(Icons.attractions_rounded, Colors.deepOrange))
                     : _placeholder(Icons.attractions_rounded, Colors.deepOrange),
               ),
             ),
@@ -722,7 +682,7 @@ class _ActivitySearchScreenState extends State<ActivitySearchScreen> with Single
               child: SizedBox(
                 width: 72, height: 72,
                 child: r.photoUrl.isNotEmpty
-                    ? Image.network(r.photoUrl, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _placeholder(Icons.restaurant_rounded, Colors.green))
+                    ? Image.network(r.photoUrl, fit: BoxFit.cover, errorBuilder: (_, _, _) => _placeholder(Icons.restaurant_rounded, Colors.green))
                     : _placeholder(Icons.restaurant_rounded, Colors.green),
               ),
             ),
