@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../models/city.dart';
 import '../../../models/template.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/template_provider.dart';
-import 'step_basic_info.dart';
-import 'step_define_route.dart';
-import 'step_leg_recommendations.dart';
-import 'step_review.dart';
+import '../../../services/api_service.dart';
+import 'template_hotel_picker_screen.dart';
 
 class CreateTemplateScreen extends StatefulWidget {
   final String? editTemplateId;
-
   const CreateTemplateScreen({super.key, this.editTemplateId});
 
   @override
@@ -19,10 +18,9 @@ class CreateTemplateScreen extends StatefulWidget {
 }
 
 class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
-  final PageController _pageController = PageController();
-  int _currentStep = 0;
+  final ApiService _apiService = ApiService();
 
-  // Step 1: Basic Info
+  // Basic info
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _coverUrlController = TextEditingController();
@@ -31,253 +29,448 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
   List<String> _tags = [];
   String _currency = 'EUR';
 
-  // Step 2: Route
-  List<CreateTemplateLeg> _legs = [];
+  // Legs
+  List<_LegDraft> _legs = [];
 
   bool get _isEditing => widget.editTemplateId != null;
+  bool _isSaving = false;
+
+  static const _availableTags = [
+    'budget', 'luxury', 'backpacking', 'romantic', 'family',
+    '7-day', '14-day', 'weekend', 'adventure', 'cultural', 'beach', 'city-break',
+  ];
 
   @override
   void initState() {
     super.initState();
-    if (_isEditing) {
-      _loadExistingTemplate();
-    }
+    if (_isEditing) _loadExisting();
   }
 
-  Future<void> _loadExistingTemplate() async {
+  Future<void> _loadExisting() async {
     final provider = context.read<TemplateProvider>();
     await provider.loadTemplateDetail(widget.editTemplateId!);
-    final template = provider.currentTemplate;
-    if (template != null && mounted) {
+    final t = provider.currentTemplate;
+    if (t != null && mounted) {
       setState(() {
-        _titleController.text = template.title;
-        _descriptionController.text = template.description;
-        _coverUrlController.text = template.coverPhotoUrl;
-        _budgetMinController.text =
-            template.estimatedBudgetMin?.toInt().toString() ?? '';
-        _budgetMaxController.text =
-            template.estimatedBudgetMax?.toInt().toString() ?? '';
-        _tags = List.from(template.tags);
-        _currency = template.currency;
-        _legs = template.legs
-            .map((l) => CreateTemplateLeg(
-                  order: l.order,
-                  city: l.city,
-                  country: l.country,
-                  days: l.days,
-                  flightRecommendation: l.flightRecommendation,
-                  transportRecommendation: l.transportRecommendation,
-                  hotelRecommendations: l.hotelRecommendations,
-                  playlistId: l.playlistId,
-                  restaurantIds: l.restaurantIds,
-                  authorNotes: l.authorNotes,
-                ))
-            .toList();
+        _titleController.text = t.title;
+        _descriptionController.text = t.description;
+        _coverUrlController.text = t.coverPhotoUrl;
+        _budgetMinController.text = t.estimatedBudgetMin?.toInt().toString() ?? '';
+        _budgetMaxController.text = t.estimatedBudgetMax?.toInt().toString() ?? '';
+        _tags = List.from(t.tags);
+        _currency = t.currency;
+        _legs = t.legs.map((l) => _LegDraft(
+          city: l.city, country: l.country, days: l.days,
+          hotelPicks: l.hotelRecommendations?.primaryPicks ?? [],
+          authorNotes: l.authorNotes,
+        )).toList();
       });
     }
   }
 
   @override
   void dispose() {
-    _pageController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _coverUrlController.dispose();
     _budgetMinController.dispose();
     _budgetMaxController.dispose();
+    for (final leg in _legs) {
+      leg.cityController.dispose();
+      leg.notesController.dispose();
+    }
     super.dispose();
   }
 
-  void _nextStep() {
-    if (_currentStep < 3) {
-      setState(() => _currentStep++);
-      _pageController.nextPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
+  void _addLeg() {
+    setState(() => _legs.add(_LegDraft()));
   }
 
-  void _previousStep() {
-    if (_currentStep > 0) {
-      setState(() => _currentStep--);
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
+  void _removeLeg(int index) {
+    setState(() {
+      _legs[index].cityController.dispose();
+      _legs[index].notesController.dispose();
+      _legs.removeAt(index);
+    });
   }
 
-  Future<void> _saveAsDraft() async {
+  List<CreateTemplateLeg> _buildLegs() {
+    return _legs.asMap().entries.map((e) {
+      final i = e.key;
+      final leg = e.value;
+      return CreateTemplateLeg(
+        order: i + 1, city: leg.city, country: leg.country, days: leg.days,
+        hotelRecommendations: leg.hotelPicks.isNotEmpty ? HotelRecommendations(
+          city: leg.city, country: leg.country, primaryPicks: leg.hotelPicks,
+          fallbackNeighborhood: '', fallbackStarMin: 1, fallbackStarMax: 5,
+        ) : null,
+        restaurantIds: [], authorNotes: leg.notesController.text,
+      );
+    }).toList();
+  }
+
+  Future<void> _save({bool publish = false}) async {
+    if (_titleController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a title')));
+      return;
+    }
+    if (_legs.isEmpty || _legs.first.city.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add at least one city')));
+      return;
+    }
+
+    setState(() => _isSaving = true);
     final userId = context.read<AuthProvider>().user?.id ?? '';
     final provider = context.read<TemplateProvider>();
+    final legs = _buildLegs();
 
-    if (_isEditing) {
-      await provider.updateTemplate(
-        templateId: widget.editTemplateId!,
-        userId: userId,
-        request: UpdateTemplateRequest(
-          title: _titleController.text,
-          description: _descriptionController.text,
-          coverPhotoUrl: _coverUrlController.text,
-          tags: _tags,
-          legs: _legs,
+    try {
+      TemplateResponse? result;
+      if (_isEditing) {
+        result = await provider.updateTemplate(templateId: widget.editTemplateId!, userId: userId, request: UpdateTemplateRequest(
+          title: _titleController.text, description: _descriptionController.text, coverPhotoUrl: _coverUrlController.text,
+          tags: _tags, legs: legs, estimatedBudgetMin: double.tryParse(_budgetMinController.text),
+          estimatedBudgetMax: double.tryParse(_budgetMaxController.text), currency: _currency,
+        ));
+      } else {
+        result = await provider.createTemplate(CreateTemplateRequest(
+          authorId: userId, title: _titleController.text, description: _descriptionController.text,
+          coverPhotoUrl: _coverUrlController.text, tags: _tags, legs: legs,
           estimatedBudgetMin: double.tryParse(_budgetMinController.text),
-          estimatedBudgetMax: double.tryParse(_budgetMaxController.text),
-          currency: _currency,
-        ),
-      );
-    } else {
-      await provider.createTemplate(CreateTemplateRequest(
-        authorId: userId,
-        title: _titleController.text,
-        description: _descriptionController.text,
-        coverPhotoUrl: _coverUrlController.text,
-        tags: _tags,
-        legs: _legs,
-        estimatedBudgetMin: double.tryParse(_budgetMinController.text),
-        estimatedBudgetMax: double.tryParse(_budgetMaxController.text),
-        currency: _currency,
-      ));
+          estimatedBudgetMax: double.tryParse(_budgetMaxController.text), currency: _currency,
+        ));
+      }
+      if (publish && result != null) {
+        await provider.publishTemplate(templateId: result.id, userId: userId);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(publish ? 'Template published!' : 'Template saved as draft')));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Template saved as draft')),
-      );
-      Navigator.pop(context);
-    }
+    if (mounted) setState(() => _isSaving = false);
   }
 
-  Future<void> _publish() async {
-    final userId = context.read<AuthProvider>().user?.id ?? '';
-    final provider = context.read<TemplateProvider>();
-
-    // Save first
-    TemplateResponse? result;
-    if (_isEditing) {
-      result = await provider.updateTemplate(
-        templateId: widget.editTemplateId!,
-        userId: userId,
-        request: UpdateTemplateRequest(
-          title: _titleController.text,
-          description: _descriptionController.text,
-          coverPhotoUrl: _coverUrlController.text,
-          tags: _tags,
-          legs: _legs,
-          estimatedBudgetMin: double.tryParse(_budgetMinController.text),
-          estimatedBudgetMax: double.tryParse(_budgetMaxController.text),
-          currency: _currency,
-        ),
-      );
-    } else {
-      result = await provider.createTemplate(CreateTemplateRequest(
-        authorId: userId,
-        title: _titleController.text,
-        description: _descriptionController.text,
-        coverPhotoUrl: _coverUrlController.text,
-        tags: _tags,
-        legs: _legs,
-        estimatedBudgetMin: double.tryParse(_budgetMinController.text),
-        estimatedBudgetMax: double.tryParse(_budgetMaxController.text),
-        currency: _currency,
-      ));
+  Future<void> _openHotelPicker(int legIndex) async {
+    final leg = _legs[legIndex];
+    if (leg.city.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a city first')));
+      return;
     }
-
-    if (result != null) {
-      await provider.publishTemplate(
-        templateId: result.id,
-        userId: userId,
-      );
-    }
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Template published!')),
-      );
-      Navigator.pop(context);
+    final result = await Navigator.push<List<HotelPick>>(
+      context,
+      MaterialPageRoute(builder: (_) => TemplateHotelPickerScreen(city: leg.city, existingPicks: leg.hotelPicks)),
+    );
+    if (result != null && mounted) {
+      setState(() => _legs[legIndex].hotelPicks = result);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text(
-          _isEditing ? 'Edit Template' : 'Create Template',
-          style: Theme.of(context).textTheme.titleLarge,
+      body: Container(
+        decoration: const BoxDecoration(gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFF8F5FF), Color(0xFFEDE7F6), Color(0xFFF3E5F5)])),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(children: [
+                // App bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(children: [
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).pop(),
+                      child: Container(width: 42, height: 42, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))]), child: const Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: AppTheme.textPrimary)),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(child: Text(_isEditing ? 'Edit Template' : 'Create Template', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.textPrimary))),
+                  ]),
+                ),
+
+                // Scrollable content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      // ─── GENERAL INFO ────────────────────────────
+                      _sectionTitle('GENERAL INFO'),
+                      const SizedBox(height: 12),
+
+                      _label('Title *'),
+                      TextField(controller: _titleController, decoration: _inputDeco('e.g. 7 Days in Spain')),
+                      const SizedBox(height: 14),
+
+                      _label('Description'),
+                      TextField(controller: _descriptionController, maxLines: 3, decoration: _inputDeco('Describe your trip template...')),
+                      const SizedBox(height: 14),
+
+                      _label('Cover Photo URL'),
+                      TextField(controller: _coverUrlController, decoration: _inputDeco('https://...')),
+                      const SizedBox(height: 14),
+
+                      // Tags
+                      _label('Tags'),
+                      const SizedBox(height: 6),
+                      Wrap(spacing: 8, runSpacing: 8, children: _availableTags.map((tag) {
+                        final isSelected = _tags.contains(tag);
+                        return GestureDetector(
+                          onTap: () => setState(() => isSelected ? _tags.remove(tag) : _tags.add(tag)),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isSelected ? AppTheme.primaryColor.withOpacity(0.15) : Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: isSelected ? AppTheme.primaryColor : Colors.grey.withOpacity(0.3)),
+                            ),
+                            child: Text(tag, style: TextStyle(fontSize: 12, color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
+                          ),
+                        );
+                      }).toList()),
+                      const SizedBox(height: 14),
+
+                      // Budget
+                      _label('Estimated Budget'),
+                      const SizedBox(height: 6),
+                      Row(children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.withOpacity(0.3))),
+                          child: DropdownButtonHideUnderline(child: DropdownButton<String>(value: _currency, items: ['EUR', 'USD', 'GBP', 'GEL'].map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 14)))).toList(), onChanged: (v) { if (v != null) setState(() => _currency = v); })),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(child: TextField(controller: _budgetMinController, keyboardType: TextInputType.number, decoration: _inputDeco('Min'))),
+                        const Padding(padding: EdgeInsets.symmetric(horizontal: 6), child: Text('–')),
+                        Expanded(child: TextField(controller: _budgetMaxController, keyboardType: TextInputType.number, decoration: _inputDeco('Max'))),
+                      ]),
+
+                      const SizedBox(height: 28),
+
+                      // ─── CITIES ─────────────────────────────────
+                      _sectionTitle('CITIES'),
+                      const SizedBox(height: 12),
+
+                      ..._legs.asMap().entries.map((e) => _buildLegCard(e.key)),
+
+                      // Add city button
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _addLeg,
+                          icon: const Icon(Icons.add, size: 18), label: const Text('Add city'),
+                          style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.5)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 14)),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // ─── SAVE BUTTONS ───────────────────────────
+                      SizedBox(
+                        width: double.infinity, height: 50,
+                        child: OutlinedButton.icon(
+                          onPressed: _isSaving ? null : () => _save(publish: false),
+                          icon: const Icon(Icons.save_outlined, size: 18), label: const Text('Save as Draft'),
+                          style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: const BorderSide(color: AppTheme.primaryColor), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity, height: 50,
+                        child: ElevatedButton.icon(
+                          onPressed: _isSaving ? null : () => _save(publish: true),
+                          icon: _isSaving ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.rocket_launch, size: 18),
+                          label: Text(_isSaving ? 'Saving...' : 'Publish'),
+                          style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                    ]),
+                  ),
+                ),
+              ]),
+            ),
+          ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Center(
-              child: Text(
-                'Step ${_currentStep + 1} of 4',
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // Progress indicator
-          LinearProgressIndicator(
-            value: (_currentStep + 1) / 4,
-            backgroundColor: Colors.grey.withOpacity(0.2),
-            valueColor:
-                const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-          ),
-          Expanded(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                StepBasicInfo(
-                  titleController: _titleController,
-                  descriptionController: _descriptionController,
-                  coverUrlController: _coverUrlController,
-                  budgetMinController: _budgetMinController,
-                  budgetMaxController: _budgetMaxController,
-                  tags: _tags,
-                  currency: _currency,
-                  onTagsChanged: (tags) => setState(() => _tags = tags),
-                  onCurrencyChanged: (c) => setState(() => _currency = c),
-                  onNext: _nextStep,
-                ),
-                StepDefineRoute(
-                  legs: _legs,
-                  onLegsChanged: (legs) => setState(() => _legs = legs),
-                  onNext: _nextStep,
-                  onBack: _previousStep,
-                ),
-                StepLegRecommendations(
-                  legs: _legs,
-                  onLegsChanged: (legs) => setState(() => _legs = legs),
-                  onNext: _nextStep,
-                  onBack: _previousStep,
-                ),
-                StepReview(
-                  title: _titleController.text,
-                  description: _descriptionController.text,
-                  coverPhotoUrl: _coverUrlController.text,
-                  tags: _tags,
-                  legs: _legs,
-                  currency: _currency,
-                  budgetMin: double.tryParse(_budgetMinController.text),
-                  budgetMax: double.tryParse(_budgetMaxController.text),
-                  onSaveDraft: _saveAsDraft,
-                  onPublish: _publish,
-                  onBack: _previousStep,
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
+  }
+
+  Widget _buildLegCard(int index) {
+    final leg = _legs[index];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // Header
+        Row(children: [
+          Text('📍 City ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          const Spacer(),
+          if (_legs.length > 1) GestureDetector(onTap: () => _removeLeg(index), child: Icon(Icons.delete_outline, size: 20, color: Colors.red.withOpacity(0.7))),
+        ]),
+        const SizedBox(height: 10),
+
+        // City search
+        _CitySearchField(
+          controller: leg.cityController,
+          apiService: _apiService,
+          onCitySelected: (city) {
+            setState(() { leg.city = city.name; leg.country = city.country; });
+          },
+        ),
+        if (leg.country.isNotEmpty)
+          Padding(padding: const EdgeInsets.only(top: 4), child: Text('${leg.country}', style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary))),
+        const SizedBox(height: 10),
+
+        // Days
+        Row(children: [
+          const Text('Days: ', style: TextStyle(fontSize: 14)),
+          SizedBox(width: 60, child: TextField(
+            keyboardType: TextInputType.number, textAlign: TextAlign.center,
+            decoration: _inputDeco(''), controller: TextEditingController(text: leg.days.toString()),
+            onChanged: (v) { final d = int.tryParse(v); if (d != null && d > 0) setState(() => leg.days = d); },
+          )),
+        ]),
+        const SizedBox(height: 12),
+
+        // Hotels
+        Row(children: [
+          const Text('🏨 Hotels', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          const Spacer(),
+          if (leg.hotelPicks.isNotEmpty) Text('${leg.hotelPicks.length} picked', style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor, fontWeight: FontWeight.w500)),
+        ]),
+        const SizedBox(height: 6),
+
+        // Show picks
+        if (leg.hotelPicks.isNotEmpty) ...[
+          ...leg.hotelPicks.map((pick) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(children: [
+              const Text('⭐ ', style: TextStyle(fontSize: 12)),
+              Expanded(child: Text('${pick.name} ${'★' * pick.stars}', style: const TextStyle(fontSize: 13))),
+              if (pick.pricePaid != null) Text('${pick.currency}${pick.pricePaid!.toInt()}/n', style: const TextStyle(fontSize: 11, color: AppTheme.textSecondary)),
+            ]),
+          )),
+          const SizedBox(height: 6),
+        ],
+
+        // Search hotels button
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: () => _openHotelPicker(index),
+            icon: const Icon(Icons.search, size: 16), label: Text(leg.hotelPicks.isEmpty ? 'Search & pick hotels' : 'Change hotel picks'),
+            style: OutlinedButton.styleFrom(foregroundColor: AppTheme.primaryColor, side: BorderSide(color: AppTheme.primaryColor.withOpacity(0.3)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), padding: const EdgeInsets.symmetric(vertical: 10)),
+          ),
+        ),
+        const SizedBox(height: 12),
+
+        // Author notes
+        TextField(controller: leg.notesController, maxLines: 2, decoration: _inputDeco('📝 Tips for travelers in ${leg.city.isNotEmpty ? leg.city : "this city"}...')),
+      ]),
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Row(children: [
+      Expanded(child: Divider(color: Colors.grey.withOpacity(0.3))),
+      Padding(padding: const EdgeInsets.symmetric(horizontal: 10), child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.textSecondary, letterSpacing: 1.5))),
+      Expanded(child: Divider(color: Colors.grey.withOpacity(0.3))),
+    ]);
+  }
+
+  Widget _label(String text) => Padding(padding: const EdgeInsets.only(bottom: 6), child: Text(text, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)));
+
+  InputDecoration _inputDeco(String hint) => InputDecoration(
+    hintText: hint, filled: true, fillColor: Colors.white,
+    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.withOpacity(0.3))),
+    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide(color: Colors.grey.withOpacity(0.3))),
+    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: AppTheme.primaryColor)),
+    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+  );
+}
+
+// ─── Leg Draft ──────────────────────────────────────────────────
+
+class _LegDraft {
+  String city;
+  String country;
+  int days;
+  List<HotelPick> hotelPicks;
+  final TextEditingController cityController;
+  final TextEditingController notesController;
+
+  _LegDraft({this.city = '', this.country = '', this.days = 1, this.hotelPicks = const [], String authorNotes = ''})
+      : cityController = TextEditingController(text: city),
+        notesController = TextEditingController(text: authorNotes);
+}
+
+// ─── City Search Field ──────────────────────────────────────────
+
+class _CitySearchField extends StatefulWidget {
+  final TextEditingController controller;
+  final ApiService apiService;
+  final ValueChanged<City> onCitySelected;
+
+  const _CitySearchField({required this.controller, required this.apiService, required this.onCitySelected});
+
+  @override
+  State<_CitySearchField> createState() => _CitySearchFieldState();
+}
+
+class _CitySearchFieldState extends State<_CitySearchField> {
+  List<City> _suggestions = [];
+  bool _isSearching = false;
+
+  Future<void> _onChanged(String query) async {
+    if (query.length < 2) { setState(() => _suggestions = []); return; }
+    setState(() => _isSearching = true);
+    try {
+      final results = await widget.apiService.searchCities(query, limit: 6);
+      if (mounted) setState(() { _suggestions = results; _isSearching = false; });
+    } catch (_) { if (mounted) setState(() => _isSearching = false); }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [
+      TextField(
+        controller: widget.controller,
+        decoration: InputDecoration(
+          hintText: 'Search city...', filled: true, fillColor: const Color(0xFFF8F5FF),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          suffixIcon: _isSearching ? const Padding(padding: EdgeInsets.all(12), child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.primaryColor))) : const Icon(Icons.search, color: AppTheme.textSecondary, size: 20),
+        ),
+        onChanged: _onChanged,
+      ),
+      if (_suggestions.isNotEmpty)
+        Container(
+          constraints: const BoxConstraints(maxHeight: 200), margin: const EdgeInsets.only(top: 4),
+          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.withOpacity(0.2)), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, 4))]),
+          child: ListView.separated(
+            shrinkWrap: true, padding: EdgeInsets.zero, itemCount: _suggestions.length,
+            separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.withOpacity(0.15)),
+            itemBuilder: (_, i) {
+              final city = _suggestions[i];
+              return ListTile(
+                dense: true, visualDensity: VisualDensity.compact,
+                leading: const Icon(Icons.location_on_outlined, size: 18, color: AppTheme.primaryColor),
+                title: Text(city.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                subtitle: Text(city.country, style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+                onTap: () {
+                  widget.controller.text = city.name;
+                  widget.onCitySelected(city);
+                  setState(() => _suggestions = []);
+                },
+              );
+            },
+          ),
+        ),
+    ]);
   }
 }
