@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -268,17 +267,41 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
       child: Column(
         children: [
           EWAppBar(title: 'Edit Schedule'),
+          _buildHelperBar(context),
           Expanded(child: _buildScheduleList()),
         ],
       ),
     );
   }
 
-
+  Widget _buildHelperBar(BuildContext context) {
+    final ew = context.ew;
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.brandPrimary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.brandPrimary.withOpacity(0.1)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.touch_app_rounded, size: 16, color: AppColors.brandPrimary.withOpacity(0.7)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Drag items to reorder • Tap slot headers to add',
+              style: TextStyle(fontSize: 12, color: ew.textSecondary, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildScheduleList() {
     if (_schedule == null || _schedule!.days.isEmpty) {
-      return Center(child: Text('No schedule data', style: GoogleFonts.poppins(color: AppTheme.textSecondary)));
+      return Center(child: Text('No schedule data', style: TextStyle(color: context.ew.textSecondary)));
     }
 
     return ListView.builder(
@@ -304,6 +327,8 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   Widget _buildDaySection(ScheduleDay day, int dayIndex) {
     final date = DateTime.tryParse(day.date);
     final dayLabel = date != null ? DateFormat('EEEE, MMM d').format(date) : day.date;
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final isToday = day.date == today;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -314,7 +339,9 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [AppTheme.primaryColor, const Color(0xFF8B5CF6)]),
+              gradient: isToday
+                  ? const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)])
+                  : LinearGradient(colors: [AppColors.brandPrimary, const Color(0xFF8B5CF6)]),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -322,10 +349,10 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
-                  child: Text('Day ${dayIndex + 1}', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                  child: Text(isToday ? 'Today' : 'Day ${dayIndex + 1}', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.white)),
                 ),
                 const SizedBox(width: 10),
-                Text(dayLabel, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
+                Text(dayLabel, style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
               ],
             ),
           ),
@@ -347,6 +374,7 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   }
 
   Widget _buildSlotSection(String dayDate, String slot, List<ScheduleItem> items) {
+    final ew = context.ew;
     return DragTarget<_DragData>(
       onWillAcceptWithDetails: (_) => true,
       onAcceptWithDetails: (details) {
@@ -358,9 +386,9 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
         return Container(
           margin: const EdgeInsets.only(bottom: 6),
           decoration: BoxDecoration(
-            color: isHovering ? AppTheme.primaryColor.withOpacity(0.06) : Colors.transparent,
+            color: isHovering ? AppColors.brandPrimary.withOpacity(0.06) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
-            border: isHovering ? Border.all(color: AppTheme.primaryColor, width: 1.5) : null,
+            border: isHovering ? Border.all(color: AppColors.brandPrimary, width: 1.5) : null,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,7 +399,7 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: ew.cardColor,
                     borderRadius: BorderRadius.circular(10),
                     boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 4)],
                   ),
@@ -379,23 +407,23 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                     children: [
                       Icon(_getSlotIcon(slot), size: 16, color: _getSlotColor(slot)),
                       const SizedBox(width: 6),
-                      Text(_getSlotLabel(slot), style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _getSlotColor(slot))),
+                      Text(_getSlotLabel(slot), style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: _getSlotColor(slot))),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: AppTheme.primaryColor.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+                        decoration: BoxDecoration(color: AppColors.brandPrimary.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.add_rounded, size: 14, color: AppTheme.primaryColor),
+                            Icon(Icons.add_rounded, size: 14, color: AppColors.brandPrimary),
                             const SizedBox(width: 2),
-                            Text('Add', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.primaryColor)),
+                            Text('Add', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
                           ],
                         ),
                       ),
                       if (isHovering) ...[
                         const SizedBox(width: 8),
-                        Text('Drop here', style: GoogleFonts.poppins(fontSize: 10, color: AppTheme.primaryColor, fontWeight: FontWeight.w600)),
+                        Text('Drop here', style: TextStyle(fontSize: 10, color: AppColors.brandPrimary, fontWeight: FontWeight.w600)),
                       ],
                     ],
                   ),
@@ -456,7 +484,7 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
             children: [
               Icon(_getItemIcon(item.itemType), size: 18, color: _getItemColor(item.itemType)),
               const SizedBox(width: 8),
-              Flexible(child: Text(item.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
+              Flexible(child: Text(item.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), overflow: TextOverflow.ellipsis)),
             ],
           ),
         ),
@@ -470,12 +498,13 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   }
 
   Widget _buildItemContent(ScheduleItem item, bool isMovable, int index) {
+    final ew = context.ew;
     final isCustom = item.itemType.toLowerCase() == 'custom';
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: isCustom ? const Color(0xFFFFF8E1) : Colors.white,
+        color: isCustom ? const Color(0xFFFFF8E1) : ew.cardColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: isCustom ? Colors.amber.withOpacity(0.3) : _getItemColor(item.itemType).withOpacity(0.12)),
       ),
@@ -517,16 +546,16 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: AppTheme.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text(item.title, style: Theme.of(context).textTheme.labelLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
                     if (item.subtitle.isNotEmpty)
-                      Text(item.subtitle, style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                      Text(item.subtitle, style: TextStyle(fontSize: 11, color: ew.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
                   ],
                 ),
               ),
               // Options menu
               if (isMovable)
                 PopupMenuButton<String>(
-                  icon: Icon(Icons.more_vert_rounded, size: 18, color: AppTheme.textSecondary),
+                  icon: Icon(Icons.more_vert_rounded, size: 18, color: ew.textSecondary),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -538,19 +567,19 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                   },
                   itemBuilder: (context) => [
                     PopupMenuItem(value: 'edit_time', child: Row(children: [
-                      Icon(Icons.schedule_rounded, size: 18, color: AppTheme.primaryColor),
+                      Icon(Icons.schedule_rounded, size: 18, color: AppColors.brandPrimary),
                       const SizedBox(width: 8),
-                      Text('Edit time', style: GoogleFonts.poppins(fontSize: 13)),
+                      const Text('Edit time'),
                     ])),
                     PopupMenuItem(value: 'duplicate', child: Row(children: [
                       Icon(Icons.copy_rounded, size: 18, color: Colors.blue.shade600),
                       const SizedBox(width: 8),
-                      Text('Duplicate', style: GoogleFonts.poppins(fontSize: 13)),
+                      const Text('Duplicate'),
                     ])),
                     PopupMenuItem(value: 'remove', child: Row(children: [
                       Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red.shade600),
                       const SizedBox(width: 8),
-                      Text('Remove', style: GoogleFonts.poppins(fontSize: 13, color: Colors.red.shade600)),
+                      Text('Remove', style: TextStyle(color: Colors.red.shade600)),
                     ])),
                   ],
                 ),
@@ -616,9 +645,9 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                 children: [
                   Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
                   const SizedBox(height: 16),
-                  Text('Add to $dayLabel • ${_getSlotLabel(slot)}', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                  Text('Add to $dayLabel • ${_getSlotLabel(slot)}', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 4),
-                  Text('Tap to schedule or duplicate an activity', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textSecondary)),
+                  Text('Tap to schedule or duplicate an activity', style: TextStyle(fontSize: 12, color: context.ew.textSecondary)),
                   const SizedBox(height: 16),
                   Expanded(
                     child: ListView.separated(
@@ -676,15 +705,15 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(item.name, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                      Text(item.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
                                       Text(
                                         isHere ? 'Tap to duplicate here' : 'Currently: ${_formatDaySlot(item.currentDay, item.currentSlot)}',
-                                        style: GoogleFonts.poppins(fontSize: 11, color: isHere ? item.color : AppTheme.textSecondary),
+                                        style: TextStyle(fontSize: 11, color: isHere ? item.color : context.ew.textSecondary),
                                       ),
                                     ],
                                   ),
                                 ),
-                                Icon(isHere ? Icons.copy_rounded : Icons.add_circle_outline_rounded, size: 20, color: isHere ? item.color : AppTheme.primaryColor),
+                                Icon(isHere ? Icons.copy_rounded : Icons.add_circle_outline_rounded, size: 20, color: isHere ? item.color : AppColors.brandPrimary),
                               ],
                             ),
                           ),
@@ -750,7 +779,7 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   }
 
   Color _getSlotColor(String slot) {
-    switch (slot) { case 'morning': return const Color(0xFFF59E0B); case 'midday': return const Color(0xFFEF6C00); case 'evening': return const Color(0xFF7C3AED); case 'night': return const Color(0xFF1E3A5F); default: return AppTheme.textSecondary; }
+    switch (slot) { case 'morning': return const Color(0xFFF59E0B); case 'midday': return const Color(0xFFEF6C00); case 'evening': return const Color(0xFF7C3AED); case 'night': return const Color(0xFF1E3A5F); default: return AppColors.lightTextSecondary; }
   }
 
   IconData _getItemIcon(String t) {
@@ -758,7 +787,7 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   }
 
   Color _getItemColor(String t) {
-    switch (t.toLowerCase()) { case 'flight': return const Color(0xFF2196F3); case 'bus': case 'transit': return const Color(0xFF4CAF50); case 'hotel_checkin': case 'hotel_checkout': return const Color(0xFFFF9800); case 'attraction': return const Color(0xFFFF5722); case 'restaurant': return const Color(0xFF795548); case 'custom': return const Color(0xFFF9A825); default: return AppTheme.primaryColor; }
+    switch (t.toLowerCase()) { case 'flight': return const Color(0xFF2196F3); case 'bus': case 'transit': return const Color(0xFF4CAF50); case 'hotel_checkin': case 'hotel_checkout': return const Color(0xFFFF9800); case 'attraction': return const Color(0xFFFF5722); case 'restaurant': return const Color(0xFF795548); case 'custom': return const Color(0xFFF9A825); default: return AppColors.brandPrimary; }
   }
 }
 
@@ -809,11 +838,11 @@ class _EditTimeSheetState extends State<_EditTimeSheet> {
         children: [
           Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 20),
-          Text(widget.title, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(widget.title, style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 4),
-          Text(widget.item.title, style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+          Text(widget.item.title, style: TextStyle(fontSize: 13, color: AppColors.lightTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 16),
-          Text('Day', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
+          const Text('Day', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           SizedBox(
             height: 56,
@@ -830,12 +859,12 @@ class _EditTimeSheetState extends State<_EditTimeSheet> {
                   onTap: () => setState(() => _selectedDate = day.date),
                   child: Container(
                     width: 52,
-                    decoration: BoxDecoration(color: isSelected ? AppTheme.primaryColor : Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
+                    decoration: BoxDecoration(color: isSelected ? AppColors.brandPrimary : Colors.grey.shade100, borderRadius: BorderRadius.circular(12)),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(dt != null ? DateFormat('EEE').format(dt) : '', style: GoogleFonts.poppins(fontSize: 10, color: isSelected ? Colors.white70 : AppTheme.textSecondary)),
-                        Text(dt != null ? DateFormat('d').format(dt) : day.date, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : AppTheme.textPrimary)),
+                        Text(dt != null ? DateFormat('EEE').format(dt) : '', style: TextStyle(fontSize: 10, color: isSelected ? Colors.white70 : AppColors.lightTextSecondary)),
+                        Text(dt != null ? DateFormat('d').format(dt) : day.date, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isSelected ? Colors.white : AppColors.lightTextPrimary)),
                       ],
                     ),
                   ),
@@ -844,7 +873,7 @@ class _EditTimeSheetState extends State<_EditTimeSheet> {
             ),
           ),
           const SizedBox(height: 16),
-          Text('Time slot', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500)),
+          const Text('Time slot', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8, runSpacing: 8,
@@ -854,8 +883,8 @@ class _EditTimeSheetState extends State<_EditTimeSheet> {
                 label: Text(slot[0].toUpperCase() + slot.substring(1)),
                 selected: isSelected,
                 onSelected: (_) => setState(() => _selectedSlot = slot),
-                selectedColor: AppTheme.primaryColor,
-                labelStyle: GoogleFonts.poppins(fontSize: 13, color: isSelected ? Colors.white : AppTheme.textPrimary),
+                selectedColor: AppColors.brandPrimary,
+                labelStyle: TextStyle(fontSize: 13, color: isSelected ? Colors.white : AppColors.lightTextPrimary),
               );
             }).toList(),
           ),
@@ -868,10 +897,10 @@ class _EditTimeSheetState extends State<_EditTimeSheet> {
                   setState(() => _saving = true);
                   await widget.onConfirm(_selectedDate, _selectedSlot);
                 },
-                style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.brandPrimary, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
                 child: _saving
                     ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : Text(widget.confirmLabel, style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600)),
+                    : Text(widget.confirmLabel, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
               ),
             ),
           ),
@@ -918,7 +947,7 @@ class _UnscheduledCollapsibleState extends State<_UnscheduledCollapsible> {
                   Expanded(
                     child: Text(
                       'Unscheduled Items (${widget.items.length})',
-                      style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
                     ),
                   ),
                   Icon(
@@ -958,18 +987,18 @@ class _UnscheduledCollapsibleState extends State<_UnscheduledCollapsible> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(item.title, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text(item.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
                         if (item.originalDayNumber != null)
                           Text(
                             'Originally Day ${item.originalDayNumber} • ${item.timeSlot[0].toUpperCase()}${item.timeSlot.substring(1)}',
-                            style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textSecondary),
+                            style: TextStyle(fontSize: 11, color: AppColors.lightTextSecondary),
                           ),
                       ],
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.calendar_month_outlined, size: 20),
-                    color: AppTheme.primaryColor,
+                    color: AppColors.brandPrimary,
                     onPressed: () => widget.onSchedule(item),
                     tooltip: 'Schedule this item',
                   ),

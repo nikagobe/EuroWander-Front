@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
+import '../../../models/flight.dart';
+import '../../../models/bus.dart';
+import '../../../models/hotel.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/fork_wizard_provider.dart';
+import '../../../services/template_service.dart';
 import '../../../widgets/widgets.dart';
 import 'wizard_flight_section.dart';
 import 'wizard_hotel_section.dart';
@@ -480,14 +484,141 @@ class _ForkWizardScreenState extends State<ForkWizardScreen> {
   Future<void> _createTrip(BuildContext context, ForkWizardProvider provider) async {
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Trip created from template! You can view and edit it from your trips.'),
-        duration: Duration(seconds: 4),
-      ),
+    final token = context.read<AuthProvider>().token;
+    if (token == null) return;
+
+    final guide = provider.forkGuide;
+    if (guide == null || provider.startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please complete all required steps first.')),
+      );
+      return;
+    }
+
+    // Show loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
-    Navigator.of(context).popUntil((route) => route.isFirst);
+
+    try {
+      final templateService = TemplateService();
+      final startDateStr = DateFormat('yyyy-MM-dd').format(provider.startDate!);
+
+      // Build flight payloads
+      Map<String, dynamic>? buildFlightPayload(FlightOffer? flight) {
+        if (flight == null) return null;
+        return {
+          'airline_logo': flight.airlineLogo,
+          'booking_token': flight.bookingToken,
+          'currency': flight.currency,
+          'price': flight.price,
+          'stops': flight.stops,
+          'total_duration_minutes': flight.totalDuration,
+          'legs': flight.legs.map((leg) => {
+            'airline': leg.airline,
+            'arrival_airport': leg.arrivalAirport,
+            'arrival_airport_name': leg.arrivalAirportName,
+            'arrival_time': leg.arrivalTime,
+            'departure_airport': leg.departureAirport,
+            'departure_airport_name': leg.departureAirportName,
+            'departure_time': leg.departureTime,
+            'duration_minutes': leg.duration,
+            'flight_number': leg.flightNumber,
+          }).toList(),
+        };
+      }
+
+      // Build hotel payloads
+      final hotels = <Map<String, dynamic>>[];
+      for (final entry in provider.selectedHotels.entries) {
+        final legOrder = entry.key;
+        final hotel = entry.value;
+        if (hotel == null) continue;
+        final leg = guide.legs.firstWhere((l) => l.order == legOrder);
+        hotels.add({
+          'leg_order': legOrder,
+          'hotel_id': hotel.hotelId,
+          'name': hotel.name,
+          'city': leg.city,
+          'checkin_date': leg.hotelSearch?.checkin ?? '',
+          'checkout_date': leg.hotelSearch?.checkout ?? '',
+          'price_per_night': hotel.pricePerNight,
+          'price_total': hotel.priceTotal,
+          'currency': hotel.currency,
+          'stars': hotel.stars,
+          'review_score': hotel.reviewScore,
+          'review_score_word': hotel.reviewScoreWord,
+          'address': '',
+          'latitude': hotel.latitude,
+          'longitude': hotel.longitude,
+          'photo_url': hotel.photoUrl,
+          'booking_url': '',
+        });
+      }
+
+      // Build bus payloads
+      final buses = <Map<String, dynamic>>[];
+      for (final entry in provider.selectedBuses.entries) {
+        final segmentIndex = entry.key;
+        final bus = entry.value;
+        if (bus == null) continue;
+        buses.add({
+          'segment_index': segmentIndex,
+          'dep_name': bus.depName,
+          'arr_name': bus.arrName,
+          'dep_time': bus.depTime,
+          'arr_time': bus.arrTime,
+          'duration_minutes': bus.durationMinutes,
+          'price': bus.totalPrice ?? bus.price,
+          'currency': bus.currency,
+          'changeovers': bus.changeovers,
+          'deeplink': bus.deeplink,
+          'segments': bus.segments.map((seg) => {
+            'dep_name': seg.depName,
+            'arr_name': seg.arrName,
+            'dep_time': seg.depTime,
+            'arr_time': seg.arrTime,
+            'product_type': seg.productType,
+            'product': seg.product,
+          }).toList(),
+        });
+      }
+
+      await templateService.createTripFromTemplate(
+        token: token,
+        templateId: widget.templateId,
+        name: guide.title,
+        startDate: startDateStr,
+        originCity: provider.originCity?.name,
+        outboundFlight: buildFlightPayload(provider.outboundFlight),
+        returnFlight: buildFlightPayload(provider.returnFlight),
+        hotels: hotels,
+        buses: buses,
+      );
+
+      if (!context.mounted) return;
+      Navigator.of(context).pop(); // dismiss loading
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Trip created from template! You can view and edit it from your trips.'),
+          duration: Duration(seconds: 4),
+        ),
+      );
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.of(context).pop(); // dismiss loading
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to create trip: ${e.toString().replaceAll('Exception: ', '')}'),
+          backgroundColor: Colors.red.shade600,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 }
-
-

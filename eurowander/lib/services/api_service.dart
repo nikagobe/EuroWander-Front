@@ -19,15 +19,15 @@ class ApiService {
   final String baseUrl = AppConstants.baseUrl;
 
   void _logRequest(String method, Uri uri, {Object? body}) {
-    debugPrint('[API] → $method $uri');
+    print('[API] → $method $uri');
     if (body != null) {
-      debugPrint('[API]   Body: $body');
+      print('[API]   Body: $body');
     }
   }
 
   void _logResponse(http.Response response) {
-    debugPrint('[API] ← ${response.statusCode} ${response.request?.url}');
-    debugPrint('[API]   Response: ${response.body}');
+    print('[API] ← ${response.statusCode} ${response.request?.url}');
+    print('[API]   Response: ${response.body}');
   }
 
   Future<List<City>> searchCities(String query, {int limit = 10}) async {
@@ -1448,4 +1448,40 @@ class ApiService {
       throw Exception('Failed to delete schedule item: ${response.statusCode}');
     }
   }
+
+  /// Get the Google Maps directions URL for a specific day's schedule.
+  Future<MapUrlResponse> getDayMapUrl({
+    required String token,
+    required String tripId,
+    required String dayDate,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/trips/$tripId/schedule/day/$dayDate/map-url');
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _authHeaders(token));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return MapUrlResponse(
+        dayDate: data['day_date'] as String,
+        mapUrl: data['map_url'] as String,
+        stopCount: data['stop_count'] as int,
+      );
+    }
+    if (response.statusCode == 400) {
+      throw Exception('No places with coordinates scheduled for this day');
+    }
+    throw Exception('Failed to get map URL: ${response.statusCode}');
+  }
+}
+
+class MapUrlResponse {
+  final String dayDate;
+  final String mapUrl;
+  final int stopCount;
+
+  const MapUrlResponse({
+    required this.dayDate,
+    required this.mapUrl,
+    required this.stopCount,
+  });
 }

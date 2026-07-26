@@ -245,6 +245,45 @@ class TemplateService {
     }
   }
 
+  // ─── Create Trip from Template (Fork) ─────────────────────────────
+
+  Future<Map<String, dynamic>> createTripFromTemplate({
+    required String token,
+    required String templateId,
+    required String name,
+    required String startDate,
+    String? originCity,
+    Map<String, dynamic>? outboundFlight,
+    Map<String, dynamic>? returnFlight,
+    List<Map<String, dynamic>>? hotels,
+    List<Map<String, dynamic>>? buses,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/templates/$templateId/fork/create-trip');
+
+    final body = {
+      'name': name,
+      'start_date': startDate,
+      if (originCity != null) 'origin_city': originCity,
+      if (outboundFlight != null) 'outbound_flight': outboundFlight,
+      if (returnFlight != null) 'return_flight': returnFlight,
+      'hotels': hotels ?? [],
+      'buses': buses ?? [],
+    };
+
+    _logRequest('POST', uri, body: body);
+    final response = await http.post(
+      uri,
+      headers: _authHeaders(token),
+      body: jsonEncode(body),
+    );
+    _logResponse(response);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to create trip from template: ${response.statusCode} ${response.body}');
+  }
+
   // ─── Hotel Details (availability check) ───────────────────────────
 
   Future<HotelOffer?> getHotelDetails({

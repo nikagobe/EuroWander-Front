@@ -9,9 +9,7 @@ import '../../utils/page_transitions.dart';
 import '../../widgets/widgets.dart';
 import '../plan/city_selection_screen.dart';
 import '../playlists/playlist_discovery_screen.dart';
-import '../playlists/my_playlists_screen.dart';
 import '../templates/template_discovery_screen.dart';
-import '../templates/my_templates_screen.dart';
 import 'trip_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -30,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _loadTrips();
   }
 
@@ -50,9 +48,18 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           _trips = trips;
           _isLoading = false;
         });
+        _autoSelectTab();
       }
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  void _autoSelectTab() {
+    if (_upcomingTrips.isNotEmpty) {
+      _tabController.index = 0;
+    } else if (_previousTrips.isNotEmpty) {
+      _tabController.index = 1;
     }
   }
 
@@ -69,18 +76,242 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               children: [
                 const SizedBox(height: AppSpacing.xl),
                 _buildHeader(context),
-                const SizedBox(height: AppSpacing.xl),
+                const SizedBox(height: AppSpacing.lg),
                 _buildPlanButton(context),
                 const SizedBox(height: AppSpacing.sm),
                 _buildQuickActions(context),
-                const SizedBox(height: AppSpacing.xxl),
+                const SizedBox(height: AppSpacing.lg),
+                // Featured trip: active trip or first upcoming
+                if (!_isLoading) _buildFeaturedTrip(),
+                if (!_isLoading && _featuredTrip != null) const SizedBox(height: AppSpacing.lg),
               ],
             ),
           ),
-          // Trip tabs
+          // Remaining trip tabs (Upcoming / Previous)
           _buildTripTabs(),
           Expanded(child: _buildTripsTabView()),
         ],
+      ),
+    );
+  }
+
+  /// The featured trip is the first active trip, or the first upcoming trip if none are active.
+  SavedTrip? get _featuredTrip {
+    if (_activeTrips.isNotEmpty) return _activeTrips.first;
+    if (_upcomingTrips.isNotEmpty) return _upcomingTrips.first;
+    return null;
+  }
+
+  /// Upcoming trips excluding the featured one (to avoid duplication in the tab).
+  List<SavedTrip> get _remainingUpcomingTrips {
+    final featured = _featuredTrip;
+    if (featured == null) return _upcomingTrips;
+    return _upcomingTrips.where((t) => t != featured).toList();
+  }
+
+  Widget _buildFeaturedTrip() {
+    final trip = _featuredTrip;
+    if (trip == null) return const SizedBox.shrink();
+    return _buildFeaturedTripCard(trip);
+  }
+
+  Widget _buildFeaturedTripCard(SavedTrip trip) {
+    final ew = context.ew;
+    final theme = Theme.of(context);
+    final depDate = _getDepartureDate(trip);
+    final retDate = _getReturnDate(trip);
+    final destination = trip.outboundFlight?.arrivalCityName.isNotEmpty == true
+        ? trip.outboundFlight!.arrivalCityName
+        : trip.outboundFlight?.legs.isNotEmpty == true
+            ? trip.outboundFlight!.legs.last.arrivalCityName
+            : '';
+    final origin = trip.outboundFlight?.departureCityName.isNotEmpty == true
+        ? trip.outboundFlight!.departureCityName
+        : '';
+    final days = depDate != null && retDate != null ? retDate.difference(depDate).inDays : null;
+    final isActive = _activeTrips.contains(trip);
+
+    return Material(
+      color: ew.cardColor,
+      borderRadius: BorderRadius.circular(16),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () async {
+          await Navigator.of(context).push(EWPageRoute(page: TripDetailScreen(trip: trip)));
+          _loadTrips();
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.success.withOpacity(0.6), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.success.withOpacity(0.1),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Photo
+              if (trip.destinationPhotoUrl != null && trip.destinationPhotoUrl!.isNotEmpty)
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                  child: Stack(
+                    children: [
+                      Image.network(
+                        trip.destinationPhotoUrl!,
+                        height: 130,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            height: 130,
+                            color: Colors.grey.withOpacity(0.1),
+                            child: const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+                          );
+                        },
+                        errorBuilder: (_, _, _) => Container(
+                          height: 130,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(colors: [AppColors.success, Color(0xFF66BB6A)]),
+                          ),
+                          child: Center(child: Icon(Icons.location_city_rounded, size: 36, color: Colors.white.withOpacity(0.5))),
+                        ),
+                      ),
+                      // Scrim
+                      Positioned(
+                        bottom: 0, left: 0, right: 0,
+                        child: Container(
+                          height: 50,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Colors.black.withOpacity(0.5)],
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Status badge
+                      Positioned(
+                        top: 10, left: 10,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: isActive ? AppColors.success : AppColors.brandPrimary,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(
+                              isActive ? Icons.flight_takeoff_rounded : Icons.upcoming_rounded,
+                              size: 12, color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              isActive ? 'Active Now' : 'Next Trip',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                            ),
+                          ]),
+                        ),
+                      ),
+                      // Countdown badge
+                      if (depDate != null)
+                        Positioned(
+                          top: 10, right: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: _buildCompactCountdown(depDate, retDate, isActive, false),
+                          ),
+                        ),
+                      // Destination on photo
+                      if (destination.isNotEmpty)
+                        Positioned(
+                          bottom: 10, left: 12,
+                          child: Text(
+                            destination,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white, shadows: [Shadow(blurRadius: 4, color: Colors.black54)]),
+                          ),
+                        ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  height: 6,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+                    gradient: const LinearGradient(colors: [AppColors.success, Color(0xFF66BB6A)]),
+                  ),
+                ),
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            trip.name,
+                            style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              if (origin.isNotEmpty || destination.isNotEmpty) ...[
+                                Icon(Icons.flight_takeoff_rounded, size: 14, color: ew.textSecondary),
+                                const SizedBox(width: 5),
+                                if (origin.isNotEmpty)
+                                  Text(origin, style: TextStyle(fontSize: 12, color: ew.textSecondary)),
+                                if (origin.isNotEmpty && destination.isNotEmpty)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                                    child: Icon(Icons.arrow_forward_rounded, size: 12, color: ew.textSecondary),
+                                  ),
+                                if (destination.isNotEmpty)
+                                  Text(destination, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success)),
+                              ],
+                            ],
+                          ),
+                          if (depDate != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              days != null
+                                  ? '${DateFormat('MMM d').format(depDate)} – ${DateFormat('MMM d').format(retDate!)} · $days days'
+                                  : DateFormat('MMM d, yyyy').format(depDate),
+                              style: TextStyle(fontSize: 11, color: ew.textSecondary),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.success.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.arrow_forward_rounded, size: 18, color: AppColors.success),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -91,33 +322,113 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildHeader(BuildContext context) {
     final ew = context.ew;
+    final user = context.watch<AuthProvider>().user;
+    final firstName = user?.firstName ?? '';
+    final initials = '${user?.firstName.isNotEmpty == true ? user!.firstName[0] : ''}${user?.lastName.isNotEmpty == true ? user!.lastName[0] : ''}';
 
     return Row(
       children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: AppRadius.borderMd,
-          ),
-          child: const Icon(Icons.public_rounded, color: Colors.white, size: 24),
-        ),
-        const SizedBox(width: AppSpacing.sm),
         Expanded(
-          child: Text(
-            'EuroWander',
-            style: Theme.of(context).textTheme.headlineLarge,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getGreeting(),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: ew.textSecondary),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                firstName.isNotEmpty ? 'Hey, $firstName!' : 'Welcome back!',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ],
           ),
         ),
-        EWIconButton(
-          icon: Icons.logout_rounded,
-          iconColor: ew.textSecondary,
-          size: 40,
-          tooltip: 'Log out',
-          onTap: () => context.read<AuthProvider>().logout(),
+        GestureDetector(
+          onTap: () => _showAccountSheet(context),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                initials.toUpperCase(),
+                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
         ),
       ],
+    );
+  }
+
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  void _showAccountSheet(BuildContext context) {
+    final ew = context.ew;
+    final user = context.read<AuthProvider>().user;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ew.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Container(
+                width: 64, height: 64,
+                decoration: BoxDecoration(gradient: AppColors.primaryGradient, shape: BoxShape.circle),
+                child: Center(
+                  child: Text(
+                    '${user?.firstName[0] ?? ''}${user?.lastName[0] ?? ''}'.toUpperCase(),
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(user?.fullName ?? '', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(user?.email ?? '', style: TextStyle(fontSize: 13, color: ew.textSecondary)),
+              const SizedBox(height: AppSpacing.xxl),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.read<AuthProvider>().logout();
+                  },
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: const Text('Log Out'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(color: AppColors.error.withOpacity(0.3)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -143,62 +454,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   // ────────────────────────────────────────────────────────────
 
   Widget _buildQuickActions(BuildContext context) {
-    return Column(
+    return Row(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlineActionButton(
-                label: 'Playlists',
-                icon: Icons.explore_rounded,
-                color: AppColors.brandPrimary,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen()),
-                ),
-              ),
+        Expanded(
+          child: OutlineActionButton(
+            label: 'Playlists',
+            icon: Icons.explore_rounded,
+            color: AppColors.brandPrimary,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen()),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: OutlineActionButton(
-                label: 'My Playlists',
-                icon: Icons.playlist_play_rounded,
-                color: AppColors.brandSecondary,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MyPlaylistsScreen()),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        Row(
-          children: [
-            Expanded(
-              child: OutlineActionButton(
-                label: 'Templates',
-                icon: Icons.compass_calibration_rounded,
-                color: AppColors.brandAmber,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen()),
-                ),
-              ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: OutlineActionButton(
+            label: 'Templates',
+            icon: Icons.compass_calibration_rounded,
+            color: AppColors.brandAmber,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen()),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: OutlineActionButton(
-                label: 'My Templates',
-                icon: Icons.dashboard_customize_rounded,
-                color: AppColors.brandDeepOrange,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const MyTemplatesScreen()),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -288,13 +567,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         dividerHeight: 0,
         labelColor: Colors.white,
         unselectedLabelColor: ew.textSecondary,
-        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         labelPadding: EdgeInsets.zero,
         padding: const EdgeInsets.all(3),
         tabs: [
-          Tab(text: 'Active (${_activeTrips.length})'),
-          Tab(text: 'Upcoming (${_upcomingTrips.length})'),
+          Tab(text: 'Upcoming (${_remainingUpcomingTrips.length})'),
           Tab(text: 'Previous (${_previousTrips.length})'),
         ],
       ),
@@ -324,16 +602,30 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return TabBarView(
       controller: _tabController,
       children: [
-        _buildTripGrid(_activeTrips, emptyIcon: Icons.flight_takeoff_rounded, emptyTitle: 'No active trips', emptySubtitle: 'Your ongoing adventures will appear here'),
-        _buildTripGrid(_upcomingTrips, emptyIcon: Icons.upcoming_rounded, emptyTitle: 'No upcoming trips', emptySubtitle: 'Plan a new trip to get started!'),
-        _buildTripGrid(_previousTrips, emptyIcon: Icons.photo_album_rounded, emptyTitle: 'No past trips', emptySubtitle: 'Your completed adventures will live here'),
+        _buildTripGrid(_remainingUpcomingTrips, emptyIcon: Icons.upcoming_rounded, emptyTitle: 'No upcoming trips', emptySubtitle: 'Plan a new trip to get started!', showCta: true),
+        _buildTripGrid(_previousTrips, emptyIcon: Icons.photo_album_rounded, emptyTitle: 'No past trips', emptySubtitle: 'Your completed adventures will live here', showCta: true),
       ],
     );
   }
 
-  Widget _buildTripGrid(List<SavedTrip> trips, {required IconData emptyIcon, required String emptyTitle, required String emptySubtitle}) {
+  Widget _buildTripGrid(List<SavedTrip> trips, {required IconData emptyIcon, required String emptyTitle, required String emptySubtitle, bool showCta = false}) {
     if (trips.isEmpty) {
-      return Center(child: EmptyState(icon: emptyIcon, title: emptyTitle, subtitle: emptySubtitle));
+      return Center(
+        child: EmptyState(
+          icon: emptyIcon,
+          title: emptyTitle,
+          subtitle: emptySubtitle,
+          actionLabel: showCta ? 'Plan a Trip' : null,
+          onAction: showCta
+              ? () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const CitySelectionScreen()),
+                  );
+                  _loadTrips();
+                }
+              : null,
+        ),
+      );
     }
 
     return RefreshIndicator(
@@ -350,7 +642,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             opacity: value,
             child: Transform.translate(offset: Offset(0, 16 * (1 - value)), child: child),
           ),
-          child: _buildTripCard(trips[index]),
+          child: _buildTripCard(trips[index], isHero: index == 0),
         ),
       ),
     );
@@ -360,7 +652,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   // Trip Card
   // ────────────────────────────────────────────────────────────
 
-  Widget _buildTripCard(SavedTrip trip) {
+  Widget _buildTripCard(SavedTrip trip, {bool isHero = false}) {
     final ew = context.ew;
     final theme = Theme.of(context);
     final depDate = _getDepartureDate(trip);
@@ -377,192 +669,237 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final days = depDate != null && retDate != null ? retDate.difference(depDate).inDays : null;
     final isActive = _activeTrips.contains(trip);
     final isPast = _previousTrips.contains(trip);
+    final photoHeight = isHero ? 140.0 : 100.0;
 
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.of(context).push(EWPageRoute(page: TripDetailScreen(trip: trip)));
-        _loadTrips();
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 14),
-        decoration: BoxDecoration(
-          color: ew.cardColor,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Material(
+        color: ew.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () async {
+            await Navigator.of(context).push(EWPageRoute(page: TripDetailScreen(trip: trip)));
+            _loadTrips();
+          },
           borderRadius: BorderRadius.circular(16),
-          border: isActive ? Border.all(color: AppColors.brandPrimary.withOpacity(0.4), width: 1.5) : null,
-          boxShadow: [
-            BoxShadow(
-              color: isActive ? AppColors.brandPrimary.withOpacity(0.1) : Colors.black.withOpacity(0.05),
-              blurRadius: isActive ? 16 : 10,
-              offset: const Offset(0, 4),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: isActive ? Border.all(color: AppColors.brandPrimary.withOpacity(0.4), width: 1.5) : null,
+              boxShadow: [
+                BoxShadow(
+                  color: isActive ? AppColors.brandPrimary.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+                  blurRadius: isActive ? 16 : 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Destination photo or gradient bar
-            if (trip.destinationPhotoUrl != null && trip.destinationPhotoUrl!.isNotEmpty)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Stack(
-                  children: [
-                    Image.network(
-                      trip.destinationPhotoUrl!,
-                      height: 100,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Container(
-                        height: 100,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: isActive
-                                ? [AppColors.brandPrimary, AppColors.brandSecondary]
-                                : isPast
-                                    ? [Colors.grey.shade400, Colors.grey.shade300]
-                                    : [const Color(0xFFFF9800), const Color(0xFFFFC107)],
-                          ),
-                        ),
-                        child: Center(child: Icon(Icons.location_city_rounded, size: 36, color: Colors.white.withOpacity(0.5))),
-                      ),
-                    ),
-                    // Gradient scrim at bottom for readability
-                    Positioned(
-                      bottom: 0, left: 0, right: 0,
-                      child: Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Destination name on photo
-                    if (destination.isNotEmpty)
-                      Positioned(
-                        bottom: 8, left: 12,
-                        child: Text(
-                          destination,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white, shadows: [Shadow(blurRadius: 4, color: Colors.black54)]),
-                        ),
-                      ),
-                  ],
-                ),
-              )
-            else
-              Container(
-                height: 4,
-                decoration: BoxDecoration(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  gradient: isActive
-                      ? const LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary])
-                      : isPast
-                          ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade300])
-                          : const LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFFC107)]),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title + status badge
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          trip.name,
-                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (isActive)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4CAF50).withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle)),
-                            const SizedBox(width: 4),
-                            const Text('Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF4CAF50))),
-                          ]),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-
-                  // Route
-                  if (origin.isNotEmpty || destination.isNotEmpty)
-                    Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Destination photo or gradient bar
+                if (trip.destinationPhotoUrl != null && trip.destinationPhotoUrl!.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: Stack(
                       children: [
-                        Icon(Icons.flight_takeoff_rounded, size: 15, color: ew.textSecondary),
-                        const SizedBox(width: 6),
-                        if (origin.isNotEmpty) ...[
-                          Text(origin, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: ew.textPrimary)),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 6),
-                            child: Icon(Icons.arrow_forward_rounded, size: 14, color: ew.textSecondary),
+                        Image.network(
+                          trip.destinationPhotoUrl!,
+                          height: photoHeight,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: photoHeight,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: ew.cardColor,
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.grey.withOpacity(0.1),
+                                    Colors.grey.withOpacity(0.2),
+                                    Colors.grey.withOpacity(0.1),
+                                  ],
+                                ),
+                              ),
+                              child: Center(
+                                child: SizedBox(
+                                  width: 20, height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.brandPrimary.withOpacity(0.5),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (_, _, _) => Container(
+                            height: photoHeight,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isActive
+                                    ? [AppColors.brandPrimary, AppColors.brandSecondary]
+                                    : isPast
+                                        ? [Colors.grey.shade400, Colors.grey.shade300]
+                                        : [const Color(0xFFFF9800), const Color(0xFFFFC107)],
+                              ),
+                            ),
+                            child: Center(child: Icon(Icons.location_city_rounded, size: 36, color: Colors.white.withOpacity(0.5))),
                           ),
-                        ],
+                        ),
+                        // Gradient scrim at bottom for readability
+                        Positioned(
+                          bottom: 0, left: 0, right: 0,
+                          child: Container(
+                            height: 40,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Destination name on photo
                         if (destination.isNotEmpty)
-                          Text(destination, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
+                          Positioned(
+                            bottom: 8, left: 12,
+                            child: Text(
+                              destination,
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white, shadows: [Shadow(blurRadius: 4, color: Colors.black54)]),
+                            ),
+                          ),
+                        // Countdown badge on hero card
+                        if (isHero && depDate != null)
+                          Positioned(
+                            top: 10, right: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: _buildCompactCountdown(depDate, retDate, isActive, isPast),
+                            ),
+                          ),
                       ],
                     ),
-                  const SizedBox(height: 10),
-
-                  // Info chips
-                  Row(
+                  )
+                else
+                  Container(
+                    height: 4,
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      gradient: isActive
+                          ? const LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary])
+                          : isPast
+                              ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade300])
+                              : const LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFFC107)]),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (depDate != null)
-                        _tripInfoChip(Icons.calendar_today_rounded, DateFormat('MMM d').format(depDate), ew),
-                      if (days != null) ...[
-                        const SizedBox(width: 8),
-                        _tripInfoChip(Icons.timelapse_rounded, '$days days', ew),
-                      ],
-                      if (trip.hotels.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        _tripInfoChip(Icons.hotel_rounded, '${trip.hotels.length}', ew),
-                      ],
-                      if (trip.attractions.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        _tripInfoChip(Icons.attractions_rounded, '${trip.attractions.length}', ew),
+                      // Title + status badge
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              trip.name,
+                              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isActive)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4CAF50).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle)),
+                                const SizedBox(width: 4),
+                                const Text('Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF4CAF50))),
+                              ]),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Route + date combined row
+                      Row(
+                        children: [
+                          if (origin.isNotEmpty || destination.isNotEmpty) ...[
+                            Icon(Icons.flight_takeoff_rounded, size: 15, color: ew.textSecondary),
+                            const SizedBox(width: 6),
+                            if (origin.isNotEmpty) ...[
+                              Text(origin, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: ew.textPrimary)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6),
+                                child: Icon(Icons.arrow_forward_rounded, size: 14, color: ew.textSecondary),
+                              ),
+                            ],
+                            if (destination.isNotEmpty)
+                              Text(destination, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
+                          ],
+                          const Spacer(),
+                          if (depDate != null)
+                            Text(
+                              days != null ? '${DateFormat('MMM d').format(depDate)} · $days days' : DateFormat('MMM d').format(depDate),
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: ew.textSecondary),
+                            ),
+                        ],
+                      ),
+
+                      // Countdown (only if no hero badge already showing it)
+                      if (depDate != null && !isHero) ...[
+                        const SizedBox(height: 10),
+                        _buildCountdown(depDate, retDate, isActive, isPast),
                       ],
                     ],
                   ),
-
-                  // Days remaining / ago
-                  if (depDate != null) ...[
-                    const SizedBox(height: 10),
-                    _buildCountdown(depDate, retDate, isActive, isPast),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _tripInfoChip(IconData icon, String text, EuroWanderTheme ew) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 12, color: ew.textSecondary),
+  Widget _buildCompactCountdown(DateTime depDate, DateTime? retDate, bool isActive, bool isPast) {
+    final now = DateTime.now();
+    if (isActive) {
+      final daysLeft = (retDate ?? depDate.add(const Duration(days: 7))).difference(now).inDays;
+      return Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.sunny, size: 12, color: Color(0xFFFFC107)),
         const SizedBox(width: 4),
-        Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: ew.textSecondary)),
-      ]),
-    );
+        Text(daysLeft > 0 ? '$daysLeft days left' : 'Last day!', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+      ]);
+    } else if (isPast) {
+      final daysAgo = now.difference(retDate ?? depDate).inDays;
+      return Text(
+        daysAgo < 30 ? '$daysAgo days ago' : '${(daysAgo / 30).floor()}mo ago',
+        style: const TextStyle(fontSize: 11, color: Colors.white70),
+      );
+    } else {
+      final daysUntil = depDate.difference(now).inDays;
+      return Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.schedule_rounded, size: 12, color: Colors.white),
+        const SizedBox(width: 4),
+        Text(daysUntil <= 1 ? 'Tomorrow!' : 'In $daysUntil days', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+      ]);
+    }
   }
+
+
 
   Widget _buildCountdown(DateTime depDate, DateTime? retDate, bool isActive, bool isPast) {
     final now = DateTime.now();
@@ -601,13 +938,4 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
-  String? _formatDate(String? dateStr) {
-    if (dateStr == null) return null;
-    try {
-      final dt = DateTime.parse(dateStr.replaceAll(' ', 'T'));
-      return DateFormat('MMM d, yyyy').format(dt);
-    } catch (_) {
-      return null;
-    }
-  }
 }

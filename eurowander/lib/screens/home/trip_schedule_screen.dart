@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/theme/app_theme.dart';
 import '../../widgets/widgets.dart';
 import '../../models/saved_trip.dart';
@@ -81,6 +82,30 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
     }
   }
 
+  Future<void> _openDayOnMap(String dayDate) async {
+    final token = context.read<AuthProvider>().token;
+    if (token == null) return;
+    try {
+      final result = await _apiService.getDayMapUrl(
+        token: token,
+        tripId: widget.trip.id,
+        dayDate: dayDate,
+      );
+      final uri = Uri.parse(result.mapUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
@@ -154,8 +179,15 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.calendar_today_rounded, size: 48, color: AppColors.brandPrimary.withOpacity(0.5)),
-              const SizedBox(height: AppSpacing.md),
+              Container(
+                width: 72, height: 72,
+                decoration: BoxDecoration(
+                  color: AppColors.brandPrimary.withOpacity(0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.calendar_today_rounded, size: 32, color: AppColors.brandPrimary.withOpacity(0.6)),
+              ),
+              const SizedBox(height: AppSpacing.lg),
               Text(
                 'No schedule yet',
                 style: Theme.of(context).textTheme.titleMedium!.copyWith(color: context.ew.textSecondary),
@@ -175,7 +207,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
     return RefreshIndicator(
       onRefresh: _loadSchedule,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         itemCount: _schedule!.days.length,
         itemBuilder: (context, index) => _buildDayCard(_schedule!.days[index], index),
       ),
@@ -183,9 +215,14 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
   }
 
   Widget _buildDayCard(ScheduleDay day, int dayIndex) {
+    final ew = context.ew;
     final date = DateTime.tryParse(day.date);
     final dayLabel = date != null ? DateFormat('EEEE, MMM d').format(date) : day.date;
     final dayNumber = 'Day ${dayIndex + 1}';
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final isToday = day.date == today;
+    final isPast = day.date.compareTo(today) < 0;
+    final hasPlaces = day.items.any((i) => i.itemType == 'attraction' || i.itemType == 'restaurant');
 
     // Group items by time slot
     final slotOrder = ['morning', 'midday', 'evening', 'night'];
@@ -198,7 +235,7 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -206,13 +243,15 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.brandPrimary, const Color(0xFF8B5CF6)],
-              ),
-              borderRadius: AppRadius.borderLg,
+              gradient: isToday
+                  ? const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)])
+                  : isPast
+                      ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade500])
+                      : LinearGradient(colors: [AppColors.brandPrimary, const Color(0xFF8B5CF6)]),
+              borderRadius: BorderRadius.circular(14),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.brandPrimary.withOpacity(0.3),
+                  color: (isToday ? AppColors.success : AppColors.brandPrimary).withOpacity(0.25),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -227,73 +266,132 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
-                    dayNumber,
+                    isToday ? 'Today' : dayNumber,
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.sm),
-                Text(
-                  dayLabel,
-                  style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.white),
+                Expanded(
+                  child: Text(
+                    dayLabel,
+                    style: Theme.of(context).textTheme.titleMedium!.copyWith(color: Colors.white),
+                  ),
                 ),
+                if (hasPlaces)
+                  GestureDetector(
+                    onTap: () => _openDayOnMap(day.date),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.map_rounded, size: 14, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text('Map', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
-          const SizedBox(height: AppSpacing.sm),
-          // Time slots
+          const SizedBox(height: 12),
+          // Timeline content
           if (groupedItems.isEmpty)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: AppRadius.borderLg,
+                color: ew.cardColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.withOpacity(0.08)),
               ),
               child: Center(
-                child: Text(
-                  'No activities planned',
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
+                child: Column(
+                  children: [
+                    Icon(Icons.event_available_rounded, size: 28, color: ew.textTertiary),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No activities planned',
+                      style: TextStyle(fontSize: 13, color: ew.textSecondary),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Long-press items to reschedule',
+                      style: TextStyle(fontSize: 11, color: ew.textTertiary),
+                    ),
+                  ],
                 ),
               ),
             )
           else
-            ...groupedItems.entries.map((entry) => _buildTimeSlotSection(entry.key, entry.value)),
+            Container(
+              decoration: BoxDecoration(
+                color: ew.cardColor,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.grey.withOpacity(0.06)),
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                children: groupedItems.entries.map((entry) => _buildTimeSlotSection(entry.key, entry.value)).toList(),
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _buildTimeSlotSection(String slot, List<ScheduleItem> items) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
+    final ew = context.ew;
+    final slotColor = _getSlotColor(slot);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Slot header
           Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 6),
+            padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
             child: Row(
               children: [
-                Icon(
-                  _getSlotIcon(slot),
-                  size: 16,
-                  color: _getSlotColor(slot),
+                Container(
+                  width: 24, height: 24,
+                  decoration: BoxDecoration(
+                    color: slotColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(_getSlotIcon(slot), size: 13, color: slotColor),
                 ),
-                const SizedBox(width: 6),
+                const SizedBox(width: 8),
                 Text(
                   _getSlotLabel(slot),
-                  style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: _getSlotColor(slot)),
+                  style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w700, color: slotColor),
                 ),
+                const SizedBox(width: 8),
+                Expanded(child: Container(height: 1, color: slotColor.withOpacity(0.15))),
               ],
             ),
           ),
-          // Items
-          ...items.map((item) => _buildScheduleItemCard(item)),
+          // Items with timeline
+          ...items.asMap().entries.map((entry) {
+            final index = entry.key;
+            final item = entry.value;
+            final isLast = index == items.length - 1;
+            return _buildTimelineItem(item, slotColor, isLast);
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildScheduleItemCard(ScheduleItem item) {
+  Widget _buildTimelineItem(ScheduleItem item, Color slotColor, bool isLast) {
+    final ew = context.ew;
+    final itemColor = _getItemTypeColor(item.itemType);
     final hasTime = _itemHasTime(item);
 
     return Dismissible(
@@ -302,10 +400,10 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: 8, left: 32),
         decoration: BoxDecoration(
           color: Colors.red.shade400,
-          borderRadius: AppRadius.borderLg,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: const Icon(Icons.delete_rounded, color: Colors.white),
       ),
@@ -326,90 +424,119 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
       child: GestureDetector(
         onTap: () => _onScheduleItemTap(item),
         onLongPress: () => _onScheduleItemLongPress(item),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: AppRadius.borderLg,
-            border: item.isAuto
-                ? Border.all(color: _getItemTypeColor(item.itemType).withOpacity(0.3))
-                : null,
-            boxShadow: [
-              BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            // Type icon
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: _getItemTypeColor(item.itemType).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                _getItemTypeIcon(item.itemType),
-                size: 20,
-                color: _getItemTypeColor(item.itemType),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    style: Theme.of(context).textTheme.labelLarge!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (item.subtitle.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      item.subtitle,
-                      style: Theme.of(context).textTheme.bodySmall!.copyWith(color: context.ew.textSecondary),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Timeline connector
+              SizedBox(
+                width: 28,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 10, height: 10,
+                      decoration: BoxDecoration(
+                        color: itemColor,
+                        shape: BoxShape.circle,
+                        boxShadow: [BoxShadow(color: itemColor.withOpacity(0.3), blurRadius: 4)],
+                      ),
                     ),
+                    if (!isLast)
+                      Expanded(
+                        child: Container(
+                          width: 2,
+                          margin: const EdgeInsets.symmetric(vertical: 2),
+                          decoration: BoxDecoration(
+                            color: slotColor.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(1),
+                          ),
+                        ),
+                      ),
                   ],
-                ],
-              ),
-            ),
-            // Time indicator (only for items with a specific time)
-            if (hasTime) ...[
-              const SizedBox(width: AppSpacing.xs),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getItemTypeColor(item.itemType).withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text(
-                  _extractTime(item),
-                  style: Theme.of(context).textTheme.labelSmall!.copyWith(fontWeight: FontWeight.w500, color: _getItemTypeColor(item.itemType)),
+              ),
+              const SizedBox(width: 8),
+              // Card content
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: ew.cardColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: item.isAuto ? itemColor.withOpacity(0.2) : Colors.grey.withOpacity(0.08),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      // Type icon
+                      Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          color: itemColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Icon(_getItemTypeIcon(item.itemType), size: 18, color: itemColor),
+                      ),
+                      const SizedBox(width: 10),
+                      // Content
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.title,
+                              style: Theme.of(context).textTheme.labelLarge!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (item.subtitle.isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                item.subtitle,
+                                style: TextStyle(fontSize: 11, color: ew.textSecondary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      // Time chip
+                      if (hasTime) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: itemColor.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            _extractTime(item),
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: itemColor),
+                          ),
+                        ),
+                      ],
+                      // Auto indicator
+                      if (item.isAuto) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.auto_awesome_rounded, size: 13, color: ew.textTertiary),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ],
-            // Auto badge
-            if (item.isAuto) ...[
-              const SizedBox(width: 6),
-              Icon(
-                Icons.lock_outline_rounded,
-                size: 14,
-                color: context.ew.textSecondary.withOpacity(0.5),
-              ),
-            ],
-          ],
+          ),
         ),
-      ),
       ),
     );
   }
