@@ -13,9 +13,10 @@ class BusSelectionScreen extends StatefulWidget {
   final String originCityName;
   final String departureCityName;
   final DateTime transitDate;
-  final FlightOffer outboundFlight;
-  final FlightOffer returnFlight;
+  final FlightOffer? outboundFlight;
+  final FlightOffer? returnFlight;
   final int adults;
+  final bool pickMode;
 
   const BusSelectionScreen({
     super.key,
@@ -24,9 +25,10 @@ class BusSelectionScreen extends StatefulWidget {
     required this.originCityName,
     required this.departureCityName,
     required this.transitDate,
-    required this.outboundFlight,
-    required this.returnFlight,
+    this.outboundFlight,
+    this.returnFlight,
     this.adults = 1,
+    this.pickMode = false,
   });
 
   @override
@@ -43,16 +45,20 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
 
   DateTime get _earliestDate {
     try {
-      final arrTime = widget.outboundFlight.arrivalTime;
-      if (arrTime.isNotEmpty) return DateTime.parse(arrTime);
+      if (widget.outboundFlight != null) {
+        final arrTime = widget.outboundFlight!.arrivalTime;
+        if (arrTime.isNotEmpty) return DateTime.parse(arrTime);
+      }
     } catch (_) {}
     return widget.transitDate;
   }
 
   DateTime get _latestDate {
     try {
-      final depTime = widget.returnFlight.departureTime;
-      if (depTime.isNotEmpty) return DateTime.parse(depTime);
+      if (widget.returnFlight != null) {
+        final depTime = widget.returnFlight!.departureTime;
+        if (depTime.isNotEmpty) return DateTime.parse(depTime);
+      }
     } catch (_) {}
     return widget.transitDate.add(const Duration(days: 30));
   }
@@ -511,10 +517,14 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
           if (_selectedBus != null)
             GestureDetector(
               onTap: () {
+                if (widget.pickMode) {
+                  Navigator.of(context).pop(_selectedBus);
+                  return;
+                }
                 Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => TripConfirmationScreen(
-                      selectedFlight: widget.outboundFlight,
+                      selectedFlight: widget.outboundFlight!,
                       returnFlight: widget.returnFlight,
                       busTransit: _selectedBus,
                     ),
@@ -550,10 +560,14 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
           const SizedBox(height: 10),
           GestureDetector(
             onTap: () {
+              if (widget.pickMode) {
+                Navigator.of(context).pop(null);
+                return;
+              }
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) => TripConfirmationScreen(
-                    selectedFlight: widget.outboundFlight,
+                    selectedFlight: widget.outboundFlight!,
                     returnFlight: widget.returnFlight,
                     busTransit: null,
                   ),

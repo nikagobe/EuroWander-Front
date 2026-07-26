@@ -21,6 +21,7 @@ class FlightResultsScreen extends StatefulWidget {
   final bool isReturn;
   final FlightOffer? firstFlight;
   final City? outboundDestinationCity;
+  final bool pickMode;
 
   const FlightResultsScreen({
     super.key,
@@ -31,6 +32,7 @@ class FlightResultsScreen extends StatefulWidget {
     this.isReturn = false,
     this.firstFlight,
     this.outboundDestinationCity,
+    this.pickMode = false,
   });
 
   @override
@@ -735,6 +737,10 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: GestureDetector(
         onTap: () {
+          if (widget.pickMode) {
+            Navigator.of(context).pop(_selectedFlight);
+            return;
+          }
           if (widget.isReturn) {
             // Use top-level city info to check if bus transit is needed
             final outboundArrivalId = widget.firstFlight!.arrivalAirportId.isNotEmpty

@@ -118,10 +118,9 @@ class _ForkWizardScreenState extends State<ForkWizardScreen> {
         selectedFlight: provider.outboundFlight,
         onFlightSelected: (flight) {
           provider.setOutboundFlight(flight);
-          // Save origin city for return flight
-          if (flight != null && provider.originCity == null) {
-            // Origin is resolved inside the flight section
-          }
+        },
+        onOriginResolved: (city) {
+          provider.setOriginCity(city);
         },
       ),
     ));

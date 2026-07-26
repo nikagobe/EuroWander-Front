@@ -12,9 +12,22 @@ import '../../widgets/widgets.dart';
 import 'hotel_detail_screen.dart';
 
 class HotelSearchScreen extends StatefulWidget {
-  final SavedTrip trip;
+  final SavedTrip? trip;
+  final bool pickMode;
+  final String? prefillCity;
+  final DateTime? prefillCheckin;
+  final DateTime? prefillCheckout;
+  final List<HotelOffer>? recommendedPicks;
 
-  const HotelSearchScreen({super.key, required this.trip});
+  const HotelSearchScreen({
+    super.key,
+    this.trip,
+    this.pickMode = false,
+    this.prefillCity,
+    this.prefillCheckin,
+    this.prefillCheckout,
+    this.recommendedPicks,
+  });
 
   @override
   State<HotelSearchScreen> createState() => _HotelSearchScreenState();
@@ -66,31 +79,43 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   void initState() {
     super.initState();
     _prefillDatesFromTrip();
+    _applyWizardPrefills();
   }
 
   void _prefillDatesFromTrip() {
+    if (widget.trip == null) return;
     // Pre-fill check-in from outbound flight arrival
-    if (widget.trip.outboundFlight != null) {
+    if (widget.trip!.outboundFlight != null) {
       try {
-        final arrivalStr = widget.trip.outboundFlight!.arrivalTime;
+        final arrivalStr = widget.trip!.outboundFlight!.arrivalTime;
         final arrival = DateTime.parse(arrivalStr.replaceAll(' ', 'T'));
         _arrivalDate = DateTime(arrival.year, arrival.month, arrival.day);
       } catch (_) {}
     }
 
     // Pre-fill check-out: if bus exists, use bus departure; else use return flight departure
-    if (widget.trip.busJourney != null) {
+    if (widget.trip!.busJourney != null) {
       try {
-        final busDepStr = widget.trip.busJourney!.depTime;
+        final busDepStr = widget.trip!.busJourney!.depTime;
         final busDep = DateTime.parse(busDepStr.replaceAll(' ', 'T'));
         _departureDate = DateTime(busDep.year, busDep.month, busDep.day);
       } catch (_) {}
-    } else if (widget.trip.returnFlight != null) {
+    } else if (widget.trip!.returnFlight != null) {
       try {
-        final retDepStr = widget.trip.returnFlight!.departureTime;
+        final retDepStr = widget.trip!.returnFlight!.departureTime;
         final retDep = DateTime.parse(retDepStr.replaceAll(' ', 'T'));
         _departureDate = DateTime(retDep.year, retDep.month, retDep.day);
       } catch (_) {}
+    }
+  }
+
+  void _applyWizardPrefills() {
+    if (widget.prefillCheckin != null) _arrivalDate = widget.prefillCheckin;
+    if (widget.prefillCheckout != null) _departureDate = widget.prefillCheckout;
+    if (widget.prefillCity != null) {
+      _searchController.text = widget.prefillCity!;
+      // Auto-resolve destination
+      _searchDestinations(widget.prefillCity!);
     }
   }
 
@@ -275,8 +300,106 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
     );
   }
 
+  Widget _buildRecommendedPicks() {
+    if (widget.recommendedPicks == null || widget.recommendedPicks!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    final ew = context.ew;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3E0),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: const Color(0xFFFF9800)),
+          ),
+          child: const Text(
+            '⭐ RECOMMENDED',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFE65100), letterSpacing: 0.5),
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...widget.recommendedPicks!.map((hotel) => _buildRecommendedCard(hotel)),
+        const SizedBox(height: 16),
+        Divider(color: Colors.grey.withOpacity(0.2)),
+        const SizedBox(height: 16),
+        Text(
+          'Or search for more hotels below:',
+          style: TextStyle(fontSize: 13, color: ew.textSecondary),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildRecommendedCard(HotelOffer hotel) {
+    final ew = context.ew;
+    final theme = Theme.of(context);
+    return GestureDetector(
+      onTap: () => _openHotelDetail(hotel),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: ew.cardColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFFF9800).withOpacity(0.3)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: hotel.photoUrl.isNotEmpty
+                  ? Image.network(hotel.photoUrl, width: 64, height: 64, fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(width: 64, height: 64, color: Colors.grey.shade100, child: const Icon(Icons.hotel, color: Colors.grey)))
+                  : Container(width: 64, height: 64, color: Colors.grey.shade100, child: const Icon(Icons.hotel, color: Colors.grey)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(hotel.name, style: theme.textTheme.labelLarge?.copyWith(color: ew.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text('${'★' * hotel.stars}', style: const TextStyle(fontSize: 12, color: Color(0xFFFF9800))),
+                      if (hotel.reviewScore > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          decoration: BoxDecoration(color: AppColors.brandPrimary, borderRadius: BorderRadius.circular(4)),
+                          child: Text('${hotel.reviewScore}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white)),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '€${hotel.pricePerNight.toStringAsFixed(0)}/night · €${hotel.priceTotal.toStringAsFixed(0)} total',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary),
+                  ),
+                ],
+              ),
+            ),
+            if (widget.pickMode)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: AppColors.brandPrimary, borderRadius: BorderRadius.circular(8)),
+                child: const Text('Select', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildTripDatesInfo() {
     final trip = widget.trip;
+    if (trip == null) return const SizedBox.shrink();
     final hasFlightDates = trip.outboundFlight != null || trip.returnFlight != null;
     if (!hasFlightDates) return const SizedBox.shrink();
 
@@ -372,6 +495,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: AppSpacing.md),
+              _buildRecommendedPicks(),
               _buildTripDatesInfo(),
               // Destination search
               Text('Destination', style: theme.textTheme.labelLarge!.copyWith(color: ew.textPrimary)),
@@ -905,6 +1029,12 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
   }
 
   void _openHotelDetail(HotelOffer hotel) async {
+    if (widget.pickMode) {
+      // In pick mode, selecting a hotel returns it to the caller
+      Navigator.of(context).pop(hotel);
+      return;
+    }
+    if (widget.trip == null) return;
     final result = await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => HotelDetailScreen(
@@ -913,7 +1043,7 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
           departureDate: _formatDate(_departureDate!),
           adults: _adults,
           rooms: _rooms,
-          trip: widget.trip,
+          trip: widget.trip!,
         ),
       ),
     );

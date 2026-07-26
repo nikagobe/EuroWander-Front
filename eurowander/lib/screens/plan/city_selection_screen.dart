@@ -14,19 +14,23 @@ import 'flight_results_screen.dart';
 class CitySelectionScreen extends StatefulWidget {
   final City? prefillFrom;
   final City? prefillTo;
+  final DateTime? prefillDate;
   final bool isReturn;
   final FlightOffer? firstFlight;
   final City? outboundDestinationCity;
   final int adults;
+  final bool pickMode;
 
   const CitySelectionScreen({
     super.key,
     this.prefillFrom,
     this.prefillTo,
+    this.prefillDate,
     this.isReturn = false,
     this.firstFlight,
     this.outboundDestinationCity,
     this.adults = 1,
+    this.pickMode = false,
   });
 
   @override
@@ -65,6 +69,9 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
     if (widget.prefillTo != null) {
       _selectedTo = widget.prefillTo;
       _toController.text = '${widget.prefillTo!.name}, ${widget.prefillTo!.country}';
+    }
+    if (widget.prefillDate != null) {
+      _departureDate = widget.prefillDate;
     }
   }
 
@@ -693,20 +700,37 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
         _selectedFrom != null && _selectedTo != null && _departureDate != null;
     return GestureDetector(
       onTap: isReady
-          ? () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => FlightResultsScreen(
-                    origin: _selectedFrom!,
-                    destination: _selectedTo!,
-                    departureDate: _departureDate!,
-                    adults: _adults,
-                    isReturn: widget.isReturn,
-                    firstFlight: widget.firstFlight,
-                    outboundDestinationCity: widget.outboundDestinationCity,
+          ? () async {
+              if (widget.pickMode) {
+                final result = await Navigator.of(context).push<FlightOffer>(
+                  MaterialPageRoute(
+                    builder: (_) => FlightResultsScreen(
+                      origin: _selectedFrom!,
+                      destination: _selectedTo!,
+                      departureDate: _departureDate!,
+                      adults: _adults,
+                      pickMode: true,
+                    ),
                   ),
-                ),
-              );
+                );
+                if (result != null && mounted) {
+                  Navigator.of(context).pop(result);
+                }
+              } else {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => FlightResultsScreen(
+                      origin: _selectedFrom!,
+                      destination: _selectedTo!,
+                      departureDate: _departureDate!,
+                      adults: _adults,
+                      isReturn: widget.isReturn,
+                      firstFlight: widget.firstFlight,
+                      outboundDestinationCity: widget.outboundDestinationCity,
+                    ),
+                  ),
+                );
+              }
             }
           : null,
       child: Container(
