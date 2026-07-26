@@ -264,7 +264,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.xs, AppSpacing.lg, AppSpacing.xxs),
             child: Row(
               children: [
-                Text(_timeSlotIcon(slot), style: const TextStyle(fontSize: 16)),
+                Icon(_timeSlotIconData(slot), size: 18, color: context.ew.textSecondary),
                 const SizedBox(width: 6),
                 Text(
                   _timeSlotLabel(slot),
@@ -319,7 +319,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 children: [
                   Row(
                     children: [
-                      if (isCustom) const Text('📌 ', style: TextStyle(fontSize: 12)),
+                      if (isCustom) const Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child: Icon(Icons.push_pin_rounded, size: 14, color: Colors.amber),
+                      ),
                       Expanded(
                         child: Text(
                           item.name,
@@ -560,13 +563,13 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     );
   }
 
-  String _timeSlotIcon(String slot) {
+  IconData _timeSlotIconData(String slot) {
     switch (slot) {
-      case 'morning': return '🌅';
-      case 'midday': return '☀️';
-      case 'evening': return '🌆';
-      case 'night': return '🌙';
-      default: return '⏰';
+      case 'morning': return Icons.wb_sunny_rounded;
+      case 'midday': return Icons.light_mode_rounded;
+      case 'evening': return Icons.wb_twilight_rounded;
+      case 'night': return Icons.nightlight_round;
+      default: return Icons.schedule_rounded;
     }
   }
 

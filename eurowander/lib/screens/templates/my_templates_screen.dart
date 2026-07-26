@@ -136,9 +136,18 @@ class _MyTemplatesScreenState extends State<MyTemplatesScreen>
             ),
           if (status == 'published') ...[
             const SizedBox(height: AppSpacing.xxs),
-            Text(
-              '🍴 ${template.forkCount} forks • ❤️ ${template.likeCount}',
-              style: theme.textTheme.bodyMedium,
+            Row(
+              children: [
+                Icon(Icons.fork_right_rounded, size: 14, color: Theme.of(context).textTheme.bodyMedium?.color),
+                const SizedBox(width: 2),
+                Text('${template.forkCount} forks', style: theme.textTheme.bodyMedium),
+                const SizedBox(width: 8),
+                Text('\u2022', style: theme.textTheme.bodyMedium),
+                const SizedBox(width: 8),
+                Icon(Icons.favorite, size: 14, color: Colors.red.shade400),
+                const SizedBox(width: 2),
+                Text('${template.likeCount}', style: theme.textTheme.bodyMedium),
+              ],
             ),
           ],
           const SizedBox(height: AppSpacing.sm),

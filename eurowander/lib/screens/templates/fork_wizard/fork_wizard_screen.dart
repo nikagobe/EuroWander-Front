@@ -323,9 +323,15 @@ class _ForkWizardScreenState extends State<ForkWizardScreen> {
             final legEnd = provider.legEndDate(leg.order)!;
             return Padding(
               padding: const EdgeInsets.only(bottom: 3),
-              child: Text(
-                '📍 ${leg.city} — ${DateFormat('MMM d').format(legStart)}–${DateFormat('MMM d').format(legEnd)} (${leg.days} days)',
-                style: const TextStyle(fontSize: 12, color: AppColors.lightTextSecondary),
+              child: Row(
+                children: [
+                  const Icon(Icons.place, size: 14, color: AppColors.brandPrimary),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${leg.city} — ${DateFormat('MMM d').format(legStart)}–${DateFormat('MMM d').format(legEnd)} (${leg.days} days)',
+                    style: const TextStyle(fontSize: 12, color: AppColors.lightTextSecondary),
+                  ),
+                ],
               ),
             );
           }),

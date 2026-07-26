@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../providers/template_provider.dart';
+import '../../utils/page_transitions.dart';
 import '../../widgets/widgets.dart';
 import '../../widgets/templates/template_card.dart';
 import 'template_detail_screen.dart';
@@ -220,9 +221,8 @@ class _TemplateDiscoveryScreenState extends State<TemplateDiscoveryScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        TemplateDetailScreen(templateId: template.id),
+                  EWPageRoute(
+                    page: TemplateDetailScreen(templateId: template.id),
                   ),
                 );
               },

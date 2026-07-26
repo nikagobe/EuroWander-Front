@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../core/constants/app_constants.dart';
@@ -11,6 +12,12 @@ class TemplateService {
   Map<String, String> get _headers => {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+      };
+
+  Map<String, String> _authHeaders(String token) => {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
       };
 
   void _logRequest(String method, Uri uri, {Object? body}) {
@@ -260,5 +267,70 @@ class TemplateService {
     }
     // 404 = not available for those dates
     return null;
+  }
+
+  // ─── Cover Photo Upload ───────────────────────────────────────────
+
+  Future<Map<String, dynamic>> requestCoverUploadUrl({
+    required String token,
+    required String fileName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/templates/cover/upload-url');
+    final body = {
+      'file_name': fileName,
+      'content_type': contentType,
+      'size_bytes': sizeBytes,
+    };
+    _logRequest('POST', uri, body: body);
+    final response = await http.post(uri, headers: _authHeaders(token), body: jsonEncode(body));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to get cover upload URL: ${response.statusCode} ${response.body}');
+  }
+
+  Future<void> uploadFileToPresignedUrl({
+    required String uploadUrl,
+    required Uint8List fileBytes,
+    required String contentType,
+  }) async {
+    final uri = Uri.parse(uploadUrl);
+    _logRequest('PUT', uri);
+    final response = await http.put(
+      uri,
+      headers: {'Content-Type': contentType},
+      body: fileBytes,
+    );
+    debugPrint('[TemplateAPI] <- ${response.statusCode} PUT presigned URL');
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw Exception('Failed to upload file: ${response.statusCode} ${response.body}');
+    }
+  }
+
+  Future<String> confirmCoverUpload({
+    required String token,
+    required String fileKey,
+    required String fileName,
+    required String contentType,
+    required int sizeBytes,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/v1/templates/cover/confirm');
+    final body = {
+      'file_key': fileKey,
+      'file_name': fileName,
+      'content_type': contentType,
+      'size_bytes': sizeBytes,
+    };
+    _logRequest('POST', uri, body: body);
+    final response = await http.post(uri, headers: _authHeaders(token), body: jsonEncode(body));
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return data['url'] as String;
+    }
+    throw Exception('Failed to confirm cover upload: ${response.statusCode} ${response.body}');
   }
 }

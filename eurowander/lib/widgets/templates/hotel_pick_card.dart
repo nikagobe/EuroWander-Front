@@ -63,13 +63,22 @@ class HotelPickCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        '$name ${'★' * stars}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: isAvailable ? AppTheme.textPrimary : AppTheme.textSecondary,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              name,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: isAvailable ? AppTheme.textPrimary : AppTheme.textSecondary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          ...List.generate(stars, (_) => Icon(Icons.star_rounded, size: 14, color: isAvailable ? const Color(0xFFFF9800) : Colors.grey)),
+                        ],
                       ),
                       if (authorReview.isNotEmpty)
                         Text(

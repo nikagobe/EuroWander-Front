@@ -122,9 +122,16 @@ class _WizardHotelSectionState extends State<WizardHotelSection> {
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(color: const Color(0xFFFF9800)),
                 ),
-                child: const Text(
-                  '⭐ AUTHOR\'S PICKS',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFE65100), letterSpacing: 0.5),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.star_rounded, size: 14, color: Color(0xFFE65100)),
+                    SizedBox(width: 4),
+                    Text(
+                      'AUTHOR\'S PICKS',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFE65100), letterSpacing: 0.5),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 10),
@@ -182,18 +189,30 @@ class _WizardHotelSectionState extends State<WizardHotelSection> {
                   children: [
                     if (widget.leg.playlistId != null && widget.leg.playlistId!.isNotEmpty) ...[
                       const Row(children: [
-                        Text('🎵 ', style: TextStyle(fontSize: 16)),
+                        Icon(Icons.attractions_rounded, size: 16, color: Color(0xFF4CAF50)),
+                        SizedBox(width: 6),
                         Text('Attractions playlist', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                       ]),
-                      const Text('✅ Will be added to your trip', style: TextStyle(fontSize: 11, color: Color(0xFF4CAF50))),
+                      const Row(children: [
+                        SizedBox(width: 22),
+                        Icon(Icons.check_circle, size: 12, color: Color(0xFF4CAF50)),
+                        SizedBox(width: 4),
+                        Text('Will be added to your trip', style: TextStyle(fontSize: 11, color: Color(0xFF4CAF50))),
+                      ]),
                       const SizedBox(height: 6),
                     ],
                     if (widget.leg.restaurantIds.isNotEmpty) ...[
                       Row(children: [
-                        const Text('🍽 ', style: TextStyle(fontSize: 16)),
+                        const Icon(Icons.restaurant_rounded, size: 16, color: Color(0xFF4CAF50)),
+                        const SizedBox(width: 6),
                         Text('${widget.leg.restaurantIds.length} restaurants', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
                       ]),
-                      const Text('✅ Will be added to your trip', style: TextStyle(fontSize: 11, color: Color(0xFF4CAF50))),
+                      const Row(children: [
+                        SizedBox(width: 22),
+                        Icon(Icons.check_circle, size: 12, color: Color(0xFF4CAF50)),
+                        SizedBox(width: 4),
+                        Text('Will be added to your trip', style: TextStyle(fontSize: 11, color: Color(0xFF4CAF50))),
+                      ]),
                     ],
                   ],
                 ),
@@ -237,7 +256,10 @@ class _WizardHotelSectionState extends State<WizardHotelSection> {
                   ],
                 ),
               ),
-              Text('${'★' * hotel.stars}', style: const TextStyle(fontSize: 14, color: Color(0xFFFF9800))),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(hotel.stars, (_) => const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF9800))),
+              ),
             ],
           ),
           const SizedBox(height: 10),

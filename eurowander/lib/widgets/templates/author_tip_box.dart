@@ -20,7 +20,7 @@ class AuthorTipBox extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('💡', style: TextStyle(fontSize: 16)),
+          const Icon(Icons.lightbulb_rounded, size: 18, color: Color(0xFF1565C0)),
           const SizedBox(width: 8),
           Expanded(
             child: Text(

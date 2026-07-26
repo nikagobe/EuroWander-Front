@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 enum PlaylistVibe {
   chill,
   adventure,
@@ -62,32 +64,32 @@ enum PlaylistVibe {
     }
   }
 
-  String get icon {
+  IconData get iconData {
     switch (this) {
       case PlaylistVibe.chill:
-        return '🧘';
+        return Icons.self_improvement;
       case PlaylistVibe.adventure:
-        return '🏔️';
+        return Icons.terrain;
       case PlaylistVibe.cultural:
-        return '🏛️';
+        return Icons.account_balance;
       case PlaylistVibe.foodie:
-        return '🍕';
+        return Icons.restaurant;
       case PlaylistVibe.nightlife:
-        return '🎶';
+        return Icons.nightlife;
       case PlaylistVibe.romantic:
-        return '💕';
+        return Icons.favorite;
       case PlaylistVibe.family:
-        return '👨‍👩‍👧';
+        return Icons.family_restroom;
       case PlaylistVibe.instagram:
-        return '📸';
+        return Icons.camera_alt;
       case PlaylistVibe.hiddenGems:
-        return '💎';
+        return Icons.diamond;
       case PlaylistVibe.luxury:
-        return '👑';
+        return Icons.workspace_premium;
       case PlaylistVibe.backpacker:
-        return '🎒';
+        return Icons.backpack;
       case PlaylistVibe.wellness:
-        return '🧖';
+        return Icons.spa;
     }
   }
 }
@@ -139,18 +141,18 @@ enum BudgetTier {
     }
   }
 
-  String get icon {
+  IconData get iconData {
     switch (this) {
       case BudgetTier.ultraBudget:
-        return '🪙';
+        return Icons.savings;
       case BudgetTier.budget:
-        return '💰';
+        return Icons.account_balance_wallet;
       case BudgetTier.midRange:
-        return '💳';
+        return Icons.credit_card;
       case BudgetTier.premium:
-        return '💎';
+        return Icons.diamond;
       case BudgetTier.luxury:
-        return '👑';
+        return Icons.workspace_premium;
     }
   }
 }

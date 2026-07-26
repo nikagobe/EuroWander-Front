@@ -53,7 +53,7 @@ class WizardReviewSection extends StatelessWidget {
                       context,
                       icon: Icons.hotel,
                       iconColor: const Color(0xFFFF9800),
-                      label: '🏨 ${leg.city} (${leg.days} nights)',
+                      label: '${leg.city} (${leg.days} nights)',
                       value: hotel != null
                           ? '${hotel.name} · €${hotel.priceTotal.toStringAsFixed(0)}'
                           : 'No hotel selected',
@@ -72,7 +72,7 @@ class WizardReviewSection extends StatelessWidget {
                           context,
                           icon: Icons.directions_bus,
                           iconColor: const Color(0xFF4CAF50),
-                          label: '🚌 ${leg.city} → ${nextLeg.city}',
+                          label: '${leg.city} → ${nextLeg.city}',
                           value: bus != null
                               ? '€${(bus.totalPrice ?? bus.price).toStringAsFixed(0)} · ${bus.duration}'
                               : 'Not selected',
@@ -143,9 +143,16 @@ class WizardReviewSection extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0,
                 ),
-                child: const Text(
-                  '🚀  CREATE MY TRIP',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.rocket_launch_rounded, size: 20, color: Colors.white),
+                    SizedBox(width: 8),
+                    Text(
+                      'CREATE MY TRIP',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -5,6 +5,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/saved_trip.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../utils/page_transitions.dart';
 import '../../widgets/widgets.dart';
 import '../plan/city_selection_screen.dart';
 import '../playlists/playlist_discovery_screen.dart';
@@ -20,15 +21,23 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   final ApiService _apiService = ApiService();
   List<SavedTrip> _trips = [];
   bool _isLoading = true;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadTrips();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTrips() async {
@@ -65,17 +74,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: AppSpacing.sm),
                 _buildQuickActions(context),
                 const SizedBox(height: AppSpacing.xxl),
-                SectionHeader(
-                  title: 'My Trips',
-                  subtitle: _trips.isNotEmpty
-                      ? '${_trips.length} adventure${_trips.length == 1 ? '' : 's'}'
-                      : null,
-                ),
-                const SizedBox(height: AppSpacing.xxs),
               ],
             ),
           ),
-          Expanded(child: _buildTripsList()),
+          // Trip tabs
+          _buildTripTabs(),
+          Expanded(child: _buildTripsTabView()),
         ],
       ),
     );
@@ -201,12 +205,105 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ────────────────────────────────────────────────────────────
-  // Trips List
+  // Trip Categorization
   // ────────────────────────────────────────────────────────────
 
-  Widget _buildTripsList() {
+  DateTime? _getDepartureDate(SavedTrip trip) {
+    final depStr = trip.outboundFlight?.departureTime;
+    if (depStr == null || depStr.isEmpty) return null;
+    try { return DateTime.parse(depStr.replaceAll(' ', 'T')); } catch (_) { return null; }
+  }
+
+  DateTime? _getReturnDate(SavedTrip trip) {
+    final retStr = trip.returnFlight?.arrivalTime;
+    if (retStr == null || retStr.isEmpty) return null;
+    try { return DateTime.parse(retStr.replaceAll(' ', 'T')); } catch (_) { return null; }
+  }
+
+  List<SavedTrip> get _activeTrips {
+    final now = DateTime.now();
+    return _trips.where((t) {
+      final dep = _getDepartureDate(t);
+      final ret = _getReturnDate(t);
+      if (dep == null) return false;
+      final end = ret ?? dep.add(const Duration(days: 7));
+      return !dep.isAfter(now) && end.isAfter(now);
+    }).toList();
+  }
+
+  List<SavedTrip> get _upcomingTrips {
+    final now = DateTime.now();
+    return _trips.where((t) {
+      final dep = _getDepartureDate(t);
+      if (dep == null) return true; // No flight yet = upcoming/planning
+      return dep.isAfter(now);
+    }).toList()
+      ..sort((a, b) {
+        final da = _getDepartureDate(a);
+        final db = _getDepartureDate(b);
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return da.compareTo(db);
+      });
+  }
+
+  List<SavedTrip> get _previousTrips {
+    final now = DateTime.now();
+    return _trips.where((t) {
+      final dep = _getDepartureDate(t);
+      final ret = _getReturnDate(t);
+      if (dep == null) return false;
+      final end = ret ?? dep.add(const Duration(days: 7));
+      return !end.isAfter(now);
+    }).toList()
+      ..sort((a, b) {
+        final da = _getDepartureDate(a);
+        final db = _getDepartureDate(b);
+        if (da == null || db == null) return 0;
+        return db.compareTo(da); // Most recent first
+      });
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Trip Tabs
+  // ────────────────────────────────────────────────────────────
+
+  Widget _buildTripTabs() {
+    final ew = context.ew;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+      decoration: BoxDecoration(
+        color: ew.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+      ),
+      child: TabBar(
+        controller: _tabController,
+        indicator: BoxDecoration(
+          color: AppColors.brandPrimary,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        indicatorSize: TabBarIndicatorSize.tab,
+        dividerHeight: 0,
+        labelColor: Colors.white,
+        unselectedLabelColor: ew.textSecondary,
+        labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+        labelPadding: EdgeInsets.zero,
+        padding: const EdgeInsets.all(3),
+        tabs: [
+          Tab(text: 'Active (${_activeTrips.length})'),
+          Tab(text: 'Upcoming (${_upcomingTrips.length})'),
+          Tab(text: 'Previous (${_previousTrips.length})'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTripsTabView() {
     if (_isLoading) {
-      return const ShimmerList(itemCount: 4);
+      return const ShimmerList(itemCount: 3);
     }
 
     if (_trips.isEmpty) {
@@ -224,90 +321,233 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
+    return TabBarView(
+      controller: _tabController,
+      children: [
+        _buildTripGrid(_activeTrips, emptyIcon: Icons.flight_takeoff_rounded, emptyTitle: 'No active trips', emptySubtitle: 'Your ongoing adventures will appear here'),
+        _buildTripGrid(_upcomingTrips, emptyIcon: Icons.upcoming_rounded, emptyTitle: 'No upcoming trips', emptySubtitle: 'Plan a new trip to get started!'),
+        _buildTripGrid(_previousTrips, emptyIcon: Icons.photo_album_rounded, emptyTitle: 'No past trips', emptySubtitle: 'Your completed adventures will live here'),
+      ],
+    );
+  }
+
+  Widget _buildTripGrid(List<SavedTrip> trips, {required IconData emptyIcon, required String emptyTitle, required String emptySubtitle}) {
+    if (trips.isEmpty) {
+      return Center(child: EmptyState(icon: emptyIcon, title: emptyTitle, subtitle: emptySubtitle));
+    }
+
     return RefreshIndicator(
       onRefresh: _loadTrips,
       color: AppColors.brandPrimary,
       child: ListView.builder(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xl,
-          vertical: AppSpacing.xs,
+        padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, AppSpacing.xl),
+        itemCount: trips.length,
+        itemBuilder: (context, index) => TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 400 + (index * 100)),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) => Opacity(
+            opacity: value,
+            child: Transform.translate(offset: Offset(0, 16 * (1 - value)), child: child),
+          ),
+          child: _buildTripCard(trips[index]),
         ),
-        itemCount: _trips.length,
-        itemBuilder: (context, index) => _buildTripCard(_trips[index]),
       ),
     );
   }
 
+  // ────────────────────────────────────────────────────────────
+  // Trip Card
+  // ────────────────────────────────────────────────────────────
+
   Widget _buildTripCard(SavedTrip trip) {
     final ew = context.ew;
-    final destination = trip.outboundFlight?.legs.last.arrivalAirport ?? '';
-    final departureDate = _formatDate(trip.outboundFlight?.legs.first.departureTime);
+    final theme = Theme.of(context);
+    final depDate = _getDepartureDate(trip);
+    final retDate = _getReturnDate(trip);
+    final destination = trip.outboundFlight?.arrivalCityName.isNotEmpty == true
+        ? trip.outboundFlight!.arrivalCityName
+        : trip.outboundFlight?.legs.isNotEmpty == true
+            ? trip.outboundFlight!.legs.last.arrivalCityName
+            : '';
+    final origin = trip.outboundFlight?.departureCityName.isNotEmpty == true
+        ? trip.outboundFlight!.departureCityName
+        : '';
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: EWCard(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => TripDetailScreen(trip: trip)),
-          );
-        },
-        child: Row(
+    final days = depDate != null && retDate != null ? retDate.difference(depDate).inDays : null;
+    final isActive = _activeTrips.contains(trip);
+    final isPast = _previousTrips.contains(trip);
+
+    return GestureDetector(
+      onTap: () async {
+        await Navigator.of(context).push(EWPageRoute(page: TripDetailScreen(trip: trip)));
+        _loadTrips();
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: ew.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: isActive ? Border.all(color: AppColors.brandPrimary.withOpacity(0.4), width: 1.5) : null,
+          boxShadow: [
+            BoxShadow(
+              color: isActive ? AppColors.brandPrimary.withOpacity(0.1) : Colors.black.withOpacity(0.05),
+              blurRadius: isActive ? 16 : 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Top gradient bar
             Container(
-              width: 48,
-              height: 48,
+              height: 4,
               decoration: BoxDecoration(
-                color: AppColors.brandPrimary.withOpacity(0.10),
-                borderRadius: AppRadius.borderMd,
-              ),
-              child: const Icon(
-                Icons.flight_takeoff_rounded,
-                color: AppColors.brandPrimary,
-                size: 22,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                gradient: isActive
+                    ? const LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary])
+                    : isPast
+                        ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade300])
+                        : const LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFFC107)]),
               ),
             ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
+            Padding(
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    trip.name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppSpacing.xxxs),
+                  // Title + status badge
                   Row(
                     children: [
-                      if (destination.isNotEmpty) ...[
-                        Icon(Icons.location_on_outlined, size: 13, color: ew.textSecondary),
-                        const SizedBox(width: AppSpacing.xxxs),
-                        Text(
-                          destination,
-                          style: Theme.of(context).textTheme.bodySmall,
+                      Expanded(
+                        child: Text(
+                          trip.name,
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: AppSpacing.sm),
+                      ),
+                      if (isActive)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50).withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle)),
+                            const SizedBox(width: 4),
+                            const Text('Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF4CAF50))),
+                          ]),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Route
+                  if (origin.isNotEmpty || destination.isNotEmpty)
+                    Row(
+                      children: [
+                        Icon(Icons.flight_takeoff_rounded, size: 15, color: ew.textSecondary),
+                        const SizedBox(width: 6),
+                        if (origin.isNotEmpty) ...[
+                          Text(origin, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: ew.textPrimary)),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 6),
+                            child: Icon(Icons.arrow_forward_rounded, size: 14, color: ew.textSecondary),
+                          ),
+                        ],
+                        if (destination.isNotEmpty)
+                          Text(destination, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
                       ],
-                      if (departureDate != null) ...[
-                        Icon(Icons.calendar_today_outlined, size: 12, color: ew.textSecondary),
-                        const SizedBox(width: AppSpacing.xxxs),
-                        Text(
-                          departureDate,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
+                    ),
+                  const SizedBox(height: 10),
+
+                  // Info chips
+                  Row(
+                    children: [
+                      if (depDate != null)
+                        _tripInfoChip(Icons.calendar_today_rounded, DateFormat('MMM d').format(depDate), ew),
+                      if (days != null) ...[
+                        const SizedBox(width: 8),
+                        _tripInfoChip(Icons.timelapse_rounded, '$days days', ew),
+                      ],
+                      if (trip.hotels.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        _tripInfoChip(Icons.hotel_rounded, '${trip.hotels.length}', ew),
+                      ],
+                      if (trip.attractions.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        _tripInfoChip(Icons.attractions_rounded, '${trip.attractions.length}', ew),
                       ],
                     ],
                   ),
+
+                  // Days remaining / ago
+                  if (depDate != null) ...[
+                    const SizedBox(height: 10),
+                    _buildCountdown(depDate, retDate, isActive, isPast),
+                  ],
                 ],
               ),
             ),
-            const SizedBox(width: AppSpacing.xs),
-            Icon(Icons.chevron_right_rounded, color: ew.textTertiary, size: 20),
           ],
         ),
       ),
     );
+  }
+
+  Widget _tripInfoChip(IconData icon, String text, EuroWanderTheme ew) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: ew.textSecondary),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: ew.textSecondary)),
+      ]),
+    );
+  }
+
+  Widget _buildCountdown(DateTime depDate, DateTime? retDate, bool isActive, bool isPast) {
+    final now = DateTime.now();
+    final ew = context.ew;
+
+    if (isActive) {
+      final daysLeft = (retDate ?? depDate.add(const Duration(days: 7))).difference(now).inDays;
+      return Row(children: [
+        const Icon(Icons.sunny, size: 14, color: Color(0xFFFF9800)),
+        const SizedBox(width: 4),
+        Text(
+          daysLeft > 0 ? '$daysLeft days remaining' : 'Last day!',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFFFF9800)),
+        ),
+      ]);
+    } else if (isPast) {
+      final daysAgo = now.difference(retDate ?? depDate).inDays;
+      return Row(children: [
+        Icon(Icons.history_rounded, size: 14, color: ew.textSecondary),
+        const SizedBox(width: 4),
+        Text(
+          daysAgo < 30 ? '$daysAgo days ago' : '${(daysAgo / 30).floor()} months ago',
+          style: TextStyle(fontSize: 12, color: ew.textSecondary),
+        ),
+      ]);
+    } else {
+      final daysUntil = depDate.difference(now).inDays;
+      return Row(children: [
+        const Icon(Icons.schedule_rounded, size: 14, color: AppColors.brandPrimary),
+        const SizedBox(width: 4),
+        Text(
+          daysUntil <= 1 ? 'Tomorrow!' : 'In $daysUntil days',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.brandPrimary),
+        ),
+      ]);
+    }
   }
 
   String? _formatDate(String? dateStr) {

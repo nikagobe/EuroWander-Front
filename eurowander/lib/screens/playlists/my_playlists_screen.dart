@@ -177,7 +177,14 @@ class _MyPlaylistsScreenState extends State<MyPlaylistsScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          Text('❤️ ${playlist.likeCount}', style: const TextStyle(fontSize: 11)),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.favorite, size: 12, color: Colors.red.shade400),
+                              const SizedBox(width: 3),
+                              Text('${playlist.likeCount}', style: const TextStyle(fontSize: 11)),
+                            ],
+                          ),
                           const SizedBox(width: 10),
                           Icon(
                             playlist.id.isNotEmpty ? Icons.public : Icons.lock,

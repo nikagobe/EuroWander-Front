@@ -315,9 +315,16 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: const Color(0xFFFF9800)),
           ),
-          child: const Text(
-            '⭐ RECOMMENDED',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFE65100), letterSpacing: 0.5),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.star_rounded, size: 14, color: Color(0xFFE65100)),
+              SizedBox(width: 4),
+              Text(
+                'RECOMMENDED',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFE65100), letterSpacing: 0.5),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 12),
@@ -366,7 +373,10 @@ class _HotelSearchScreenState extends State<HotelSearchScreen> {
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Text('${'★' * hotel.stars}', style: const TextStyle(fontSize: 12, color: Color(0xFFFF9800))),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: List.generate(hotel.stars, (_) => const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800))),
+                      ),
                       if (hotel.reviewScore > 0) ...[
                         const SizedBox(width: 6),
                         Container(

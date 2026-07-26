@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
@@ -6,9 +8,11 @@ import '../../../models/template.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/template_provider.dart';
 import '../../../services/api_service.dart';
+import '../../../services/template_service.dart';
 import '../../../services/playlist_service.dart';
 import '../../../widgets/widgets.dart';
 import '../../playlists/playlist_builder_screen.dart';
+import '../../playlists/playlist_detail_screen.dart';
 import 'template_hotel_picker_screen.dart';
 import 'template_playlist_picker_screen.dart';
 
@@ -22,11 +26,16 @@ class CreateTemplateScreen extends StatefulWidget {
 
 class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
   final ApiService _apiService = ApiService();
+  final _templateService = TemplateService();
 
   // Basic info
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _coverUrlController = TextEditingController();
+  String _coverPhotoUrl = '';
+  Uint8List? _coverPhotoBytes;
+  String? _coverPhotoFileName;
+  String? _coverPhotoContentType;
+  bool _isUploadingCover = false;
   final _budgetMinController = TextEditingController();
   final _budgetMaxController = TextEditingController();
   List<String> _tags = [];
@@ -57,7 +66,7 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       setState(() {
         _titleController.text = t.title;
         _descriptionController.text = t.description;
-        _coverUrlController.text = t.coverPhotoUrl;
+        _coverPhotoUrl = t.coverPhotoUrl;
         _budgetMinController.text = t.estimatedBudgetMin?.toInt().toString() ?? '';
         _budgetMaxController.text = t.estimatedBudgetMax?.toInt().toString() ?? '';
         _tags = List.from(t.tags);
@@ -77,7 +86,6 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _coverUrlController.dispose();
     _budgetMinController.dispose();
     _budgetMaxController.dispose();
     for (final leg in _legs) {
@@ -131,17 +139,24 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
     final legs = _buildLegs();
 
     try {
+      // Upload cover photo if a new file was picked
+      if (_coverPhotoBytes != null && _coverPhotoFileName != null) {
+        final token = context.read<AuthProvider>().token ?? '';
+        final url = await _uploadCoverPhoto(token);
+        if (url != null) _coverPhotoUrl = url;
+      }
+
       TemplateResponse? result;
       if (_isEditing) {
         result = await provider.updateTemplate(templateId: widget.editTemplateId!, userId: userId, request: UpdateTemplateRequest(
-          title: _titleController.text, description: _descriptionController.text, coverPhotoUrl: _coverUrlController.text,
+          title: _titleController.text, description: _descriptionController.text, coverPhotoUrl: _coverPhotoUrl,
           tags: _tags, legs: legs, estimatedBudgetMin: double.tryParse(_budgetMinController.text),
           estimatedBudgetMax: double.tryParse(_budgetMaxController.text), currency: _currency,
         ));
       } else {
         result = await provider.createTemplate(CreateTemplateRequest(
           authorId: userId, title: _titleController.text, description: _descriptionController.text,
-          coverPhotoUrl: _coverUrlController.text, tags: _tags, legs: legs,
+          coverPhotoUrl: _coverPhotoUrl, tags: _tags, legs: legs,
           estimatedBudgetMin: double.tryParse(_budgetMinController.text),
           estimatedBudgetMax: double.tryParse(_budgetMaxController.text), currency: _currency,
         ));
@@ -157,6 +172,102 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
     }
     if (mounted) setState(() => _isSaving = false);
+  }
+
+  void _showTagPicker() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(Icons.label_rounded, size: 20, color: AppColors.brandPrimary),
+                      const SizedBox(width: 8),
+                      Text('Select Tags', style: Theme.of(ctx).textTheme.headlineSmall),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('Done'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 10,
+                    children: _availableTags.map((tag) {
+                      final isSelected = _tags.contains(tag);
+                      return GestureDetector(
+                        onTap: () {
+                          setSheetState(() {
+                            isSelected ? _tags.remove(tag) : _tags.add(tag);
+                          });
+                          setState(() {});
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppColors.brandPrimary.withOpacity(0.15) : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? AppColors.brandPrimary : Colors.grey.withOpacity(0.3),
+                              width: isSelected ? 1.5 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isSelected) ...[
+                                const Icon(Icons.check_circle, size: 16, color: AppColors.brandPrimary),
+                                const SizedBox(width: 4),
+                              ],
+                              Text(
+                                tag,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: isSelected ? AppColors.brandPrimary : AppColors.lightTextPrimary,
+                                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _viewPlaylist(String playlistId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PlaylistDetailScreen(playlistId: playlistId)),
+    );
   }
 
   Future<void> _openHotelPicker(int legIndex) async {
@@ -242,28 +353,39 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                       TextField(controller: _descriptionController, maxLines: 3, decoration: _inputDeco('Describe your trip template...')),
                       const SizedBox(height: 14),
 
-                      _label('Cover Photo URL'),
-                      TextField(controller: _coverUrlController, decoration: _inputDeco('https://...')),
+                      _label('Cover Photo'),
+                      _buildCoverPhotoPicker(),
                       const SizedBox(height: 14),
 
                       // Tags
                       _label('Tags'),
                       const SizedBox(height: 6),
-                      Wrap(spacing: 8, runSpacing: 8, children: _availableTags.map((tag) {
-                        final isSelected = _tags.contains(tag);
-                        return GestureDetector(
-                          onTap: () => setState(() => isSelected ? _tags.remove(tag) : _tags.add(tag)),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppColors.brandPrimary.withOpacity(0.15) : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: isSelected ? AppColors.brandPrimary : Colors.grey.withOpacity(0.3)),
-                            ),
-                            child: Text(tag, style: TextStyle(fontSize: 12, color: isSelected ? AppColors.brandPrimary : AppColors.lightTextSecondary, fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal)),
+                      GestureDetector(
+                        onTap: _showTagPicker,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.grey.withOpacity(0.3)),
                           ),
-                        );
-                      }).toList()),
+                          child: _tags.isEmpty
+                              ? Text('Select tags...', style: TextStyle(fontSize: 14, color: Colors.grey.shade500))
+                              : Wrap(
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: _tags.map((tag) => Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.brandPrimary.withOpacity(0.12),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Text(tag, style: const TextStyle(fontSize: 12, color: AppColors.brandPrimary, fontWeight: FontWeight.w500)),
+                                  )).toList(),
+                                ),
+                        ),
+                      ),
                       const SizedBox(height: 14),
 
                       // Budget
@@ -337,8 +459,10 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Header
-        Row(children: [
-          Text('📍 City ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+          Row(children: [
+            const Icon(Icons.location_on, size: 18, color: AppColors.brandPrimary),
+            const SizedBox(width: 4),
+            Text('City ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
           const Spacer(),
           if (_legs.length > 1) GestureDetector(onTap: () => _removeLeg(index), child: Icon(Icons.delete_outline, size: 20, color: Colors.red.withOpacity(0.7))),
         ]),
@@ -375,7 +499,9 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
             childrenPadding: const EdgeInsets.only(top: 6),
             initiallyExpanded: leg.hotelPicks.isEmpty,
             title: Row(children: [
-              const Text('🏨 Hotels', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const Icon(Icons.hotel, size: 16, color: Color(0xFFFF9800)),
+              const SizedBox(width: 4),
+              const Text('Hotels', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               const Spacer(),
               if (leg.hotelPicks.isNotEmpty) Text('${leg.hotelPicks.length} recommended', style: const TextStyle(fontSize: 12, color: Color(0xFFFF9800), fontWeight: FontWeight.w500)),
             ]),
@@ -397,16 +523,25 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                         iconColor: AppColors.lightTextSecondary,
                         collapsedIconColor: AppColors.lightTextSecondary,
                         title: Row(children: [
-                          const Text('⭐ ', style: TextStyle(fontSize: 12)),
-                          Expanded(child: Text('${pick.name} ${'★' * pick.stars}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                          const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF9800)),
+                          const SizedBox(width: 2),
+                          Expanded(child: Row(children: [
+                            Flexible(child: Text(pick.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600))),
+                            const SizedBox(width: 4),
+                            ...List.generate(pick.stars, (_) => const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800))),
+                          ])),
                           if (pick.pricePaid != null) Text('${pick.currency}${pick.pricePaid!.toInt()}/n', style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary)),
                         ]),
                         subtitle: pick.authorReview.isNotEmpty
-                            ? Text('💡 ${pick.authorReview}', style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)
+                            ? Row(children: [
+                                const Icon(Icons.lightbulb_outline, size: 12, color: AppColors.lightTextSecondary),
+                                const SizedBox(width: 4),
+                                Expanded(child: Text(pick.authorReview, style: const TextStyle(fontSize: 11, color: AppColors.lightTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                              ])
                             : const Text('Tap to add tip', style: TextStyle(fontSize: 11, color: AppColors.lightTextSecondary)),
                         children: [
                           TextField(
-                            decoration: _inputDeco('💡 Add tip for this hotel...').copyWith(fillColor: Colors.white),
+                            decoration: _inputDeco('Add tip for this hotel...').copyWith(fillColor: Colors.white, prefixIcon: const Icon(Icons.lightbulb_outline, size: 16)),
                             style: const TextStyle(fontSize: 12),
                             controller: TextEditingController(text: pick.authorReview),
                             onChanged: (v) {
@@ -446,7 +581,9 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
             childrenPadding: const EdgeInsets.only(top: 6, bottom: 4),
             initiallyExpanded: leg.playlistId == null,
             title: Row(children: [
-              const Text('🎵 Playlist', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const Icon(Icons.queue_music_rounded, size: 16, color: Color(0xFF4CAF50)),
+              const SizedBox(width: 4),
+              const Text('Playlist', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               const Spacer(),
               if (leg.playlistId != null) Text(leg.playlistName, style: const TextStyle(fontSize: 12, color: Color(0xFF4CAF50), fontWeight: FontWeight.w500)),
             ]),
@@ -459,6 +596,15 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
                     const Icon(Icons.playlist_play_rounded, size: 20, color: Color(0xFF4CAF50)),
                     const SizedBox(width: 8),
                     Expanded(child: Text(leg.playlistName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
+                    GestureDetector(
+                      onTap: () => _viewPlaylist(leg.playlistId!),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: const Color(0xFF4CAF50).withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                        child: const Text('View', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF4CAF50))),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
                     GestureDetector(
                       onTap: () => setState(() { leg.playlistId = null; leg.playlistName = ''; }),
                       child: const Icon(Icons.close, size: 18, color: AppColors.lightTextSecondary),
@@ -485,9 +631,153 @@ class _CreateTemplateScreenState extends State<CreateTemplateScreen> {
         const SizedBox(height: 8),
 
         // Author notes
-        TextField(controller: leg.notesController, maxLines: 2, decoration: _inputDeco('📝 Tips for travelers in ${leg.city.isNotEmpty ? leg.city : "this city"}...')),
+        TextField(controller: leg.notesController, maxLines: 2, decoration: _inputDeco('Tips for travelers in ${leg.city.isNotEmpty ? leg.city : "this city"}...').copyWith(prefixIcon: const Icon(Icons.edit_note, size: 18))),
       ]),
     );
+  }
+
+  // ─── Cover photo picker ──────────────────────────────────────────
+
+  Widget _buildCoverPhotoPicker() {
+    final hasImage = _coverPhotoBytes != null || _coverPhotoUrl.isNotEmpty;
+
+    return GestureDetector(
+      onTap: _isUploadingCover ? null : _pickCoverPhoto,
+      child: Container(
+        width: double.infinity,
+        height: 160,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: hasImage ? AppColors.brandPrimary.withOpacity(0.3) : Colors.grey.withOpacity(0.3)),
+          image: _coverPhotoBytes != null
+              ? DecorationImage(image: MemoryImage(_coverPhotoBytes!), fit: BoxFit.cover)
+              : _coverPhotoUrl.isNotEmpty
+                  ? DecorationImage(
+                      image: NetworkImage(_coverPhotoUrl),
+                      fit: BoxFit.cover,
+                      onError: (_, _) {},
+                    )
+                  : null,
+        ),
+        child: _isUploadingCover
+            ? const Center(child: CircularProgressIndicator(color: AppColors.brandPrimary))
+            : !hasImage
+                ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey.shade400),
+                      const SizedBox(height: 8),
+                      Text('Tap to upload cover photo', style: TextStyle(fontSize: 13, color: Colors.grey.shade500)),
+                    ],
+                  )
+                : Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.6),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.edit, size: 14, color: Colors.white),
+                            SizedBox(width: 4),
+                            Text('Change', style: TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.w500)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+      ),
+    );
+  }
+
+  Future<void> _pickCoverPhoto() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    if (file.bytes == null) return;
+
+    final contentType = _getContentType(file.extension ?? '');
+    if (contentType == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unsupported file type. Use JPG, PNG, or WebP.')),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _coverPhotoBytes = file.bytes;
+      _coverPhotoFileName = file.name;
+      _coverPhotoContentType = contentType;
+    });
+  }
+
+  Future<String?> _uploadCoverPhoto(String token) async {
+    if (_coverPhotoBytes == null || _coverPhotoFileName == null || _coverPhotoContentType == null) return null;
+
+    setState(() => _isUploadingCover = true);
+    try {
+      final uploadData = await _templateService.requestCoverUploadUrl(
+        token: token,
+        fileName: _coverPhotoFileName!,
+        contentType: _coverPhotoContentType!,
+        sizeBytes: _coverPhotoBytes!.length,
+      );
+
+      final uploadUrl = uploadData['upload_url'] as String;
+      final fileKey = uploadData['file_key'] as String;
+
+      await _templateService.uploadFileToPresignedUrl(
+        uploadUrl: uploadUrl,
+        fileBytes: _coverPhotoBytes!,
+        contentType: _coverPhotoContentType!,
+      );
+
+      final publicUrl = await _templateService.confirmCoverUpload(
+        token: token,
+        fileKey: fileKey,
+        fileName: _coverPhotoFileName!,
+        contentType: _coverPhotoContentType!,
+        sizeBytes: _coverPhotoBytes!.length,
+      );
+
+      return publicUrl;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Cover upload failed: $e')),
+        );
+      }
+      return null;
+    } finally {
+      if (mounted) setState(() => _isUploadingCover = false);
+    }
+  }
+
+  String? _getContentType(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return null;
+    }
   }
 
   Widget _sectionTitle(String title) {

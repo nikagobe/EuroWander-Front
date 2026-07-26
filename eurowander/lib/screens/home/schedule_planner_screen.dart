@@ -917,7 +917,7 @@ class _UnscheduledCollapsibleState extends State<_UnscheduledCollapsible> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      '📋 Unscheduled Items (${widget.items.length})',
+                      'Unscheduled Items (${widget.items.length})',
                       style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.orange.shade800),
                     ),
                   ),
