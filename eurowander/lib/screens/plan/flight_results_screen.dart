@@ -770,6 +770,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                     outboundFlight: widget.firstFlight!,
                     returnFlight: _selectedFlight!,
                     adults: widget.adults,
+                    destinationCityWikidataId: widget.outboundDestinationCity?.wikidataId ?? widget.destination.wikidataId,
                   ),
                 ),
               );
@@ -780,6 +781,7 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
                   builder: (_) => TripConfirmationScreen(
                     selectedFlight: widget.firstFlight!,
                     returnFlight: _selectedFlight!,
+                    destinationCityWikidataId: widget.outboundDestinationCity?.wikidataId ?? widget.destination.wikidataId,
                   ),
                 ),
               );

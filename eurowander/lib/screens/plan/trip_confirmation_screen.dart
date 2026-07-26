@@ -16,12 +16,14 @@ class TripConfirmationScreen extends StatefulWidget {
   final FlightOffer selectedFlight;
   final FlightOffer? returnFlight;
   final BusOffer? busTransit;
+  final String? destinationCityWikidataId;
 
   const TripConfirmationScreen({
     super.key,
     required this.selectedFlight,
     this.returnFlight,
     this.busTransit,
+    this.destinationCityWikidataId,
   });
 
   @override
@@ -204,6 +206,7 @@ class _TripConfirmationScreenState extends State<TripConfirmationScreen> {
         outboundFlight: selectedFlight,
         returnFlight: returnFlight,
         busOffer: busTransit,
+        destinationCityWikidataId: widget.destinationCityWikidataId,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

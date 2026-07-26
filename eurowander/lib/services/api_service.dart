@@ -207,6 +207,7 @@ class ApiService {
     required FlightOffer outboundFlight,
     FlightOffer? returnFlight,
     BusOffer? busOffer,
+    String? destinationCityWikidataId,
   }) async {
     final uri = Uri.parse('$baseUrl/api/v1/trips');
 
@@ -261,6 +262,8 @@ class ApiService {
       'outbound_flight': buildFlightPayload(outboundFlight),
       'return_flight': returnFlight != null ? buildFlightPayload(returnFlight) : null,
       'bus_journey': busOffer != null ? buildBusPayload(busOffer) : null,
+      if (destinationCityWikidataId != null && destinationCityWikidataId.isNotEmpty)
+        'destination_city_wikidata_id': destinationCityWikidataId,
     };
 
     _logRequest('POST', uri, body: body);

@@ -214,6 +214,7 @@ class SavedTrip {
   final String userId;
   final String name;
   final String status;
+  final String? destinationPhotoUrl;
   final FlightOffer? outboundFlight;
   final FlightOffer? returnFlight;
   final BusOffer? busJourney;
@@ -228,6 +229,7 @@ class SavedTrip {
     required this.userId,
     required this.name,
     required this.status,
+    this.destinationPhotoUrl,
     this.outboundFlight,
     this.returnFlight,
     this.busJourney,
@@ -244,6 +246,7 @@ class SavedTrip {
       userId: json['user_id'] ?? '',
       name: json['name'] ?? '',
       status: json['status'] ?? 'planning',
+      destinationPhotoUrl: json['destination_photo_url'] as String?,
       outboundFlight: json['outbound_flight'] != null
           ? FlightOffer.fromJson(json['outbound_flight'])
           : null,

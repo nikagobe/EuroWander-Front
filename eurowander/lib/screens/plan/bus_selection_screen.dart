@@ -17,6 +17,7 @@ class BusSelectionScreen extends StatefulWidget {
   final FlightOffer? returnFlight;
   final int adults;
   final bool pickMode;
+  final String? destinationCityWikidataId;
 
   const BusSelectionScreen({
     super.key,
@@ -29,6 +30,7 @@ class BusSelectionScreen extends StatefulWidget {
     this.returnFlight,
     this.adults = 1,
     this.pickMode = false,
+    this.destinationCityWikidataId,
   });
 
   @override
@@ -527,6 +529,7 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                       selectedFlight: widget.outboundFlight!,
                       returnFlight: widget.returnFlight,
                       busTransit: _selectedBus,
+                      destinationCityWikidataId: widget.destinationCityWikidataId,
                     ),
                   ),
                 );
@@ -570,6 +573,7 @@ class _BusSelectionScreenState extends State<BusSelectionScreen> {
                     selectedFlight: widget.outboundFlight!,
                     returnFlight: widget.returnFlight,
                     busTransit: null,
+                    destinationCityWikidataId: widget.destinationCityWikidataId,
                   ),
                 ),
               );

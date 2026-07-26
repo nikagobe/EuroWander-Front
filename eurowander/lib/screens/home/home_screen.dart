@@ -400,18 +400,69 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top gradient bar
-            Container(
-              height: 4,
-              decoration: BoxDecoration(
+            // Destination photo or gradient bar
+            if (trip.destinationPhotoUrl != null && trip.destinationPhotoUrl!.isNotEmpty)
+              ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                gradient: isActive
-                    ? const LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary])
-                    : isPast
-                        ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade300])
-                        : const LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFFC107)]),
+                child: Stack(
+                  children: [
+                    Image.network(
+                      trip.destinationPhotoUrl!,
+                      height: 100,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        height: 100,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: isActive
+                                ? [AppColors.brandPrimary, AppColors.brandSecondary]
+                                : isPast
+                                    ? [Colors.grey.shade400, Colors.grey.shade300]
+                                    : [const Color(0xFFFF9800), const Color(0xFFFFC107)],
+                          ),
+                        ),
+                        child: Center(child: Icon(Icons.location_city_rounded, size: 36, color: Colors.white.withOpacity(0.5))),
+                      ),
+                    ),
+                    // Gradient scrim at bottom for readability
+                    Positioned(
+                      bottom: 0, left: 0, right: 0,
+                      child: Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Destination name on photo
+                    if (destination.isNotEmpty)
+                      Positioned(
+                        bottom: 8, left: 12,
+                        child: Text(
+                          destination,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white, shadows: [Shadow(blurRadius: 4, color: Colors.black54)]),
+                        ),
+                      ),
+                  ],
+                ),
+              )
+            else
+              Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  gradient: isActive
+                      ? const LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary])
+                      : isPast
+                          ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade300])
+                          : const LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFFC107)]),
+                ),
               ),
-            ),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
