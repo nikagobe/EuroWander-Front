@@ -483,6 +483,22 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
   // Hotels Preview
   // ────────────────────────────────────────────────────────────
 
+  String _formatHotelDates(String checkin, String checkout) {
+    try {
+      final inDate = DateTime.parse(checkin);
+      final outDate = DateTime.parse(checkout);
+      final nights = outDate.difference(inDate).inDays;
+      final inStr = DateFormat('MMM d').format(inDate);
+      final outStr = inDate.year == outDate.year
+          ? DateFormat('MMM d').format(outDate)
+          : DateFormat('MMM d, yyyy').format(outDate);
+      final nightLabel = nights == 1 ? '1 night' : '$nights nights';
+      return '$inStr – $outStr  ·  $nightLabel';
+    } catch (_) {
+      return '$checkin → $checkout';
+    }
+  }
+
   Widget _buildHotelsPreview(BuildContext context) {
     final ew = context.ew;
     final hotel = trip.hotels.first;
@@ -551,7 +567,7 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                               const SizedBox(width: 6),
                             ],
                             Text(
-                              '${hotel.checkinDate} → ${hotel.checkoutDate}',
+                              _formatHotelDates(hotel.checkinDate, hotel.checkoutDate),
                               style: TextStyle(fontSize: 11, color: ew.textSecondary),
                             ),
                           ],

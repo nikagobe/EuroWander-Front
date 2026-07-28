@@ -42,7 +42,9 @@ class EmptyState extends StatelessWidget {
     return Center(
       child: Padding(
         padding: AppSpacing.paddingHorizontalXl,
-        child: Column(
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
@@ -84,6 +86,7 @@ class EmptyState extends StatelessWidget {
               ),
             ],
           ],
+        ),
         ),
       ),
     );

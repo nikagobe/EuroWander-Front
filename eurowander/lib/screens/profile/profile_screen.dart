@@ -261,6 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
     if (confirmed == true && mounted) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
       context.read<AuthProvider>().logout();
     }
   }

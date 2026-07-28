@@ -22,6 +22,7 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   late SavedTrip _trip;
   FullSchedule? _schedule;
   bool _isLoading = true;
+  String? _hoveringDayDate;
 
   @override
   void initState() {
@@ -329,43 +330,76 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
     final dayLabel = date != null ? DateFormat('EEEE, MMM d').format(date) : day.date;
     final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
     final isToday = day.date == today;
+    final isHovering = _hoveringDayDate == day.date;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Day header
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              gradient: isToday
-                  ? const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)])
-                  : LinearGradient(colors: [AppColors.brandPrimary, const Color(0xFF8B5CF6)]),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
-                  child: Text(isToday ? 'Today' : 'Day ${dayIndex + 1}', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.white)),
+    return DragTarget<_DragData>(
+      onWillAcceptWithDetails: (_) {
+        if (_hoveringDayDate != day.date) {
+          setState(() => _hoveringDayDate = day.date);
+        }
+        return false; // Don't accept at day level — individual slots handle it
+      },
+      builder: (context, candidateData, rejectedData) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: isHovering
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.brandPrimary.withOpacity(0.3), width: 1.5),
+                  color: AppColors.brandPrimary.withOpacity(0.02),
+                )
+              : null,
+          padding: isHovering ? const EdgeInsets.all(4) : null,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Day header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: isToday
+                      ? const LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)])
+                      : LinearGradient(colors: [AppColors.brandPrimary, const Color(0xFF8B5CF6)]),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(width: 10),
-                Text(dayLabel, style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
-              ],
-            ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
+                      child: Text(isToday ? 'Today' : 'Day ${dayIndex + 1}', style: Theme.of(context).textTheme.bodySmall!.copyWith(fontWeight: FontWeight.w600, color: Colors.white)),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(dayLabel, style: Theme.of(context).textTheme.titleSmall!.copyWith(color: Colors.white, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              ..._buildTimeSlots(day),
+              // Show hint when hovering on an empty day
+              if (isHovering && !day.items.any((i) => !i.isAuto))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Center(
+                    child: Text(
+                      'Drop into a time slot above',
+                      style: TextStyle(fontSize: 11, color: AppColors.brandPrimary.withOpacity(0.6), fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 8),
-          ..._buildTimeSlots(day),
-        ],
-      ),
+        );
+      },
     );
   }
 
   List<Widget> _buildTimeSlots(ScheduleDay day) {
     const slots = ['morning', 'midday', 'evening', 'night'];
+    final isHovering = _hoveringDayDate == day.date;
     return slots.where((slot) {
+      // Show all slots when dragging over this day, otherwise only populated ones
+      if (isHovering) return true;
       return day.items.any((i) => i.timeSlot == slot);
     }).map((slot) {
       final slotItems = day.items.where((i) => i.timeSlot == slot).toList();
@@ -376,9 +410,15 @@ class _SchedulePlannerScreenState extends State<SchedulePlannerScreen> {
   Widget _buildSlotSection(String dayDate, String slot, List<ScheduleItem> items) {
     final ew = context.ew;
     return DragTarget<_DragData>(
-      onWillAcceptWithDetails: (_) => true,
+      onWillAcceptWithDetails: (_) {
+        if (_hoveringDayDate != dayDate) {
+          setState(() => _hoveringDayDate = dayDate);
+        }
+        return true;
+      },
       onAcceptWithDetails: (details) {
         final data = details.data;
+        setState(() => _hoveringDayDate = null);
         _rescheduleItem(data.item, dayDate, slot);
       },
       builder: (context, candidateData, rejectedData) {

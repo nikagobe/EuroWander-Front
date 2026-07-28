@@ -67,31 +67,37 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: AppSpacing.paddingHorizontalXl,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: AppSpacing.xl),
-                _buildHeader(context),
-                const SizedBox(height: AppSpacing.lg),
-                _buildPlanButton(context),
-                const SizedBox(height: AppSpacing.sm),
-                _buildQuickActions(context),
-                const SizedBox(height: AppSpacing.lg),
-                // Featured trip: active trip or first upcoming
-                if (!_isLoading) _buildFeaturedTrip(),
-                if (!_isLoading && _featuredTrip != null) const SizedBox(height: AppSpacing.lg),
-              ],
+      child: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) {
+          return [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: AppSpacing.paddingHorizontalXl,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildHeader(context),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildPlanButton(context),
+                    const SizedBox(height: AppSpacing.sm),
+                    _buildQuickActions(context),
+                    const SizedBox(height: AppSpacing.lg),
+                    if (!_isLoading) _buildFeaturedTrip(),
+                    if (!_isLoading && _featuredTrip != null) const SizedBox(height: AppSpacing.lg),
+                  ],
+                ),
+              ),
             ),
-          ),
-          // Remaining trip tabs (Upcoming / Previous)
-          _buildTripTabs(),
-          Expanded(child: _buildTripsTabView()),
-        ],
+            SliverToBoxAdapter(
+              child: _buildTripTabs(),
+            ),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: AppSpacing.md),
+            ),
+          ];
+        },
+        body: _buildTripsTabView(),
       ),
     );
   }

@@ -9,6 +9,7 @@ import '../../models/schedule.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import 'attraction_detail_screen.dart';
+import 'hotel_detail_screen.dart';
 import 'restaurant_detail_screen.dart';
 import 'schedule_planner_screen.dart';
 import 'trip_hotels_screen.dart';
@@ -377,15 +378,259 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
               ],
             ),
           ),
-          // Items with timeline
-          ...items.asMap().entries.map((entry) {
-            final index = entry.key;
-            final item = entry.value;
-            final isLast = index == items.length - 1;
-            return _buildTimelineItem(item, slotColor, isLast);
-          }),
+          // Items with timeline — group connected flight legs
+          ..._buildGroupedItems(items, slotColor),
         ],
       ),
+    );
+  }
+
+  /// Groups consecutive flight items with the same referenceId into
+  /// a single connected visual block, while rendering other items normally.
+  List<Widget> _buildGroupedItems(List<ScheduleItem> items, Color slotColor) {
+    final widgets = <Widget>[];
+    int i = 0;
+    while (i < items.length) {
+      final item = items[i];
+      // Check if this starts a multi-leg flight group
+      if (item.itemType.toLowerCase() == 'flight' && item.referenceId.isNotEmpty) {
+        final groupStart = i;
+        while (i < items.length &&
+            items[i].itemType.toLowerCase() == 'flight' &&
+            items[i].referenceId == item.referenceId) {
+          i++;
+        }
+        final group = items.sublist(groupStart, i);
+        final isLast = i >= items.length;
+        if (group.length > 1) {
+          widgets.add(_buildFlightGroupCard(group, slotColor, isLast));
+        } else {
+          widgets.add(_buildTimelineItem(group.first, slotColor, isLast));
+        }
+      } else {
+        final isLast = i == items.length - 1;
+        widgets.add(_buildTimelineItem(item, slotColor, isLast));
+        i++;
+      }
+    }
+    return widgets;
+  }
+
+  /// Renders a group of flight legs as a single connected card with a
+  /// "Connecting Flight" ribbon and layover indicator between legs.
+  Widget _buildFlightGroupCard(List<ScheduleItem> legs, Color slotColor, bool isLast) {
+    final ew = context.ew;
+    final flightColor = _getItemTypeColor('flight');
+
+    return GestureDetector(
+      onTap: () => _onScheduleItemTap(legs.first),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Timeline connector
+            SizedBox(
+              width: 28,
+              child: Column(
+                children: [
+                  Container(
+                    width: 10, height: 10,
+                    decoration: BoxDecoration(
+                      color: flightColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [BoxShadow(color: flightColor.withOpacity(0.3), blurRadius: 4)],
+                    ),
+                  ),
+                  if (!isLast)
+                    Expanded(
+                      child: Container(
+                        width: 2,
+                        margin: const EdgeInsets.symmetric(vertical: 2),
+                        decoration: BoxDecoration(
+                          color: slotColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(1),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Grouped card
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: ew.cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: flightColor.withOpacity(0.25)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: flightColor.withOpacity(0.06),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // "Connecting Flight" header
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: flightColor.withOpacity(0.08),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(11),
+                          topRight: Radius.circular(11),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.connecting_airports_rounded, size: 14, color: flightColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Connecting Flight  ·  ${legs.length} legs',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: flightColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Legs
+                    ...legs.asMap().entries.map((entry) {
+                      final legIndex = entry.key;
+                      final leg = entry.value;
+                      final isLastLeg = legIndex == legs.length - 1;
+                      return _buildFlightLegRow(leg, legIndex, isLastLeg, flightColor);
+                    }),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFlightLegRow(ScheduleItem leg, int legIndex, bool isLastLeg, Color flightColor) {
+    final ew = context.ew;
+    final hasTime = _itemHasTime(leg);
+
+    return Column(
+      children: [
+        // Layover divider between legs
+        if (legIndex > 0)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 1,
+                  color: flightColor.withOpacity(0.15),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: flightColor.withOpacity(0.06),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: flightColor.withOpacity(0.12)),
+                  ),
+                  child: Text(
+                    'Layover',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w600,
+                      color: flightColor.withOpacity(0.7),
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    color: flightColor.withOpacity(0.15),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        // Leg content
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            children: [
+              // Leg number indicator
+              Container(
+                width: 20, height: 20,
+                decoration: BoxDecoration(
+                  color: flightColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
+                  child: Text(
+                    '${legIndex + 1}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: flightColor,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.flight_rounded, size: 14, color: flightColor.withOpacity(0.6)),
+              const SizedBox(width: 6),
+              // Leg details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      leg.title,
+                      style: Theme.of(context).textTheme.labelLarge!.copyWith(fontSize: 13),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (leg.subtitle.isNotEmpty) ...[
+                      const SizedBox(height: 1),
+                      Text(
+                        leg.subtitle,
+                        style: TextStyle(fontSize: 10, color: ew.textSecondary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Time chip
+              if (hasTime) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: flightColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    _extractTime(leg),
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: flightColor),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -597,13 +842,31 @@ class _TripScheduleScreenState extends State<TripScheduleScreen> {
       return;
     }
 
-    // Hotels → hotels screen
+    // Hotels → detail page if we can match the hotel, otherwise hotels list
     if (type == 'hotel_checkin' || type == 'hotel_checkout') {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => TripHotelsScreen(trip: widget.trip),
-        ),
+      final refId = item.referenceId;
+      final matchedHotel = widget.trip.hotels.cast<dynamic>().firstWhere(
+        (h) => h.hotelId.toString() == refId,
+        orElse: () => null,
       );
+      if (matchedHotel != null) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => HotelDetailScreen(
+              hotelId: matchedHotel.hotelId,
+              arrivalDate: matchedHotel.checkinDate,
+              departureDate: matchedHotel.checkoutDate,
+              trip: widget.trip,
+            ),
+          ),
+        );
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => TripHotelsScreen(trip: widget.trip),
+          ),
+        );
+      }
       return;
     }
   }
