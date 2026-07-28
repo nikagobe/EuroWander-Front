@@ -9,6 +9,7 @@ import '../../utils/page_transitions.dart';
 import '../../widgets/widgets.dart';
 import '../plan/city_selection_screen.dart';
 import '../playlists/playlist_discovery_screen.dart';
+import '../profile/profile_screen.dart';
 import '../templates/template_discovery_screen.dart';
 import 'trip_detail_screen.dart';
 
@@ -345,7 +346,9 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           ),
         ),
         GestureDetector(
-          onTap: () => _showAccountSheet(context),
+          onTap: () => Navigator.of(context).push(
+            EWPageRoute(page: const ProfileScreen()),
+          ),
           child: Container(
             width: 44,
             height: 44,

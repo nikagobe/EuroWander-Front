@@ -44,6 +44,24 @@ class ApiService {
     return [];
   }
 
+  Future<List<Map<String, String>>> searchAirports(String query, {int limit = 10}) async {
+    final uri = Uri.parse('$baseUrl/api/v1/airports/search').replace(
+      queryParameters: {'q': query, 'limit': limit.toString()},
+    );
+    _logRequest('GET', uri);
+    final response = await http.get(uri, headers: _headers);
+    _logResponse(response);
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      return data.map((json) => {
+        'iata': json['iata'] as String? ?? '',
+        'name': json['name'] as String? ?? '',
+        'city': json['city'] as String? ?? '',
+      }).toList();
+    }
+    return [];
+  }
+
   Future<List<FlightOffer>> searchFlights({
     required String originId,
     required String destinationId,
