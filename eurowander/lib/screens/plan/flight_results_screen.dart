@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../models/city.dart';
 import '../../models/flight.dart';
 import '../../services/api_service.dart';
+import '../../utils/page_transitions.dart';
 import '../../widgets/widgets.dart';
 import 'bus_selection_screen.dart';
 import 'trip_confirmation_screen.dart';
@@ -86,20 +87,23 @@ class _FlightResultsScreenState extends State<FlightResultsScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 800;
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              EWAppBar(title: 'Available Flights'),
-              const SizedBox(height: AppSpacing.sm),
-              Expanded(
-                child: isWide
+    return ScrollConfiguration(
+      behavior: EWScrollBehavior(),
+      child: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
+          child: SafeArea(
+            child: Column(
+              children: [
+                const EWAppBar(title: 'Available Flights'),
+                TripFlowProgress(currentStep: widget.isReturn ? 1 : 0),
+                Expanded(
+                  child: isWide
                     ? _buildWideLayout()
                     : _buildNarrowLayout(),
               ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

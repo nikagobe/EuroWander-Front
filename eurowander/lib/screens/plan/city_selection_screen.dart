@@ -1,14 +1,15 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:latlong2/latlong.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/city.dart';
 import '../../models/flight.dart';
 import '../../services/api_service.dart';
+import '../../utils/page_transitions.dart';
+import '../../widgets/widgets.dart';
 import 'flight_results_screen.dart';
 
 class CitySelectionScreen extends StatefulWidget {
@@ -196,18 +197,23 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 800;
+    final ew = context.ew;
 
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildAppBar(context),
-              Expanded(
-                child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
-              ),
-            ],
+    return ScrollConfiguration(
+      behavior: EWScrollBehavior(),
+      child: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(gradient: ew.surfaceGradient),
+          child: SafeArea(
+            child: Column(
+              children: [
+                EWAppBar(title: widget.isReturn ? 'Return Flight' : 'Plan Trip'),
+                TripFlowProgress(currentStep: widget.isReturn ? 1 : 0),
+                Expanded(
+                  child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -215,6 +221,8 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
   }
 
   Widget _buildWideLayout() {
+    final ew = context.ew;
+    final theme = Theme.of(context);
     return Row(
       children: [
         Expanded(
@@ -230,14 +238,9 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     const SizedBox(height: 24),
                     Text(
                       'Where are you\ntravelling?',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.lightTextPrimary,
-                        height: 1.2,
-                      ),
+                      style: theme.textTheme.headlineMedium?.copyWith(height: 1.2),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
                     _buildSearchCard(),
                     const SizedBox(height: 20),
                     _buildDateCard(),
@@ -264,6 +267,8 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
   }
 
   Widget _buildNarrowLayout() {
+    final ew = context.ew;
+    final theme = Theme.of(context);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
@@ -285,14 +290,9 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                     const SizedBox(height: 20),
                     Text(
                       'Where are you\ntravelling?',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.lightTextPrimary,
-                        height: 1.2,
-                      ),
+                      style: theme.textTheme.headlineMedium?.copyWith(height: 1.2),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 28),
                     _buildSearchCard(),
                     const SizedBox(height: 20),
                     _buildDateCard(),
@@ -430,21 +430,17 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                   ),
                 ],
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.arrow_back_ios_new_rounded,
                 size: 18,
-                color: AppColors.lightTextPrimary,
+                color: context.ew.textPrimary,
               ),
             ),
           ),
           const SizedBox(width: 16),
           Text(
             'Plan Trip',
-            style: GoogleFonts.poppins(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.lightTextPrimary,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: context.ew.textPrimary),
           ),
         ],
       ),
@@ -455,7 +451,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.ew.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -547,7 +543,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.ew.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -573,7 +569,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.ew.cardColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -605,21 +601,12 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
               children: [
                 Text(
                   'Passengers',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.lightTextSecondary,
-                    letterSpacing: 0.5,
-                  ),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.ew.textSecondary, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   '$_adults ${_adults == 1 ? 'Adult' : 'Adults'}',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.lightTextPrimary,
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.ew.textPrimary),
                 ),
               ],
             ),
@@ -658,11 +645,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Text(
                     '$_adults',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.lightTextPrimary,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: context.ew.textPrimary),
                   ),
                 ),
                 GestureDetector(
@@ -703,8 +686,8 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
           ? () async {
               if (widget.pickMode) {
                 final result = await Navigator.of(context).push<FlightOffer>(
-                  MaterialPageRoute(
-                    builder: (_) => FlightResultsScreen(
+                  EWPageRoute(
+                    page: FlightResultsScreen(
                       origin: _selectedFrom!,
                       destination: _selectedTo!,
                       departureDate: _departureDate!,
@@ -718,8 +701,8 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                 }
               } else {
                 Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => FlightResultsScreen(
+                  EWPageRoute(
+                    page: FlightResultsScreen(
                       origin: _selectedFrom!,
                       destination: _selectedTo!,
                       departureDate: _departureDate!,
@@ -742,7 +725,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                   colors: [AppColors.brandPrimary, Color(0xFF8B5CF6), AppColors.brandSecondary],
                 )
               : null,
-          color: isReady ? null : Colors.grey.shade300,
+          color: isReady ? null : context.ew.cardColor,
           borderRadius: BorderRadius.circular(18),
           boxShadow: isReady
               ? [
@@ -765,11 +748,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
             const SizedBox(width: 10),
             Text(
               'Search Flights',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: isReady ? Colors.white : Colors.grey.shade500,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isReady ? Colors.white : context.ew.textTertiary),
             ),
           ],
         ),
@@ -801,7 +780,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
             child: Icon(
               icon,
               size: 18,
-              color: isSelected ? AppColors.brandPrimary : AppColors.lightTextSecondary,
+              color: isSelected ? AppColors.brandPrimary : context.ew.textSecondary,
             ),
           ),
           const SizedBox(width: 10),
@@ -811,23 +790,12 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
               children: [
                 Text(
                   label,
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.lightTextSecondary,
-                    letterSpacing: 0.5,
-                  ),
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.ew.textSecondary, letterSpacing: 0.5),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: isSelected
-                        ? AppColors.lightTextPrimary
-                        : Colors.grey.shade400,
-                  ),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: isSelected ? context.ew.textPrimary : context.ew.textTertiary),
                 ),
               ],
             ),
@@ -868,7 +836,7 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                 size: 20,
                 color: selectedCity != null
                     ? AppColors.brandPrimary
-                    : AppColors.lightTextSecondary,
+                    : context.ew.textSecondary,
               ),
             ),
             const SizedBox(width: 12),
@@ -878,29 +846,17 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.lightTextSecondary,
-                      letterSpacing: 0.5,
-                    ),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: context.ew.textSecondary, letterSpacing: 0.5),
                   ),
                   const SizedBox(height: 4),
                   TextField(
                     controller: controller,
                     focusNode: focusNode,
                     onChanged: onChanged,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.lightTextPrimary,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: context.ew.textPrimary),
                     decoration: InputDecoration(
                       hintText: hint,
-                      hintStyle: GoogleFonts.poppins(
-                        fontSize: 16,
-                        color: Colors.grey.shade400,
-                      ),
+                      hintStyle: TextStyle(fontSize: 16, color: context.ew.textTertiary),
                       border: InputBorder.none,
                       isDense: false,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -964,18 +920,11 @@ class _CitySelectionScreenState extends State<CitySelectionScreen> {
                       children: [
                         Text(
                           city.name,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.lightTextPrimary,
-                          ),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.ew.textPrimary),
                         ),
                         Text(
-                          '${city.country} · ${city.description}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            color: AppColors.lightTextSecondary,
-                          ),
+                          '${city.country} Â· ${city.description}',
+                          style: TextStyle(fontSize: 11, color: context.ew.textSecondary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),

@@ -15,3 +15,4 @@ export 'gradient_button.dart';
 export 'section_header.dart';
 export 'shimmer_loading.dart';
 export 'status_chip.dart';
+export 'trip_flow_progress.dart';
