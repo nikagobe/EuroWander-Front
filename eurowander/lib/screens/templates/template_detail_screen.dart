@@ -283,30 +283,56 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
   // ─── Stats row ────────────────────────────────────────────────────
 
   Widget _buildStatsRow(TemplateResponse template) {
-    return Row(children: [
-      _statItem(Icons.fork_right_rounded, '${template.forkCount}', 'Forks'),
-      _statDivider(),
-      _statItem(Icons.favorite_rounded, '${template.likeCount}', 'Likes'),
-      _statDivider(),
-      _statItem(Icons.calendar_today_rounded, '${template.totalDays}', 'Days'),
-      _statDivider(),
-      _statItem(Icons.location_on_rounded, '${template.legs.length}', 'Cities'),
+    final ew = context.ew;
+    return Column(children: [
+      // Social engagement row
+      Row(children: [
+        _socialChip(Icons.fork_right_rounded, '${template.forkCount}', 'Forks'),
+        const SizedBox(width: 10),
+        _socialChip(Icons.favorite_rounded, '${template.likeCount}', 'Likes'),
+      ]),
+      const SizedBox(height: 10),
+      // Trip info row
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: AppColors.brandPrimary.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.brandPrimary.withOpacity(0.12)),
+        ),
+        child: Row(children: [
+          Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.brandPrimary),
+          const SizedBox(width: 6),
+          Text('${template.totalDays} days', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ew.textPrimary)),
+          Container(
+            width: 4, height: 4,
+            margin: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(color: ew.textSecondary.withOpacity(0.4), shape: BoxShape.circle),
+          ),
+          Icon(Icons.location_on_rounded, size: 16, color: AppColors.brandPrimary),
+          const SizedBox(width: 6),
+          Text('${template.legs.length} cities', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ew.textPrimary)),
+        ]),
+      ),
     ]);
   }
 
-  Widget _statItem(IconData icon, String value, String label) {
-    return Expanded(
-      child: Column(children: [
-        Icon(icon, size: 20, color: AppColors.brandPrimary),
-        const SizedBox(height: 4),
-        Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        Text(label, style: TextStyle(fontSize: 11, color: context.ew.textSecondary)),
+  Widget _socialChip(IconData icon, String value, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: context.ew.cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 15, color: AppColors.brandPrimary),
+        const SizedBox(width: 5),
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+        const SizedBox(width: 3),
+        Text(label, style: TextStyle(fontSize: 12, color: context.ew.textSecondary)),
       ]),
     );
-  }
-
-  Widget _statDivider() {
-    return Container(width: 1, height: 36, color: Colors.grey.withOpacity(0.2));
   }
 
   // ─── Budget card ──────────────────────────────────────────────────
@@ -530,6 +556,8 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
               decoration: BoxDecoration(color: const Color(0xFFFF9800).withOpacity(0.15), shape: BoxShape.circle),
               child: const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF9800)),
             ),
+          const SizedBox(width: 4),
+          Icon(Icons.chevron_right_rounded, size: 18, color: Colors.grey.withOpacity(0.4)),
         ],
       ),
     );
@@ -548,29 +576,37 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
   Widget _buildBottomCta(TemplateResponse template) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: BoxDecoration(
-        color: context.ew.cardColor,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -4))],
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
       ),
       child: SafeArea(
         child: SizedBox(
           width: double.infinity, height: 54,
-          child: ElevatedButton(
-            onPressed: () => Navigator.push(context, EWPageRoute(page: ForkWizardScreen(templateId: widget.templateId))),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.brandPrimary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              elevation: 4,
-              shadowColor: AppColors.brandPrimary.withOpacity(0.4),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [AppColors.brandPrimary, AppColors.brandSecondary],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(color: AppColors.brandPrimary.withOpacity(0.35), blurRadius: 14, offset: const Offset(0, 6))],
             ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.rocket_launch_rounded, size: 20, color: Colors.white),
-                SizedBox(width: 10),
-                Text('USE THIS TEMPLATE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
-              ],
+            child: ElevatedButton(
+              onPressed: () => Navigator.push(context, EWPageRoute(page: ForkWizardScreen(templateId: widget.templateId))),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.rocket_launch_rounded, size: 20, color: Colors.white),
+                  SizedBox(width: 10),
+                  Text('USE THIS TEMPLATE', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+                ],
+              ),
             ),
           ),
         ),
@@ -731,6 +767,8 @@ class _PlaylistPreviewSectionState extends State<_PlaylistPreviewSection> {
           ]),
         ])),
         Text('~${item.suggestedDurationMinutes}min', style: TextStyle(fontSize: 10, color: ew.textSecondary)),
+        const SizedBox(width: 4),
+        Icon(Icons.chevron_right_rounded, size: 18, color: ew.textSecondary.withOpacity(0.5)),
       ]),
     );
   }

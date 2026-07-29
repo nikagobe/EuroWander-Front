@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/playlist.dart';
 import '../../models/saved_trip.dart';
+import '../../models/template.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
+import '../../services/playlist_service.dart';
+import '../../services/template_service.dart';
 import '../../utils/page_transitions.dart';
 import '../../widgets/widgets.dart';
 import '../plan/city_selection_screen.dart';
+import '../playlists/playlist_builder_screen.dart';
+import '../playlists/playlist_detail_screen.dart';
 import '../playlists/playlist_discovery_screen.dart';
 import '../profile/profile_screen.dart';
+import '../templates/create_template/create_template_screen.dart';
+import '../templates/template_detail_screen.dart';
 import '../templates/template_discovery_screen.dart';
 import 'trip_detail_screen.dart';
 
@@ -26,11 +34,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   bool _isLoading = true;
   late TabController _tabController;
 
+  // Popular data for carousels
+  List<TemplateListItem> _popularTemplates = [];
+  List<PlaylistSummary> _popularPlaylists = [];
+  bool _isLoadingPopular = true;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _loadTrips();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadPopularContent());
   }
 
   @override
@@ -64,9 +78,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     }
   }
 
+  Future<void> _loadPopularContent() async {
+    final token = context.read<AuthProvider>().token;
+
+    // Load templates (no auth required)
+    try {
+      final templates = await TemplateService().getTemplates(
+        sortBy: 'most_liked',
+        limit: 8,
+      );
+      if (mounted) setState(() => _popularTemplates = templates);
+    } catch (e) {
+      debugPrint('[Home] Failed to load popular templates: $e');
+    }
+
+    // Load playlists (needs auth)
+    if (token != null) {
+      try {
+        final playlists = await PlaylistService().searchPlaylists(
+          token: token,
+          sortBy: 'popular',
+          limit: 8,
+        );
+        if (mounted) setState(() => _popularPlaylists = playlists);
+      } catch (e) {
+        debugPrint('[Home] Failed to load popular playlists: $e');
+      }
+    }
+
+    if (mounted) setState(() => _isLoadingPopular = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
+      floatingActionButton: _buildCreateFab(context),
       child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
@@ -80,8 +126,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     _buildHeader(context),
                     const SizedBox(height: AppSpacing.lg),
                     _buildPlanButton(context),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildQuickActions(context),
                     const SizedBox(height: AppSpacing.lg),
                     if (!_isLoading) _buildFeaturedTrip(),
                     if (!_isLoading && _featuredTrip != null) const SizedBox(height: AppSpacing.lg),
@@ -89,6 +133,10 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                 ),
               ),
             ),
+            // Popular Templates carousel
+            SliverToBoxAdapter(child: _buildTemplatesCarousel()),
+            // Popular Playlists carousel
+            SliverToBoxAdapter(child: _buildPlaylistsCarousel()),
             SliverToBoxAdapter(
               child: _buildTripTabs(),
             ),
@@ -459,37 +507,322 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   // ────────────────────────────────────────────────────────────
-  // Quick Action Grid
+  // Create FAB (speed dial for Template + Playlist creation)
   // ────────────────────────────────────────────────────────────
 
-  Widget _buildQuickActions(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlineActionButton(
-            label: 'Playlists',
-            icon: Icons.explore_rounded,
-            color: AppColors.brandPrimary,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen()),
+  Widget _buildCreateFab(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: (value) {
+        if (value == 'template') {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateTemplateScreen()));
+        } else if (value == 'playlist') {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaylistBuilderScreen()));
+        }
+      },
+      offset: const Offset(0, -120),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      color: context.ew.cardColor,
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: 'template',
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppColors.brandAmber.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.map_rounded, size: 18, color: AppColors.brandAmber),
             ),
-          ),
+            const SizedBox(width: 10),
+            const Text('Create Template', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          ]),
         ),
-        const SizedBox(width: AppSpacing.sm),
-        Expanded(
-          child: OutlineActionButton(
-            label: 'Templates',
-            icon: Icons.compass_calibration_rounded,
-            color: AppColors.brandAmber,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen()),
+        PopupMenuItem(
+          value: 'playlist',
+          child: Row(children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(color: AppColors.brandPrimary.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
+              child: const Icon(Icons.queue_music_rounded, size: 18, color: AppColors.brandPrimary),
             ),
-          ),
+            const SizedBox(width: 10),
+            const Text('Create Playlist', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          ]),
         ),
       ],
+      child: Container(
+        width: 56, height: 56,
+        decoration: BoxDecoration(
+          gradient: AppColors.primaryGradient,
+          shape: BoxShape.circle,
+          boxShadow: AppShadows.glow(AppColors.brandPrimary),
+        ),
+        child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+      ),
     );
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Popular Templates Carousel
+  // ────────────────────────────────────────────────────────────
+
+  Widget _buildTemplatesCarousel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          child: Row(
+            children: [
+              Icon(Icons.compass_calibration_rounded, size: 18, color: AppColors.brandAmber),
+              const SizedBox(width: 6),
+              Text('Popular Templates', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen())),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('See All', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
+                  const SizedBox(width: 2),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.brandPrimary),
+                ]),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 190,
+          child: _isLoadingPopular
+              ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary)))
+              : _popularTemplates.isEmpty
+                  ? Center(child: Text('No templates yet', style: TextStyle(color: context.ew.textSecondary)))
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                      itemCount: _popularTemplates.length,
+                      itemBuilder: (context, index) {
+                        final t = _popularTemplates[index];
+                        return _buildTemplateTile(t);
+                      },
+                    ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+      ],
+    );
+  }
+
+  Widget _buildTemplateTile(TemplateListItem t) {
+    final ew = context.ew;
+    return GestureDetector(
+      onTap: () => Navigator.push(context, EWPageRoute(page: TemplateDetailScreen(templateId: t.id))),
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: ew.cardColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              child: t.coverPhotoUrl.isNotEmpty
+                  ? Image.network(t.coverPhotoUrl, height: 90, width: 200, fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _templateTilePlaceholder(t))
+                  : _templateTilePlaceholder(t),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 3),
+                  Text(
+                    t.legCities.join(' → '),
+                    style: TextStyle(fontSize: 11, color: ew.textSecondary),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandPrimary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text('${t.totalDays}d', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.fork_right_rounded, size: 13, color: ew.textSecondary),
+                    const SizedBox(width: 2),
+                    Text('${t.forkCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
+                    const SizedBox(width: 6),
+                    Icon(Icons.favorite_rounded, size: 12, color: Colors.red.shade300),
+                    const SizedBox(width: 2),
+                    Text('${t.likeCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
+                  ]),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _templateTilePlaceholder(TemplateListItem t) {
+    return Container(
+      height: 90, width: 200,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary]),
+      ),
+      child: Center(
+        child: Text(
+          t.legCities.isNotEmpty ? t.legCities.first : 'Trip',
+          style: TextStyle(fontSize: 18, color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.w700),
+        ),
+      ),
+    );
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Popular Playlists Carousel
+  // ────────────────────────────────────────────────────────────
+
+  Widget _buildPlaylistsCarousel() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+          child: Row(
+            children: [
+              Icon(Icons.explore_rounded, size: 18, color: AppColors.brandPrimary),
+              const SizedBox(width: 6),
+              Text('Popular Playlists', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen())),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('See All', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
+                  const SizedBox(width: 2),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.brandPrimary),
+                ]),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        SizedBox(
+          height: 150,
+          child: _isLoadingPopular
+              ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary)))
+              : _popularPlaylists.isEmpty
+                  ? Center(child: Text('No playlists yet', style: TextStyle(color: context.ew.textSecondary)))
+                  : ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                      itemCount: _popularPlaylists.length,
+                      itemBuilder: (context, index) {
+                        final p = _popularPlaylists[index];
+                        return _buildPlaylistTile(p);
+                      },
+                    ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+      ],
+    );
+  }
+
+  Widget _buildPlaylistTile(PlaylistSummary p) {
+    final ew = context.ew;
+    return GestureDetector(
+      onTap: () => Navigator.push(context, EWPageRoute(page: PlaylistDetailScreen(playlistId: p.id))),
+      child: Container(
+        width: 180,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: ew.cardColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // City + cover icon
+            Row(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: p.coverPhotoUrl.isNotEmpty
+                    ? Image.network(p.coverPhotoUrl, width: 40, height: 40, fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _playlistTileIcon(p))
+                    : _playlistTileIcon(p),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(p.city, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(p.country, style: TextStyle(fontSize: 10, color: ew.textSecondary)),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 10),
+            Text(p.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+            const Spacer(),
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _vibeColor(p.vibe).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(p.vibe, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _vibeColor(p.vibe))),
+              ),
+              const Spacer(),
+              if (p.averageRating > 0) ...[
+                const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800)),
+                const SizedBox(width: 2),
+                Text(p.averageRating.toStringAsFixed(1), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ew.textSecondary)),
+              ],
+              const SizedBox(width: 6),
+              Icon(Icons.people_alt_rounded, size: 12, color: ew.textSecondary),
+              const SizedBox(width: 2),
+              Text('${p.importCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
+            ]),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _playlistTileIcon(PlaylistSummary p) {
+    return Container(
+      width: 40, height: 40,
+      decoration: BoxDecoration(
+        color: AppColors.brandPrimary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Icon(Icons.queue_music_rounded, size: 20, color: AppColors.brandPrimary),
+    );
+  }
+
+  Color _vibeColor(String vibe) {
+    switch (vibe.toLowerCase()) {
+      case 'adventure': return const Color(0xFFE65100);
+      case 'romantic': return const Color(0xFFE91E63);
+      case 'cultural': return const Color(0xFF7B1FA2);
+      case 'foodie': return const Color(0xFFF57C00);
+      case 'luxury': return const Color(0xFFFF9800);
+      case 'budget': return const Color(0xFF4CAF50);
+      case 'party': return const Color(0xFFE040FB);
+      default: return AppColors.brandPrimary;
+    }
   }
 
   // ────────────────────────────────────────────────────────────

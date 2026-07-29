@@ -80,19 +80,50 @@ class _WizardHotelSectionState extends State<WizardHotelSection> {
           children: [
             // Dates info
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: ew.cardColor,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                gradient: LinearGradient(
+                  colors: [AppColors.brandPrimary.withOpacity(0.06), AppColors.brandSecondary.withOpacity(0.03)],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.brandPrimary.withOpacity(0.15)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.calendar_today, size: 16, color: AppColors.brandPrimary),
+                  Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandPrimary.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Icon(Icons.date_range_rounded, size: 14, color: AppColors.brandPrimary),
+                  ),
                   const SizedBox(width: 10),
-                  Text(
-                    '${widget.leg.dateRange.start} – ${widget.leg.dateRange.end} (${widget.leg.days} nights)',
-                    style: TextStyle(fontSize: 13, color: ew.textPrimary),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Check-in / Check-out', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: ew.textSecondary, letterSpacing: 0.3)),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${widget.leg.dateRange.start} – ${widget.leg.dateRange.end}',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.brandPrimary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${widget.leg.days} nights',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.brandPrimary),
+                    ),
                   ),
                 ],
               ),
@@ -228,41 +259,95 @@ class _WizardHotelSectionState extends State<WizardHotelSection> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.4)),
+        border: Border.all(color: const Color(0xFF4CAF50).withOpacity(0.5), width: 2),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4CAF50).withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: hotel.photoUrl.isNotEmpty
-                    ? Image.network(hotel.photoUrl, width: 56, height: 56, fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(width: 56, height: 56, color: Colors.grey.shade100, child: const Icon(Icons.hotel)))
-                    : Container(width: 56, height: 56, color: Colors.grey.shade100, child: const Icon(Icons.hotel)),
+                    ? Image.network(hotel.photoUrl, width: 64, height: 64, fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => Container(width: 64, height: 64, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.hotel)))
+                    : Container(width: 64, height: 64, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.hotel)),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(hotel.name, style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    Text(
-                      '€${hotel.pricePerNight.toStringAsFixed(0)}/night · €${hotel.priceTotal.toStringAsFixed(0)} total',
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppColors.lightTextSecondary),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(hotel.name, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(Icons.check_circle, size: 18, color: Color(0xFF4CAF50)),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        ...List.generate(hotel.stars, (_) => const Icon(Icons.star_rounded, size: 13, color: Color(0xFFFF9800))),
+                        if (hotel.reviewScore > 0) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: AppColors.brandPrimary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '${hotel.reviewScore}',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.brandPrimary),
+                            ),
+                          ),
+                          if (hotel.reviewScoreWord.isNotEmpty) ...[
+                            const SizedBox(width: 4),
+                            Text(hotel.reviewScoreWord, style: TextStyle(fontSize: 11, color: AppColors.lightTextSecondary)),
+                          ],
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(
+                          '€${hotel.pricePerNight.toStringAsFixed(0)}',
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.brandPrimary),
+                        ),
+                        Text('/night', style: TextStyle(fontSize: 12, color: AppColors.lightTextSecondary)),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4CAF50).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '€${hotel.priceTotal.toStringAsFixed(0)} total',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32)),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: List.generate(hotel.stars, (_) => const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF9800))),
-              ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(

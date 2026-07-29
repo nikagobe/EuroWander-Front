@@ -306,34 +306,85 @@ class _ForkWizardScreenState extends State<ForkWizardScreen> {
     final end = start.add(Duration(days: totalDays));
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.brandPrimary.withOpacity(0.3)),
+        gradient: LinearGradient(
+          colors: [AppColors.brandPrimary.withOpacity(0.06), AppColors.brandSecondary.withOpacity(0.04)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.brandPrimary.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Your trip:', style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Text(
-            '${DateFormat('MMM d').format(start)} – ${DateFormat('MMM d, yyyy').format(end)} ($totalDays days)',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.brandPrimary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.flight_takeoff_rounded, size: 16, color: AppColors.brandPrimary),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Your Trip', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: context.ew.textSecondary, letterSpacing: 0.5)),
+                  Text(
+                    '${DateFormat('MMM d').format(start)} – ${DateFormat('MMM d, yyyy').format(end)}',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.brandPrimary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text('$totalDays days', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
+          Container(height: 1, color: AppColors.brandPrimary.withOpacity(0.1)),
+          const SizedBox(height: 12),
           ...provider.forkGuide!.legs.map((leg) {
             final legStart = provider.legStartDate(leg.order)!;
             final legEnd = provider.legEndDate(leg.order)!;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 3),
+              padding: const EdgeInsets.only(bottom: 6),
               child: Row(
                 children: [
-                  const Icon(Icons.place, size: 14, color: AppColors.brandPrimary),
-                  const SizedBox(width: 4),
+                  Container(
+                    width: 6, height: 6,
+                    decoration: BoxDecoration(
+                      color: AppColors.brandPrimary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(leg.city, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
                   Text(
-                    '${leg.city} — ${DateFormat('MMM d').format(legStart)}–${DateFormat('MMM d').format(legEnd)} (${leg.days} days)',
-                    style: const TextStyle(fontSize: 12, color: AppColors.lightTextSecondary),
+                    '${DateFormat('MMM d').format(legStart)} – ${DateFormat('MMM d').format(legEnd)}',
+                    style: TextStyle(fontSize: 12, color: context.ew.textSecondary),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: context.ew.cardColor,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                    ),
+                    child: Text('${leg.days}d', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
                   ),
                 ],
               ),
