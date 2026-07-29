@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
+import '../../models/profile.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
-import 'widgets/activity_feed_tabs.dart';
 import 'widgets/badges_section.dart';
 import 'widgets/bio_section.dart';
 import 'widgets/collaborators_row.dart';
-import 'widgets/profile_header.dart';
 import 'widgets/stats_row.dart';
 
 class UserProfileScreen extends StatefulWidget {
@@ -20,6 +19,10 @@ class UserProfileScreen extends StatefulWidget {
 }
 
 class _UserProfileScreenState extends State<UserProfileScreen> {
+  FullProfile? _profile;
+  bool _isLoading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -29,123 +32,334 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _loadUserProfile() async {
     final token = context.read<AuthProvider>().token;
     if (token == null) return;
-    await context.read<ProfileProvider>().fetchUserProfile(
-          token: token,
-          userId: widget.userId,
-        );
-  }
 
-  @override
-  void dispose() {
-    // Don't clear in dispose to avoid rebuild issues
-    super.dispose();
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      await context.read<ProfileProvider>().fetchUserProfile(
+            token: token,
+            userId: widget.userId,
+          );
+      if (mounted) {
+        setState(() {
+          _profile = context.read<ProfileProvider>().viewedProfile;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final ew = context.ew;
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          color: AppColors.lightTextPrimary,
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Profile',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        centerTitle: true,
-      ),
       body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Consumer<ProfileProvider>(
-        builder: (context, provider, _) {
-          if (provider.isLoading && provider.viewedProfile == null) {
-            return const Center(
-              child: CircularProgressIndicator(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Consumer<ProfileProvider>(
+            builder: (context, provider, _) {
+              final profile = provider.viewedProfile ?? _profile;
+              final loading = _isLoading && profile == null;
+              final error = provider.error ?? _error;
+
+              if (loading) {
+                return const Center(
+                  child: CircularProgressIndicator(
+                    color: AppColors.brandPrimary,
+                    strokeWidth: 2.5,
+                  ),
+                );
+              }
+
+              if (error != null && profile == null) {
+                return _buildErrorState(error);
+              }
+
+              if (profile == null) {
+                return _buildErrorState('Profile not available');
+              }
+
+              return RefreshIndicator(
                 color: AppColors.brandPrimary,
-                strokeWidth: 2.5,
-              ),
-            );
-          }
-
-          if (provider.error != null && provider.viewedProfile == null) {
-            return _buildErrorState(provider.error!);
-          }
-
-          final profile = provider.viewedProfile;
-          if (profile == null) {
-            return _buildErrorState('Profile not available');
-          }
-
-          return RefreshIndicator(
-            color: AppColors.brandPrimary,
-            onRefresh: _loadUserProfile,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(
-                parent: BouncingScrollPhysics(),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: AppSpacing.md),
-                  // Header - no edit button for other users
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.md),
-                    child: ProfileHeader(
-                      profile: profile.profile,
-                      showEditButton: false,
+                onRefresh: _loadUserProfile,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                    parent: BouncingScrollPhysics(),
+                  ),
+                  slivers: [
+                    // Cover photo with overlaid back button
+                    SliverToBoxAdapter(
+                      child: _buildCoverSection(profile),
                     ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
 
-                  // Bio
-                  BioSection(bio: profile.profile.bio),
-                  if (profile.profile.bio.isNotEmpty)
-                    const SizedBox(height: AppSpacing.md),
+                    // Name and location
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.xl, AppSpacing.md, AppSpacing.xl, 0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              profile.profile.fullName.isNotEmpty
+                                  ? profile.profile.fullName
+                                  : 'Traveler',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineSmall
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                              textAlign: TextAlign.center,
+                            ),
+                            if (profile.profile.homeCity.isNotEmpty) ...[
+                              const SizedBox(height: AppSpacing.xxs),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 14,
+                                    color: AppColors.lightTextSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    profile.profile.homeCity,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.lightTextSecondary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
 
-                  // Travel style tags
-                  TravelTagsRow(tags: profile.profile.travelStyleTags),
-                  if (profile.profile.travelStyleTags.isNotEmpty)
-                    const SizedBox(height: AppSpacing.xl),
+                    // Bio
+                    if (profile.profile.bio.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.md),
+                          child: BioSection(bio: profile.profile.bio),
+                        ),
+                      ),
 
-                  // Stats
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.xl),
-                    child: StatsRow(stats: profile.stats),
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
+                    // Travel style tags
+                    if (profile.profile.travelStyleTags.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.md),
+                          child: TravelTagsRow(
+                            tags: profile.profile.travelStyleTags,
+                          ),
+                        ),
+                      ),
 
-                  // Badges
-                  BadgesSection(badges: profile.badges),
-                  if (profile.badges.isNotEmpty)
-                    const SizedBox(height: AppSpacing.xxl),
+                    // Stats
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(
+                          top: AppSpacing.xl,
+                          left: AppSpacing.xl,
+                          right: AppSpacing.xl,
+                        ),
+                        child: StatsRow(stats: profile.stats),
+                      ),
+                    ),
 
-                  // Collaborators
-                  CollaboratorsRow(
-                    collaborators: profile.collaborators,
-                    onCollaboratorTap: _navigateToUserProfile,
-                  ),
-                  if (profile.collaborators.isNotEmpty)
-                    const SizedBox(height: AppSpacing.xxl),
+                    // Badges
+                    if (profile.badges.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.xxl),
+                          child: BadgesSection(badges: profile.badges),
+                        ),
+                      ),
 
-                  const SizedBox(height: AppSpacing.huge),
+                    // Collaborators
+                    if (profile.collaborators.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: AppSpacing.xxl),
+                          child: CollaboratorsRow(
+                            collaborators: profile.collaborators,
+                            onCollaboratorTap: _navigateToUserProfile,
+                          ),
+                        ),
+                      ),
+
+                    const SliverToBoxAdapter(
+                      child: SizedBox(height: AppSpacing.huge),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCoverSection(FullProfile profile) {
+    final coverUrl = profile.profile.coverPhotoUrl;
+    final profileUrl = profile.profile.profilePhotoUrl;
+    final topPadding = MediaQuery.of(context).padding.top;
+    final coverHeight = 200.0 + topPadding;
+    const avatarOverflow = 40.0;
+
+    return SizedBox(
+      height: coverHeight + avatarOverflow,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Cover photo
+          Container(
+            height: coverHeight,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.brandPrimary,
+                  AppColors.brandSecondary.withOpacity(0.8),
+                  AppColors.brandAccent.withOpacity(0.6),
                 ],
               ),
             ),
-          );
-        },
-      ),
+            child: coverUrl.isNotEmpty
+                ? Image.network(
+                    coverUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _buildCoverGradientOverlay(),
+                  )
+                : _buildCoverGradientOverlay(),
           ),
-        ),
+
+          // Gradient scrim at bottom
+          Positioned(
+            bottom: avatarOverflow,
+            left: 0,
+            right: 0,
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Theme.of(context).colorScheme.surface.withOpacity(0.8),
+                    Theme.of(context).colorScheme.surface,
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // Back button
+          Positioned(
+            top: topPadding + AppSpacing.sm,
+            left: AppSpacing.md,
+            child: Material(
+              color: Colors.black.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: InkWell(
+                onTap: () => Navigator.pop(context),
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                child: const Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(
+                    Icons.arrow_back_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Avatar
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.surface,
+                    width: 4,
+                  ),
+                  boxShadow: AppShadows.lg(Colors.black),
+                ),
+                child: CircleAvatar(
+                  radius: 50,
+                  backgroundColor: AppColors.lightSurfaceVariant,
+                  backgroundImage:
+                      profileUrl.isNotEmpty ? NetworkImage(profileUrl) : null,
+                  child: profileUrl.isEmpty
+                      ? Text(
+                          _getInitials(profile.profile),
+                          style: const TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.brandPrimary,
+                          ),
+                        )
+                      : null,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildCoverGradientOverlay() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.brandPrimary.withOpacity(0.3),
+            AppColors.brandSecondary.withOpacity(0.1),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.travel_explore_rounded,
+          size: 48,
+          color: Colors.white.withOpacity(0.3),
+        ),
+      ),
+    );
+  }
+
+  String _getInitials(UserProfile profile) {
+    final first = profile.firstName.isNotEmpty ? profile.firstName[0] : '';
+    final last = profile.lastName.isNotEmpty ? profile.lastName[0] : '';
+    return '$first$last'.toUpperCase();
   }
 
   Widget _buildErrorState(String message) {

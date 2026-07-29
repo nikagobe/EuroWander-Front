@@ -15,6 +15,42 @@ class ActivityFeedTabs extends StatelessWidget {
     this.onTripTap,
   });
 
+  /// All trips combined and deduplicated
+  List<ActivityTripSummary> get _allTrips {
+    final all = [...activityFeed.recentCompleted, ...activityFeed.upcoming];
+    final seen = <String>{};
+    return all.where((t) => seen.add(t.tripId)).toList();
+  }
+
+  /// The effective date used to categorize a trip.
+  /// Prefers startDate from API, falls back to createdAt.
+  static DateTime _tripDate(ActivityTripSummary t) =>
+      t.startDate ?? t.createdAt;
+
+  /// Recent: trips whose effective date is today or in the past (including currently active)
+  List<ActivityTripSummary> get _recentTrips {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final recent = _allTrips.where((t) {
+      final date = _tripDate(t);
+      return !date.isAfter(today);
+    }).toList();
+    recent.sort((a, b) => _tripDate(b).compareTo(_tripDate(a))); // newest first
+    return recent;
+  }
+
+  /// Upcoming: trips whose effective date is in the future
+  List<ActivityTripSummary> get _upcomingTrips {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final upcoming = _allTrips.where((t) {
+      final date = _tripDate(t);
+      return date.isAfter(today);
+    }).toList();
+    upcoming.sort((a, b) => _tripDate(a).compareTo(_tripDate(b))); // soonest first
+    return upcoming;
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -24,15 +60,28 @@ class ActivityFeedTabs extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: Text(
-              'Activity',
-              style: Theme.of(context).textTheme.titleMedium,
+            child: Row(
+              children: [
+                Icon(
+                  Icons.timeline_rounded,
+                  size: 20,
+                  color: AppColors.brandPrimary,
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  'My Trips',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
           // Tab bar
           Container(
             margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               color: AppColors.lightSurfaceVariant,
               borderRadius: BorderRadius.circular(AppRadius.md),
@@ -42,7 +91,8 @@ class ActivityFeedTabs extends StatelessWidget {
               dividerColor: Colors.transparent,
               indicator: BoxDecoration(
                 color: AppColors.brandPrimary,
-                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                boxShadow: AppShadows.sm(AppColors.brandPrimary),
               ),
               labelColor: Colors.white,
               unselectedLabelColor: AppColors.lightTextSecondary,
@@ -53,9 +103,29 @@ class ActivityFeedTabs extends StatelessWidget {
                   Theme.of(context).textTheme.bodySmall?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
-              tabs: const [
-                Tab(text: 'Recent', height: 36),
-                Tab(text: 'Upcoming', height: 36),
+              tabs: [
+                Tab(
+                  height: 36,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.history_rounded, size: 14),
+                      const SizedBox(width: 4),
+                      Text('Recent (${_recentTrips.length})'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  height: 36,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.upcoming_rounded, size: 14),
+                      const SizedBox(width: 4),
+                      Text('Upcoming (${_upcomingTrips.length})'),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -67,13 +137,17 @@ class ActivityFeedTabs extends StatelessWidget {
               children: [
                 _buildTripList(
                   context,
-                  activityFeed.recentCompleted,
+                  _recentTrips,
                   'No recent trips yet',
+                  'Complete a trip to see it here',
+                  Icons.flight_land_rounded,
                 ),
                 _buildTripList(
                   context,
-                  activityFeed.upcoming,
+                  _upcomingTrips,
                   'No upcoming trips',
+                  'Plan your next adventure!',
+                  Icons.flight_takeoff_rounded,
                 ),
               ],
             ),
@@ -84,18 +158,20 @@ class ActivityFeedTabs extends StatelessWidget {
   }
 
   double _calculateTabViewHeight() {
-    final recentCount = activityFeed.recentCompleted.length;
-    final upcomingCount = activityFeed.upcoming.length;
+    final recentCount = _recentTrips.length;
+    final upcomingCount = _upcomingTrips.length;
     final maxCount =
         recentCount > upcomingCount ? recentCount : upcomingCount;
-    if (maxCount == 0) return 120;
-    return (maxCount * 84.0) + 16;
+    if (maxCount == 0) return 140;
+    return (maxCount * 88.0) + 16;
   }
 
   Widget _buildTripList(
     BuildContext context,
     List<ActivityTripSummary> trips,
-    String emptyMessage,
+    String emptyTitle,
+    String emptySubtitle,
+    IconData emptyIcon,
   ) {
     if (isLoading) {
       return const Center(
@@ -111,14 +187,29 @@ class ActivityFeedTabs extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.luggage_outlined,
-              size: 36,
-              color: AppColors.lightTextTertiary.withOpacity(0.5),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.brandPrimary.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                emptyIcon,
+                size: 32,
+                color: AppColors.brandPrimary.withOpacity(0.5),
+              ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.sm),
             Text(
-              emptyMessage,
+              emptyTitle,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.lightTextPrimary,
+                  ),
+            ),
+            const SizedBox(height: AppSpacing.xxs),
+            Text(
+              emptySubtitle,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppColors.lightTextTertiary,
                   ),
@@ -152,35 +243,22 @@ class _ActivityTripCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.lightSurface,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            color: AppColors.lightSurface,
             border: Border.all(
-              color: AppColors.lightBorder.withOpacity(0.5),
+              color: AppColors.lightBorder.withOpacity(0.4),
             ),
+            boxShadow: AppShadows.sm(Colors.black),
           ),
           child: Row(
             children: [
-              // Icon
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _getStatusColor().withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: Icon(
-                  _getStatusIcon(),
-                  size: 20,
-                  color: _getStatusColor(),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
               // Content
               Expanded(
                 child: Column(
@@ -195,18 +273,20 @@ class _ActivityTripCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Row(
                       children: [
                         Icon(
-                          Icons.place_outlined,
+                          Icons.place_rounded,
                           size: 12,
                           color: AppColors.lightTextTertiary,
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 3),
                         Expanded(
                           child: Text(
-                            trip.destination,
+                            trip.destination.isNotEmpty
+                                ? trip.destination
+                                : 'No destination set',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodySmall
@@ -223,76 +303,21 @@ class _ActivityTripCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Date & status
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    DateFormat('MMM d').format(trip.createdAt),
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          fontSize: 11,
-                          color: AppColors.lightTextTertiary,
-                        ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
+              const SizedBox(width: AppSpacing.xs),
+              // Date
+              Text(
+                trip.startDate != null
+                    ? DateFormat('MMM d').format(trip.startDate!)
+                    : DateFormat('MMM d').format(trip.createdAt),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: AppColors.lightTextTertiary,
                     ),
-                    decoration: BoxDecoration(
-                      color: _getStatusColor().withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(AppRadius.pill),
-                    ),
-                    child: Text(
-                      _getStatusLabel(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                        color: _getStatusColor(),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Color _getStatusColor() {
-    switch (trip.status.toLowerCase()) {
-      case 'completed':
-        return AppColors.success;
-      case 'active':
-      case 'in_progress':
-        return AppColors.brandPrimary;
-      case 'upcoming':
-      case 'planned':
-        return AppColors.brandAmber;
-      default:
-        return AppColors.lightTextSecondary;
-    }
-  }
-
-  IconData _getStatusIcon() {
-    switch (trip.status.toLowerCase()) {
-      case 'completed':
-        return Icons.check_circle_outline_rounded;
-      case 'active':
-      case 'in_progress':
-        return Icons.flight_rounded;
-      case 'upcoming':
-      case 'planned':
-        return Icons.schedule_rounded;
-      default:
-        return Icons.trip_origin_rounded;
-    }
-  }
-
-  String _getStatusLabel() {
-    return trip.status.replaceAll('_', ' ').toUpperCase();
   }
 }

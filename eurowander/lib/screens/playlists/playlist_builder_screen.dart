@@ -528,37 +528,50 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
                   ),
                   const Spacer(),
                   // Public toggle
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _isPublic ? AppColors.success.withOpacity(0.08) : ew.inputFill,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: _isPublic ? AppColors.success.withOpacity(0.3) : ew.border),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _isPublic ? Icons.public_rounded : Icons.lock_rounded,
-                          size: 16,
-                          color: _isPublic ? AppColors.success : ew.textSecondary,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          _isPublic ? 'Public' : 'Private',
-                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _isPublic ? AppColors.success : ew.textSecondary),
-                        ),
-                        const SizedBox(width: 4),
-                        SizedBox(
-                          width: 36, height: 20,
-                          child: Switch(
-                            value: _isPublic,
-                            onChanged: (v) => setState(() => _isPublic = v),
-                            activeColor: AppColors.success,
-                            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  GestureDetector(
+                    onTap: () => setState(() => _isPublic = !_isPublic),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: _isPublic ? AppColors.success.withOpacity(0.08) : ew.inputFill,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: _isPublic ? AppColors.success.withOpacity(0.3) : ew.border),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _isPublic ? Icons.public_rounded : Icons.lock_rounded,
+                            size: 16,
+                            color: _isPublic ? AppColors.success : ew.textSecondary,
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 6),
+                          Text(
+                            _isPublic ? 'Public' : 'Private',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _isPublic ? AppColors.success : ew.textSecondary),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            width: 32, height: 18,
+                            decoration: BoxDecoration(
+                              color: _isPublic ? AppColors.success : ew.textTertiary,
+                              borderRadius: BorderRadius.circular(9),
+                            ),
+                            child: AnimatedAlign(
+                              duration: const Duration(milliseconds: 200),
+                              alignment: _isPublic ? Alignment.centerRight : Alignment.centerLeft,
+                              child: Container(
+                                width: 14, height: 14,
+                                margin: const EdgeInsets.symmetric(horizontal: 2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -853,7 +866,7 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
                   children: [
                     _buildTimeSlotDropdown(globalIndex),
                     const SizedBox(width: 8),
-                    Text('${item.suggestedDurationMinutes}min', style: TextStyle(fontSize: 11, color: ew.textTertiary)),
+                    _buildDurationSelector(globalIndex),
                     if (item.note.isNotEmpty) ...[
                       const SizedBox(width: 6),
                       Icon(Icons.sticky_note_2_rounded, size: 12, color: Colors.orange.shade400),
@@ -924,6 +937,59 @@ class _PlaylistBuilderScreenState extends State<PlaylistBuilderScreen> with Tick
       onChanged: (v) {
         if (v != null) setState(() => _items[index] = _items[index].copyWith(timeSlot: v));
       },
+    );
+  }
+
+  Widget _buildDurationSelector(int index) {
+    final ew = context.ew;
+    final currentDuration = _items[index].suggestedDurationMinutes;
+    return PopupMenuButton<int>(
+      onSelected: (duration) {
+        setState(() => _items[index] = _items[index].copyWith(suggestedDurationMinutes: duration));
+      },
+      offset: const Offset(0, 30),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: ew.cardColor,
+      itemBuilder: (_) => [30, 60, 90, 120].map((d) => PopupMenuItem(
+        value: d,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.timer_outlined,
+              size: 14,
+              color: d == currentDuration ? AppColors.brandPrimary : ew.textSecondary,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '${d}min',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: d == currentDuration ? FontWeight.w600 : FontWeight.w400,
+                color: d == currentDuration ? AppColors.brandPrimary : ew.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      )).toList(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        decoration: BoxDecoration(
+          color: AppColors.brandPrimary.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: AppColors.brandPrimary.withOpacity(0.15)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.timer_outlined, size: 11, color: AppColors.brandPrimary),
+            const SizedBox(width: 3),
+            Text('${currentDuration}min', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.brandPrimary)),
+            const SizedBox(width: 2),
+            Icon(Icons.arrow_drop_down_rounded, size: 14, color: AppColors.brandPrimary),
+          ],
+        ),
+      ),
     );
   }
 }

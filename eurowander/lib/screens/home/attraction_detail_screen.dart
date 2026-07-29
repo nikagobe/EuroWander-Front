@@ -17,14 +17,14 @@ class AttractionDetailScreen extends StatefulWidget {
   final String contentId;
   final String startDate;
   final String endDate;
-  final SavedTrip trip;
+  final SavedTrip? trip;
 
   const AttractionDetailScreen({
     super.key,
     required this.contentId,
     required this.startDate,
     required this.endDate,
-    required this.trip,
+    this.trip,
   });
 
   @override
@@ -121,7 +121,7 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
   Widget build(BuildContext context) {
     return AppScaffold(
       maxWidth: double.infinity,
-      bottomNavigationBar: (!_isLoading && _details != null)
+      bottomNavigationBar: (!_isLoading && _details != null && widget.trip != null)
           ? _buildAddToTripBar()
           : null,
       child: _isLoading
@@ -171,17 +171,18 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
 
   void _showAddToTripSheet() {
     final attraction = _details!;
+    if (widget.trip == null) return;
     // Get trip date range
     DateTime? tripStart;
     DateTime? tripEnd;
-    if (widget.trip.outboundFlight != null) {
+    if (widget.trip!.outboundFlight != null) {
       try {
-        tripStart = DateTime.parse(widget.trip.outboundFlight!.departureTime.replaceAll(' ', 'T'));
+        tripStart = DateTime.parse(widget.trip!.outboundFlight!.departureTime.replaceAll(' ', 'T'));
       } catch (_) {}
     }
-    if (widget.trip.returnFlight != null) {
+    if (widget.trip!.returnFlight != null) {
       try {
-        tripEnd = DateTime.parse(widget.trip.returnFlight!.arrivalTime.replaceAll(' ', 'T'));
+        tripEnd = DateTime.parse(widget.trip!.returnFlight!.arrivalTime.replaceAll(' ', 'T'));
       } catch (_) {}
     }
     tripStart ??= DateTime.now();
@@ -210,7 +211,7 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
     try {
       await _apiService.addAttractionToTrip(
         token: token,
-        tripId: widget.trip.id,
+        tripId: widget.trip!.id,
         attractionData: {
           'location_id': attraction.contentId,
           'name': attraction.name,
@@ -779,7 +780,7 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
                           Navigator.of(context).push(MaterialPageRoute(
                             builder: (_) => RestaurantDetailScreen(
                               contentId: nearby.contentId,
-                              trip: widget.trip,
+                              trip: widget.trip!,
                             ),
                           ));
                         },

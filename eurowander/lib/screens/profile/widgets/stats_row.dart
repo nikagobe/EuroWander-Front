@@ -11,14 +11,23 @@ class StatsRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
+        horizontal: AppSpacing.md,
         vertical: AppSpacing.lg,
       ),
       decoration: BoxDecoration(
-        color: AppColors.lightSurface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.lightBorder.withOpacity(0.5)),
-        boxShadow: AppShadows.sm(Colors.black),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.brandPrimary.withOpacity(0.05),
+            AppColors.brandSecondary.withOpacity(0.03),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        border: Border.all(
+          color: AppColors.brandPrimary.withOpacity(0.12),
+        ),
+        boxShadow: AppShadows.sm(AppColors.brandPrimary),
       ),
       child: Row(
         children: [
@@ -40,7 +49,7 @@ class StatsRow extends StatelessWidget {
             icon: Icons.straighten_rounded,
             value: _formatDistance(stats.totalDistanceKm),
             label: 'km',
-            color: AppColors.brandAccent,
+            color: AppColors.success,
           ),
           _buildDivider(),
           _StatTile(
@@ -49,7 +58,7 @@ class StatsRow extends StatelessWidget {
                 ? stats.favoriteDestination
                 : '--',
             label: 'Favorite',
-            color: AppColors.brandAmber,
+            color: AppColors.error,
             isText: true,
           ),
         ],
@@ -60,9 +69,19 @@ class StatsRow extends StatelessWidget {
   Widget _buildDivider() {
     return Container(
       width: 1,
-      height: 40,
-      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
-      color: AppColors.lightBorder.withOpacity(0.4),
+      height: 44,
+      margin: const EdgeInsets.symmetric(horizontal: AppSpacing.xxs),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.transparent,
+            AppColors.lightBorder.withOpacity(0.5),
+            Colors.transparent,
+          ],
+        ),
+      ),
     );
   }
 
@@ -70,6 +89,7 @@ class StatsRow extends StatelessWidget {
     if (km >= 1000) {
       return '${(km / 1000).toStringAsFixed(1)}k';
     }
+    if (km == 0) return '0';
     return km.toInt().toString();
   }
 }
@@ -96,10 +116,17 @@ class _StatTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
               shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Icon(icon, size: 18, color: color),
           ),
@@ -108,7 +135,8 @@ class _StatTile extends StatelessWidget {
             value,
             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
-                  fontSize: isText ? 11 : 15,
+                  fontSize: isText ? 11 : 16,
+                  color: AppColors.lightTextPrimary,
                 ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -119,7 +147,8 @@ class _StatTile extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.lightTextTertiary,
-                  fontSize: 11,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
                 ),
           ),
         ],

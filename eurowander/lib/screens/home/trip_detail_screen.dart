@@ -8,6 +8,7 @@ import '../../models/schedule.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/widgets.dart';
+import 'hotel_search_screen.dart';
 import 'trip_activities_screen.dart';
 import 'trip_documents_screen.dart';
 import 'trip_finances_screen.dart';
@@ -120,11 +121,13 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
             SliverToBoxAdapter(child: _buildSectionTitle(context, 'Transport')),
           if (trip.outboundFlight != null)
             SliverToBoxAdapter(child: _buildFlightPreview(context)),
-          // Hotels preview (if available)
-          if (trip.hotels.isNotEmpty)
-            SliverToBoxAdapter(child: _buildSectionTitle(context, 'Accommodation')),
-          if (trip.hotels.isNotEmpty)
-            SliverToBoxAdapter(child: _buildHotelsPreview(context)),
+          // Hotels preview (always visible)
+          SliverToBoxAdapter(child: _buildSectionTitle(context, 'Accommodation')),
+          SliverToBoxAdapter(
+            child: trip.hotels.isNotEmpty
+                ? _buildHotelsPreview(context)
+                : _buildFindAccommodation(context),
+          ),
           // More sections
           SliverToBoxAdapter(child: _buildMoreSections(context)),
           const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xxxl)),
@@ -192,11 +195,6 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                       _buildGlassButton(
                         icon: Icons.arrow_back_ios_new_rounded,
                         onTap: () => Navigator.of(context).pop(),
-                      ),
-                      const Spacer(),
-                      _buildGlassButton(
-                        icon: Icons.edit_rounded,
-                        onTap: () {},
                       ),
                     ],
                   ),
@@ -518,37 +516,81 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Hotel photo strip
-            if (hotel.photoUrl.isNotEmpty)
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
-                child: Image.network(
-                  hotel.photoUrl,
-                  height: 80,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => Container(
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [AppColors.hotel.withOpacity(0.3), AppColors.hotel.withOpacity(0.1)]),
+            // Hotel photo
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              child: Stack(
+                children: [
+                  hotel.photoUrl.isNotEmpty
+                      ? Image.network(
+                          hotel.photoUrl,
+                          height: 110,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, _, _) => Container(
+                            height: 110,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(colors: [AppColors.hotel.withOpacity(0.3), AppColors.hotel.withOpacity(0.1)]),
+                            ),
+                            child: const Center(child: Icon(Icons.hotel_rounded, size: 32, color: AppColors.hotel)),
+                          ),
+                        )
+                      : Container(
+                          height: 110,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: [AppColors.hotel.withOpacity(0.3), AppColors.hotel.withOpacity(0.1)]),
+                          ),
+                          child: const Center(child: Icon(Icons.hotel_rounded, size: 32, color: AppColors.hotel)),
+                        ),
+                  // Gradient scrim
+                  Positioned(
+                    bottom: 0, left: 0, right: 0,
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  // Stars on photo
+                  if (hotel.stars > 0)
+                    Positioned(
+                      bottom: 8, left: 12,
+                      child: Row(
+                        children: List.generate(
+                          hotel.stars.clamp(0, 5),
+                          (_) => const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFFC107)),
+                        ),
+                      ),
+                    ),
+                  // Hotel count badge
+                  if (trip.hotels.length > 1)
+                    Positioned(
+                      top: 8, right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${trip.hotels.length} hotels',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                ],
               ),
+            ),
+            // Content
             Padding(
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  if (hotel.photoUrl.isEmpty)
-                    Container(
-                      width: 36, height: 36,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.hotel.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.hotel_rounded, size: 18, color: AppColors.hotel),
-                    ),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -559,32 +601,102 @@ class _TripDetailScreenState extends State<TripDetailScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         Row(
                           children: [
-                            if (hotel.stars > 0) ...[
-                              ...List.generate(hotel.stars.clamp(0, 5), (_) => const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFFC107))),
-                              const SizedBox(width: 6),
-                            ],
-                            Text(
-                              _formatHotelDates(hotel.checkinDate, hotel.checkoutDate),
-                              style: TextStyle(fontSize: 11, color: ew.textSecondary),
+                            Icon(Icons.calendar_today_rounded, size: 12, color: ew.textTertiary),
+                            const SizedBox(width: 5),
+                            Expanded(
+                              child: Text(
+                                _formatHotelDates(hotel.checkinDate, hotel.checkoutDate),
+                                style: TextStyle(fontSize: 12, color: ew.textSecondary),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (trip.hotels.length > 1)
-                        Text('+${trip.hotels.length - 1} more', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
-                      Icon(Icons.chevron_right_rounded, size: 20, color: ew.textTertiary),
-                    ],
+                  const SizedBox(width: 8),
+                  Icon(Icons.chevron_right_rounded, size: 20, color: ew.textTertiary),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFindAccommodation(BuildContext context) {
+    final ew = context.ew;
+    // Try to extract destination city and dates from flight
+    final destination = trip.outboundFlight?.arrivalCityName ?? '';
+    DateTime? checkin;
+    DateTime? checkout;
+    try {
+      final depStr = trip.outboundFlight?.arrivalTime;
+      if (depStr != null && depStr.isNotEmpty) checkin = DateTime.parse(depStr.replaceAll(' ', 'T'));
+      final retStr = trip.returnFlight?.departureTime;
+      if (retStr != null && retStr.isNotEmpty) checkout = DateTime.parse(retStr.replaceAll(' ', 'T'));
+    } catch (_) {}
+
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => HotelSearchScreen(
+            trip: trip,
+            prefillCity: destination.isNotEmpty ? destination : null,
+            prefillCheckin: checkin,
+            prefillCheckout: checkout,
+          ),
+        ),
+      ),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, 0),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: ew.cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.hotel.withOpacity(0.2), style: BorderStyle.solid),
+          boxShadow: AppShadows.sm(Colors.black),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44, height: 44,
+              decoration: BoxDecoration(
+                color: AppColors.hotel.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.hotel_rounded, size: 22, color: AppColors.hotel),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Find Accommodation',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    destination.isNotEmpty ? 'Search hotels in $destination' : 'Search for hotels & stays',
+                    style: TextStyle(fontSize: 12, color: ew.textSecondary),
                   ),
                 ],
               ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.hotel.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.search_rounded, size: 18, color: AppColors.hotel),
             ),
           ],
         ),

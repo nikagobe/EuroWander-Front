@@ -3,9 +3,14 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/theme/app_theme.dart';
 import '../../models/playlist.dart';
+import '../../models/profile.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/playlist_provider.dart';
+import '../../services/profile_service.dart';
 import '../../widgets/widgets.dart';
+import '../../utils/page_transitions.dart';
+import '../home/attraction_detail_screen.dart';
+import '../profile/user_profile_screen.dart';
 import 'playlist_builder_screen.dart';
 import 'import_wizard_sheet.dart';
 
@@ -19,6 +24,9 @@ class PlaylistDetailScreen extends StatefulWidget {
 }
 
 class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
+  UserProfile? _authorProfile;
+  bool _authorLoadAttempted = false;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +39,20 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     final provider = context.read<PlaylistProvider>();
     provider.loadPlaylist(token: token, id: widget.playlistId);
     provider.loadReviews(token: token, playlistId: widget.playlistId, refresh: true);
+  }
+
+  void _loadAuthorProfile(String creatorId) async {
+    if (_authorLoadAttempted || creatorId.isEmpty) return;
+    _authorLoadAttempted = true;
+    final token = context.read<AuthProvider>().token;
+    if (token == null) return;
+    try {
+      final fullProfile = await ProfileApiService().getUserProfile(token: token, userId: creatorId);
+      debugPrint('[PlaylistDetail] Author loaded: ${fullProfile.profile.firstName} ${fullProfile.profile.lastName}');
+      if (mounted) setState(() => _authorProfile = fullProfile.profile);
+    } catch (e) {
+      debugPrint('[PlaylistDetail] Failed to load author profile: $e');
+    }
   }
 
   Color _vibeColor(String vibe) {
@@ -67,6 +89,8 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
           }
           final playlist = provider.currentPlaylist;
           if (playlist == null) return const SizedBox.shrink();
+
+          _loadAuthorProfile(playlist.creatorId);
 
           return Container(
             decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
@@ -262,42 +286,73 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Creator row
-          Row(
-            children: [
-              Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: [vibeCol, vibeCol.withOpacity(0.6)]),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Text(
-                    '${playlist.creatorFirstName.isNotEmpty ? playlist.creatorFirstName[0] : ''}${playlist.creatorLastName.isNotEmpty ? playlist.creatorLastName[0] : ''}'.toUpperCase(),
-                    style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+          GestureDetector(
+            onTap: () {
+              if (playlist.creatorId.isNotEmpty) {
+                Navigator.push(context, EWPageRoute(page: UserProfileScreen(userId: playlist.creatorId)));
+              }
+            },
+            child: Row(
+              children: [
+                if (_authorProfile != null && _authorProfile!.profilePhotoUrl.isNotEmpty)
+                  ClipOval(
+                    child: Image.network(
+                      _authorProfile!.profilePhotoUrl,
+                      width: 36, height: 36, fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 36, height: 36,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(colors: [vibeCol, vibeCol.withOpacity(0.6)]),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${playlist.creatorFirstName.isNotEmpty ? playlist.creatorFirstName[0] : ''}${playlist.creatorLastName.isNotEmpty ? playlist.creatorLastName[0] : ''}'.toUpperCase(),
+                            style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    width: 36, height: 36,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [vibeCol, vibeCol.withOpacity(0.6)]),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        '${playlist.creatorFirstName.isNotEmpty ? playlist.creatorFirstName[0] : ''}${playlist.creatorLastName.isNotEmpty ? playlist.creatorLastName[0] : ''}'.toUpperCase(),
+                        style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700),
+                      ),
+                    ),
                   ),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${playlist.creatorFirstName} ${playlist.creatorLastName}',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: ew.textPrimary),
+                    ),
+                    Text('Creator', style: TextStyle(fontSize: 11, color: ew.textTertiary)),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${playlist.creatorFirstName} ${playlist.creatorLastName}',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: ew.textPrimary),
-                  ),
-                  Text('Creator', style: TextStyle(fontSize: 11, color: ew.textTertiary)),
-                ],
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(budget.displayName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.success)),
-              ),
-            ],
+                const Spacer(),
+                Icon(Icons.chevron_right_rounded, size: 20, color: ew.textSecondary.withOpacity(0.5)),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Budget badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(budget.displayName, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.success)),
           ),
           const SizedBox(height: 16),
 
@@ -515,8 +570,20 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     final ew = context.ew;
     final isCustom = item.itemType == 'custom';
     final itemColor = _itemTypeColor(item.itemType);
+    final now = DateTime.now();
+    final dateStr = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
 
-    return TweenAnimationBuilder<double>(
+    return GestureDetector(
+      onTap: () {
+        if (item.locationId.isNotEmpty && item.itemType == 'attraction') {
+          Navigator.push(context, EWPageRoute(page: AttractionDetailScreen(
+            contentId: item.locationId,
+            startDate: dateStr,
+            endDate: dateStr,
+          )));
+        }
+      },
+      child: TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.0, end: 1.0),
       duration: Duration(milliseconds: 350 + (index * 60)),
       curve: Curves.easeOutCubic,
@@ -614,9 +681,15 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                 ),
                 child: Text('${item.suggestedDurationMinutes}m', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: ew.textSecondary)),
               ),
+              if (item.locationId.isNotEmpty && item.itemType == 'attraction')
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: Icon(Icons.chevron_right_rounded, size: 18, color: ew.textSecondary.withOpacity(0.5)),
+                ),
             ],
           ),
         ),
+      ),
       ),
     );
   }

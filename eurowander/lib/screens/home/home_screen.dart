@@ -10,11 +10,6 @@ import '../../services/api_service.dart';
 import '../../services/playlist_service.dart';
 import '../../services/template_service.dart';
 import '../../utils/page_transitions.dart';
-import '../../widgets/home/destination_spotlight.dart';
-import '../../widgets/home/hero_banner.dart';
-import '../../widgets/home/smart_nudge.dart';
-import '../../widgets/home/travel_separator.dart';
-import '../../widgets/home/travel_stats_strip.dart';
 import '../../widgets/widgets.dart';
 import '../plan/city_selection_screen.dart';
 import '../playlists/playlist_builder_screen.dart';
@@ -116,121 +111,38 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().user;
-    final firstName = user?.firstName ?? '';
-    final initials = '${user?.firstName.isNotEmpty == true ? user!.firstName[0] : ''}${user?.lastName.isNotEmpty == true ? user!.lastName[0] : ''}';
-
-    // Collect destination photos from trips for the hero banner
-    final tripPhotos = _trips
-        .where((t) => t.destinationPhotoUrl != null && t.destinationPhotoUrl!.isNotEmpty)
-        .map((t) => t.destinationPhotoUrl!)
-        .take(5)
-        .toList();
-
     return AppScaffold(
-      floatingActionButton: _buildContextualFab(context),
+      floatingActionButton: _buildCreateFab(context),
       child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
-            // 1. Hero Banner (replaces old header + plan button)
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, 0),
-                child: HeroBanner(
-                  greeting: _getGreeting(),
-                  userName: firstName,
-                  onPlanTrip: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const CitySelectionScreen()),
-                    );
-                    _loadTrips();
-                  },
-                  onProfileTap: () => Navigator.of(context).push(
-                    EWPageRoute(page: const ProfileScreen()),
-                  ),
-                  profileInitials: initials,
-                  destinationPhotos: tripPhotos,
+                padding: AppSpacing.paddingHorizontalXl,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: AppSpacing.xl),
+                    _buildHeader(context),
+                    const SizedBox(height: AppSpacing.lg),
+                    _buildPlanButton(context),
+                    const SizedBox(height: AppSpacing.lg),
+                    if (!_isLoading) _buildFeaturedTrip(),
+                    if (!_isLoading && _featuredTrip != null) const SizedBox(height: AppSpacing.lg),
+                  ],
                 ),
               ),
             ),
-
-            // 2. Smart Nudges (contextual trip suggestions)
-            if (!_isLoading && _trips.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.lg),
-                  child: SmartNudges(
-                    trips: _trips,
-                    onTripTap: (trip) async {
-                      await Navigator.of(context).push(EWPageRoute(page: TripDetailScreen(trip: trip)));
-                      _loadTrips();
-                    },
-                  ),
-                ),
-              ),
-
-            // 3. Travel Stats Strip
-            if (!_isLoading && _trips.isNotEmpty)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: AppSpacing.lg),
-                  child: TravelStatsStrip(
-                    totalTrips: _trips.length,
-                    totalCountries: _countUniqueCountries(),
-                    totalPlaces: _countTotalPlaces(),
-                    totalNights: _countTotalNights(),
-                  ),
-                ),
-              ),
-
-            // separator
-            const SliverToBoxAdapter(
-              child: TravelSeparator(style: TravelSeparatorStyle.flightPath),
-            ),
-
-            // 4. Featured Trip Card (if any)
-            if (!_isLoading)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: AppSpacing.paddingHorizontalXl,
-                  child: _buildFeaturedTrip(),
-                ),
-              ),
-            if (!_isLoading && _featuredTrip != null)
-              const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-
-            // 5. Popular Templates carousel (redesigned)
+            // Popular Templates carousel
             SliverToBoxAdapter(child: _buildTemplatesCarousel()),
-
-            // separator
-            const SliverToBoxAdapter(
-              child: TravelSeparator(style: TravelSeparatorStyle.dots),
-            ),
-
-            // 6. Destination Spotlight
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-                child: DestinationSpotlight.seasonal(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen()),
-                  ),
-                ),
-              ),
-            ),
-
-            // separator
-            const SliverToBoxAdapter(
-              child: TravelSeparator(style: TravelSeparatorStyle.wave),
-            ),
-
-            // 7. Popular Playlists carousel (redesigned)
+            // Popular Playlists carousel
             SliverToBoxAdapter(child: _buildPlaylistsCarousel()),
-
-            // 8. Trip Tabs
-            SliverToBoxAdapter(child: _buildTripTabs()),
-            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
+            SliverToBoxAdapter(
+              child: _buildTripTabs(),
+            ),
+            const SliverToBoxAdapter(
+              child: SizedBox(height: AppSpacing.md),
+            ),
           ];
         },
         body: _buildTripsTabView(),
@@ -460,41 +372,55 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   // ────────────────────────────────────────────────────────────
-  // Stats Helpers
+  // Header
   // ────────────────────────────────────────────────────────────
 
-  int _countUniqueCountries() {
-    final cities = <String>{};
-    for (final trip in _trips) {
-      final city = trip.outboundFlight?.arrivalCityName;
-      if (city != null && city.isNotEmpty) cities.add(city);
-    }
-    return cities.length;
-  }
+  Widget _buildHeader(BuildContext context) {
+    final ew = context.ew;
+    final user = context.watch<AuthProvider>().user;
+    final firstName = user?.firstName ?? '';
+    final initials = '${user?.firstName.isNotEmpty == true ? user!.firstName[0] : ''}${user?.lastName.isNotEmpty == true ? user!.lastName[0] : ''}';
 
-  int _countTotalPlaces() {
-    int places = 0;
-    for (final trip in _trips) {
-      places += trip.attractions.length + trip.restaurants.length;
-    }
-    return places;
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getGreeting(),
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: ew.textSecondary),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                firstName.isNotEmpty ? 'Hey, $firstName!' : 'Welcome back!',
+                style: Theme.of(context).textTheme.headlineMedium,
+              ),
+            ],
+          ),
+        ),
+        GestureDetector(
+          onTap: () => Navigator.of(context).push(
+            EWPageRoute(page: const ProfileScreen()),
+          ),
+          child: Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Text(
+                initials.toUpperCase(),
+                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
-
-  int _countTotalNights() {
-    int nights = 0;
-    for (final trip in _trips) {
-      final dep = _getDepartureDate(trip);
-      final ret = _getReturnDate(trip);
-      if (dep != null && ret != null) {
-        nights += ret.difference(dep).inDays;
-      }
-    }
-    return nights;
-  }
-
-  // ────────────────────────────────────────────────────────────
-  // Greeting
-  // ────────────────────────────────────────────────────────────
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
@@ -503,85 +429,86 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     return 'Good evening';
   }
 
-  // ────────────────────────────────────────────────────────────
-  // Contextual FAB (smart floating action button)
-  // ────────────────────────────────────────────────────────────
-
-  Widget _buildContextualFab(BuildContext context) {
-    final hasActiveTrip = _activeTrips.isNotEmpty;
-
-    if (hasActiveTrip) {
-      // Active trip: show quick-actions radial
-      return _buildActiveTripFab(context);
-    }
-    return _buildCreateFab(context);
-  }
-
-  Widget _buildActiveTripFab(BuildContext context) {
-    final activeTrip = _activeTrips.first;
-    return PopupMenuButton<String>(
-      onSelected: (value) {
-        switch (value) {
-          case 'view':
-            Navigator.push(context, EWPageRoute(page: TripDetailScreen(trip: activeTrip)));
-          case 'template':
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const CreateTemplateScreen()));
-          case 'playlist':
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaylistBuilderScreen()));
-        }
-      },
-      offset: const Offset(0, -180),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      color: context.ew.cardColor,
-      itemBuilder: (_) => [
-        PopupMenuItem(
-          value: 'view',
-          child: Row(children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: AppColors.success.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.map_rounded, size: 18, color: AppColors.success),
-            ),
-            const SizedBox(width: 10),
-            const Text('View Active Trip', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-          ]),
+  void _showAccountSheet(BuildContext context) {
+    final ew = context.ew;
+    final user = context.read<AuthProvider>().user;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: ew.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.grey.withOpacity(0.3), borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Container(
+                width: 64, height: 64,
+                decoration: BoxDecoration(gradient: AppColors.primaryGradient, shape: BoxShape.circle),
+                child: Center(
+                  child: Text(
+                    '${user?.firstName[0] ?? ''}${user?.lastName[0] ?? ''}'.toUpperCase(),
+                    style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(user?.fullName ?? '', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 4),
+              Text(user?.email ?? '', style: TextStyle(fontSize: 13, color: ew.textSecondary)),
+              const SizedBox(height: AppSpacing.xxl),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.read<AuthProvider>().logout();
+                  },
+                  icon: const Icon(Icons.logout_rounded, size: 18),
+                  label: const Text('Log Out'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(color: AppColors.error.withOpacity(0.3)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+          ),
         ),
-        PopupMenuItem(
-          value: 'template',
-          child: Row(children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: AppColors.brandAmber.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.auto_awesome, size: 18, color: AppColors.brandAmber),
-            ),
-            const SizedBox(width: 10),
-            const Text('Create Template', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-          ]),
-        ),
-        PopupMenuItem(
-          value: 'playlist',
-          child: Row(children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: AppColors.brandPrimary.withOpacity(0.12), borderRadius: BorderRadius.circular(8)),
-              child: const Icon(Icons.queue_music_rounded, size: 18, color: AppColors.brandPrimary),
-            ),
-            const SizedBox(width: 10),
-            const Text('Create Playlist', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-          ]),
-        ),
-      ],
-      child: Container(
-        width: 56, height: 56,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [AppColors.success, Color(0xFF34D399)]),
-          shape: BoxShape.circle,
-          boxShadow: AppShadows.glow(AppColors.success),
-        ),
-        child: const Icon(Icons.explore_rounded, color: Colors.white, size: 26),
       ),
     );
   }
+
+  // ────────────────────────────────────────────────────────────
+  // CTA Button
+  // ────────────────────────────────────────────────────────────
+
+  Widget _buildPlanButton(BuildContext context) {
+    return GradientButton(
+      label: 'Plan New Trip',
+      icon: Icons.add_circle_outline_rounded,
+      onTap: () async {
+        await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const CitySelectionScreen()),
+        );
+        _loadTrips();
+      },
+    );
+  }
+
+  // ────────────────────────────────────────────────────────────
+  // Create FAB (speed dial for Template + Playlist creation)
+  // ────────────────────────────────────────────────────────────
 
   Widget _buildCreateFab(BuildContext context) {
     return PopupMenuButton<String>(
@@ -645,47 +572,26 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.brandAmber.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.compass_calibration_rounded, size: 16, color: AppColors.brandAmber),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Popular Templates', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                    Text('Community-crafted itineraries', style: TextStyle(fontSize: 11, color: context.ew.textTertiary)),
-                  ],
-                ),
-              ),
+              Icon(Icons.compass_calibration_rounded, size: 18, color: AppColors.brandAmber),
+              const SizedBox(width: 6),
+              Text('Popular Templates', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const Spacer(),
               GestureDetector(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const TemplateDiscoveryScreen())),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.brandAmber.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text('See All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandAmber)),
-                    SizedBox(width: 2),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.brandAmber),
-                  ]),
-                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('See All', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
+                  const SizedBox(width: 2),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.brandPrimary),
+                ]),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         SizedBox(
-          height: 220,
+          height: 190,
           child: _isLoadingPopular
-              ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandAmber)))
+              ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary)))
               : _popularTemplates.isEmpty
                   ? Center(child: Text('No templates yet', style: TextStyle(color: context.ew.textSecondary)))
                   : ListView.builder(
@@ -694,19 +600,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       itemCount: _popularTemplates.length,
                       itemBuilder: (context, index) {
                         final t = _popularTemplates[index];
-                        return TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: Duration(milliseconds: 400 + (index * 80)),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, value, child) => Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(20 * (1 - value), 0),
-                              child: child,
-                            ),
-                          ),
-                          child: _buildTemplateTile(t, index),
-                        );
+                        return _buildTemplateTile(t);
                       },
                     ),
         ),
@@ -715,139 +609,68 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _buildTemplateTile(TemplateListItem t, int index) {
+  Widget _buildTemplateTile(TemplateListItem t) {
     final ew = context.ew;
-    // Subtle rotation for "postcard stack" effect
-    final rotation = (index % 3 == 0) ? -0.01 : (index % 3 == 1) ? 0.01 : 0.0;
-
     return GestureDetector(
       onTap: () => Navigator.push(context, EWPageRoute(page: TemplateDetailScreen(templateId: t.id))),
-      child: Transform.rotate(
-        angle: rotation,
-        child: Container(
-          width: 200,
-          margin: const EdgeInsets.only(right: 14),
-          decoration: BoxDecoration(
-            color: ew.cardColor,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.brandAmber.withOpacity(0.15)),
-            boxShadow: [
-              BoxShadow(color: AppColors.brandAmber.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 6)),
-              BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 4, offset: const Offset(0, 2)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Cover with gradient overlay
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                child: Stack(
-                  children: [
-                    t.coverPhotoUrl.isNotEmpty
-                        ? Image.network(t.coverPhotoUrl, height: 100, width: 200, fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => _templateTilePlaceholder(t))
-                        : _templateTilePlaceholder(t),
-                    // Bottom scrim
-                    Positioned(
-                      bottom: 0, left: 0, right: 0,
-                      child: Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [Colors.transparent, Colors.black.withOpacity(0.5)],
-                          ),
-                        ),
+      child: Container(
+        width: 200,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          color: ew.cardColor,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3))],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Cover
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+              child: t.coverPhotoUrl.isNotEmpty
+                  ? Image.network(t.coverPhotoUrl, height: 90, width: 200, fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _templateTilePlaceholder(t))
+                  : _templateTilePlaceholder(t),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(t.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 3),
+                  Text(
+                    t.legCities.join(' → '),
+                    style: TextStyle(fontSize: 11, color: ew.textSecondary),
+                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.brandPrimary.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(6),
                       ),
+                      child: Text('${t.totalDays}d', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
                     ),
-                    // Route on image
-                    Positioned(
-                      bottom: 6, left: 8, right: 8,
-                      child: Text(
-                        t.legCities.join(' → '),
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white, shadows: [Shadow(blurRadius: 4, color: Colors.black54)]),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    // Days badge
-                    Positioned(
-                      top: 8, right: 8,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.brandAmber,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text('${t.totalDays}d', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                ),
+                    const SizedBox(width: 6),
+                    Icon(Icons.fork_right_rounded, size: 13, color: ew.textSecondary),
+                    const SizedBox(width: 2),
+                    Text('${t.forkCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
+                    const SizedBox(width: 6),
+                    Icon(Icons.favorite_rounded, size: 12, color: Colors.red.shade300),
+                    const SizedBox(width: 2),
+                    Text('${t.likeCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
+                  ]),
+                ],
               ),
-              // Content
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(t.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 6),
-                    Row(children: [
-                      // Fork count with icon
-                      _buildMiniStat(Icons.fork_right_rounded, '${t.forkCount}', ew.textSecondary),
-                      const SizedBox(width: 10),
-                      _buildMiniStat(Icons.favorite_rounded, '${t.likeCount}', Colors.red.shade300),
-                      const Spacer(),
-                      // Budget indicator
-                      if (t.estimatedBudgetMin != null)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.success.withOpacity(0.08),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '€${t.estimatedBudgetMin!.toInt()}+',
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.success),
-                          ),
-                        ),
-                    ]),
-                    // Tags
-                    if (t.tags.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 4,
-                        runSpacing: 4,
-                        children: t.tags.take(3).map((tag) => Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: AppColors.brandPrimary.withOpacity(0.06),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(tag, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w500, color: ew.textSecondary)),
-                        )).toList(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
-
-  Widget _buildMiniStat(IconData icon, String value, Color color) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 13, color: color),
-        const SizedBox(width: 3),
-        Text(value, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-      ],
     );
   }
 
@@ -878,45 +701,24 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: AppColors.brandPrimary.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.explore_rounded, size: 16, color: AppColors.brandPrimary),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Popular Playlists', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                    Text('Curated city guides', style: TextStyle(fontSize: 11, color: context.ew.textTertiary)),
-                  ],
-                ),
-              ),
+              Icon(Icons.explore_rounded, size: 18, color: AppColors.brandPrimary),
+              const SizedBox(width: 6),
+              Text('Popular Playlists', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
+              const Spacer(),
               GestureDetector(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PlaylistDiscoveryScreen())),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.brandPrimary.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text('See All', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
-                    SizedBox(width: 2),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 10, color: AppColors.brandPrimary),
-                  ]),
-                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('See All', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
+                  const SizedBox(width: 2),
+                  Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.brandPrimary),
+                ]),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 10),
         SizedBox(
-          height: 160,
+          height: 150,
           child: _isLoadingPopular
               ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary)))
               : _popularPlaylists.isEmpty
@@ -927,19 +729,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                       itemCount: _popularPlaylists.length,
                       itemBuilder: (context, index) {
                         final p = _popularPlaylists[index];
-                        return TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0.0, end: 1.0),
-                          duration: Duration(milliseconds: 400 + (index * 80)),
-                          curve: Curves.easeOutCubic,
-                          builder: (context, value, child) => Opacity(
-                            opacity: value,
-                            child: Transform.translate(
-                              offset: Offset(20 * (1 - value), 0),
-                              child: child,
-                            ),
-                          ),
-                          child: _buildPlaylistTile(p),
-                        );
+                        return _buildPlaylistTile(p);
                       },
                     ),
         ),
@@ -950,111 +740,75 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
   Widget _buildPlaylistTile(PlaylistSummary p) {
     final ew = context.ew;
-    final vibeCol = _vibeColor(p.vibe);
-
     return GestureDetector(
       onTap: () => Navigator.push(context, EWPageRoute(page: PlaylistDetailScreen(playlistId: p.id))),
       child: Container(
-        width: 280,
-        margin: const EdgeInsets.only(right: 14),
+        width: 180,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: ew.cardColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: vibeCol.withOpacity(0.12)),
-          boxShadow: [
-            BoxShadow(color: vibeCol.withOpacity(0.08), blurRadius: 16, offset: const Offset(0, 6)),
-          ],
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3))],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Album art style cover
-            ClipRRect(
-              borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-              child: p.coverPhotoUrl.isNotEmpty
-                  ? Image.network(p.coverPhotoUrl, width: 110, height: 160, fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _playlistAlbumArt(p, vibeCol))
-                  : _playlistAlbumArt(p, vibeCol),
-            ),
-            // Content
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Vibe chip
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: vibeCol.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(p.vibe, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: vibeCol)),
-                    ),
-                    const SizedBox(height: 8),
-                    // Title
-                    Text(p.title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700), maxLines: 2, overflow: TextOverflow.ellipsis),
-                    const SizedBox(height: 4),
-                    // City, Country
-                    Row(children: [
-                      Icon(Icons.location_on_rounded, size: 12, color: ew.textTertiary),
-                      const SizedBox(width: 3),
-                      Expanded(
-                        child: Text(
-                          '${p.city}, ${p.country}',
-                          style: TextStyle(fontSize: 11, color: ew.textSecondary),
-                          maxLines: 1, overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ]),
-                    const Spacer(),
-                    // Rating + imports
-                    Row(children: [
-                      if (p.averageRating > 0) ...[
-                        const Icon(Icons.star_rounded, size: 14, color: Color(0xFFFF9800)),
-                        const SizedBox(width: 2),
-                        Text(p.averageRating.toStringAsFixed(1), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: ew.textPrimary)),
-                        const SizedBox(width: 10),
-                      ],
-                      Icon(Icons.download_rounded, size: 13, color: ew.textTertiary),
-                      const SizedBox(width: 3),
-                      Text('${p.importCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
-                      const Spacer(),
-                      Text('${p.itemCount} places', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: ew.textTertiary)),
-                    ]),
-                  ],
-                ),
+            // City + cover icon
+            Row(children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: p.coverPhotoUrl.isNotEmpty
+                    ? Image.network(p.coverPhotoUrl, width: 40, height: 40, fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) => _playlistTileIcon(p))
+                    : _playlistTileIcon(p),
               ),
-            ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(p.city, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(p.country, style: TextStyle(fontSize: 10, color: ew.textSecondary)),
+                ]),
+              ),
+            ]),
+            const SizedBox(height: 10),
+            Text(p.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
+            const Spacer(),
+            Row(children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _vibeColor(p.vibe).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(p.vibe, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _vibeColor(p.vibe))),
+              ),
+              const Spacer(),
+              if (p.averageRating > 0) ...[
+                const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800)),
+                const SizedBox(width: 2),
+                Text(p.averageRating.toStringAsFixed(1), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ew.textSecondary)),
+              ],
+              const SizedBox(width: 6),
+              Icon(Icons.people_alt_rounded, size: 12, color: ew.textSecondary),
+              const SizedBox(width: 2),
+              Text('${p.importCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
+            ]),
           ],
         ),
       ),
     );
   }
 
-  Widget _playlistAlbumArt(PlaylistSummary p, Color vibeCol) {
+  Widget _playlistTileIcon(PlaylistSummary p) {
     return Container(
-      width: 110,
-      height: 160,
+      width: 40, height: 40,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [vibeCol, vibeCol.withOpacity(0.6)],
-        ),
+        color: AppColors.brandPrimary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.queue_music_rounded, size: 32, color: Colors.white.withOpacity(0.6)),
-          const SizedBox(height: 6),
-          Text(
-            p.city,
-            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.8)),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+      child: const Icon(Icons.queue_music_rounded, size: 20, color: AppColors.brandPrimary),
     );
   }
 
@@ -1257,14 +1011,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final days = depDate != null && retDate != null ? retDate.difference(depDate).inDays : null;
     final isActive = _activeTrips.contains(trip);
     final isPast = _previousTrips.contains(trip);
-    final photoHeight = isHero ? 140.0 : 110.0;
-
-    // Trip detail counts
-    final hotelCount = trip.hotels.length;
-    final attractionCount = trip.attractions.length;
-    final restaurantCount = trip.restaurants.length;
-    final hasFlight = trip.outboundFlight != null;
-    final hasDetails = hotelCount > 0 || attractionCount > 0 || restaurantCount > 0;
+    final photoHeight = isHero ? 140.0 : 100.0;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -1367,25 +1114,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white, shadows: [Shadow(blurRadius: 4, color: Colors.black54)]),
                             ),
                           ),
-                        // Status badge (top left)
-                        if (isActive)
-                          Positioned(
-                            top: 10, left: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: AppColors.success,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                                Icon(Icons.flight_takeoff_rounded, size: 11, color: Colors.white),
-                                SizedBox(width: 4),
-                                Text('Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
-                              ]),
-                            ),
-                          ),
-                        // Countdown badge
-                        if (depDate != null)
+                        // Countdown badge on hero card
+                        if (isHero && depDate != null)
                           Positioned(
                             top: 10, right: 10,
                             child: Container(
@@ -1413,11 +1143,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                     ),
                   ),
                 Padding(
-                  padding: const EdgeInsets.all(14),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Title row
+                      // Title + status badge
                       Row(
                         children: [
                           Expanded(
@@ -1428,66 +1158,53 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: (isActive ? AppColors.success : AppColors.brandPrimary).withOpacity(0.1),
-                              shape: BoxShape.circle,
+                          if (isActive)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4CAF50).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Container(width: 6, height: 6, decoration: const BoxDecoration(color: Color(0xFF4CAF50), shape: BoxShape.circle)),
+                                const SizedBox(width: 4),
+                                const Text('Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF4CAF50))),
+                              ]),
                             ),
-                            child: Icon(
-                              Icons.arrow_forward_rounded,
-                              size: 14,
-                              color: isActive ? AppColors.success : AppColors.brandPrimary,
-                            ),
-                          ),
                         ],
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
 
-                      // Route row
-                      if (origin.isNotEmpty || destination.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: Row(
-                            children: [
-                              Icon(Icons.flight_takeoff_rounded, size: 14, color: ew.textSecondary),
-                              const SizedBox(width: 6),
-                              if (origin.isNotEmpty) ...[
-                                Text(origin, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: ew.textPrimary)),
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5),
-                                  child: Icon(Icons.arrow_forward_rounded, size: 12, color: ew.textSecondary),
-                                ),
-                              ],
-                              if (destination.isNotEmpty)
-                                Text(destination, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
-                              const Spacer(),
-                              if (depDate != null)
-                                Text(
-                                  days != null ? '${DateFormat('MMM d').format(depDate)} · $days days' : DateFormat('MMM d').format(depDate),
-                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: ew.textSecondary),
-                                ),
+                      // Route + date combined row
+                      Row(
+                        children: [
+                          if (origin.isNotEmpty || destination.isNotEmpty) ...[
+                            Icon(Icons.flight_takeoff_rounded, size: 15, color: ew.textSecondary),
+                            const SizedBox(width: 6),
+                            if (origin.isNotEmpty) ...[
+                              Text(origin, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: ew.textPrimary)),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 6),
+                                child: Icon(Icons.arrow_forward_rounded, size: 14, color: ew.textSecondary),
+                              ),
                             ],
-                          ),
-                        ),
-
-                      // Trip detail chips (hotels, attractions, restaurants)
-                      if (hasDetails || hasFlight)
-                        Wrap(
-                          spacing: 6,
-                          runSpacing: 6,
-                          children: [
-                            if (hasFlight)
-                              _buildDetailChip(Icons.flight_rounded, 'Flight', AppColors.flight),
-                            if (hotelCount > 0)
-                              _buildDetailChip(Icons.hotel_rounded, '$hotelCount ${hotelCount == 1 ? 'Hotel' : 'Hotels'}', AppColors.hotel),
-                            if (attractionCount > 0)
-                              _buildDetailChip(Icons.attractions_rounded, '$attractionCount ${attractionCount == 1 ? 'Place' : 'Places'}', AppColors.attraction),
-                            if (restaurantCount > 0)
-                              _buildDetailChip(Icons.restaurant_rounded, '$restaurantCount ${restaurantCount == 1 ? 'Restaurant' : 'Restaurants'}', AppColors.restaurant),
+                            if (destination.isNotEmpty)
+                              Text(destination, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
                           ],
-                        ),
+                          const Spacer(),
+                          if (depDate != null)
+                            Text(
+                              days != null ? '${DateFormat('MMM d').format(depDate)} · $days days' : DateFormat('MMM d').format(depDate),
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: ew.textSecondary),
+                            ),
+                        ],
+                      ),
+
+                      // Countdown (only if no hero badge already showing it)
+                      if (depDate != null && !isHero) ...[
+                        const SizedBox(height: 10),
+                        _buildCountdown(depDate, retDate, isActive, isPast),
+                      ],
                     ],
                   ),
                 ),
@@ -1495,25 +1212,6 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDetailChip(IconData icon, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.12)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
-        ],
       ),
     );
   }
@@ -1539,6 +1237,45 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         const Icon(Icons.schedule_rounded, size: 12, color: Colors.white),
         const SizedBox(width: 4),
         Text(daysUntil <= 1 ? 'Tomorrow!' : 'In $daysUntil days', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
+      ]);
+    }
+  }
+
+
+
+  Widget _buildCountdown(DateTime depDate, DateTime? retDate, bool isActive, bool isPast) {
+    final now = DateTime.now();
+    final ew = context.ew;
+
+    if (isActive) {
+      final daysLeft = (retDate ?? depDate.add(const Duration(days: 7))).difference(now).inDays;
+      return Row(children: [
+        const Icon(Icons.sunny, size: 14, color: Color(0xFFFF9800)),
+        const SizedBox(width: 4),
+        Text(
+          daysLeft > 0 ? '$daysLeft days remaining' : 'Last day!',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Color(0xFFFF9800)),
+        ),
+      ]);
+    } else if (isPast) {
+      final daysAgo = now.difference(retDate ?? depDate).inDays;
+      return Row(children: [
+        Icon(Icons.history_rounded, size: 14, color: ew.textSecondary),
+        const SizedBox(width: 4),
+        Text(
+          daysAgo < 30 ? '$daysAgo days ago' : '${(daysAgo / 30).floor()} months ago',
+          style: TextStyle(fontSize: 12, color: ew.textSecondary),
+        ),
+      ]);
+    } else {
+      final daysUntil = depDate.difference(now).inDays;
+      return Row(children: [
+        const Icon(Icons.schedule_rounded, size: 14, color: AppColors.brandPrimary),
+        const SizedBox(width: 4),
+        Text(
+          daysUntil <= 1 ? 'Tomorrow!' : 'In $daysUntil days',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.brandPrimary),
+        ),
       ]);
     }
   }

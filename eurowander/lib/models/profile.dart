@@ -139,27 +139,34 @@ class FrequentCollaborator {
 class ActivityTripSummary {
   final String tripId;
   final String name;
-  final String status;
   final String destination;
   final DateTime createdAt;
+  final DateTime? startDate;
+  final DateTime? endDate;
 
   ActivityTripSummary({
     required this.tripId,
     required this.name,
-    required this.status,
     required this.destination,
     required this.createdAt,
+    this.startDate,
+    this.endDate,
   });
 
   factory ActivityTripSummary.fromJson(Map<String, dynamic> json) {
     return ActivityTripSummary(
       tripId: json['trip_id'] as String? ?? '',
       name: json['name'] as String? ?? '',
-      status: json['status'] as String? ?? '',
       destination: json['destination'] as String? ?? '',
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : DateTime.now(),
+      startDate: json['start_date'] != null
+          ? DateTime.tryParse(json['start_date'] as String)
+          : null,
+      endDate: json['end_date'] != null
+          ? DateTime.tryParse(json['end_date'] as String)
+          : null,
     );
   }
 }

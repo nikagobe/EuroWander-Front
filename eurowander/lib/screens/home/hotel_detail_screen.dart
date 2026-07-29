@@ -15,14 +15,14 @@ class HotelDetailScreen extends StatefulWidget {
   final String departureDate;
   final int adults;
   final int rooms;
-  final SavedTrip trip;
+  final SavedTrip? trip;
 
   const HotelDetailScreen({
     super.key,
     required this.hotelId,
     required this.arrivalDate,
     required this.departureDate,
-    required this.trip,
+    this.trip,
     this.adults = 1,
     this.rooms = 1,
   });
@@ -60,7 +60,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
   }
 
   Future<void> _saveHotelToTrip() async {
-    if (_details == null) return;
+    if (_details == null || widget.trip == null) return;
     setState(() => _isSaving = true);
 
     final prefs = await SharedPreferences.getInstance();
@@ -87,7 +87,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
 
     final success = await _apiService.saveHotelToTrip(
       token: token,
-      tripId: widget.trip.id,
+      tripId: widget.trip!.id,
       hotelData: hotelData,
     );
 
@@ -625,17 +625,19 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
               Expanded(
                 child: SizedBox(
                   height: 50,
-                  child: ElevatedButton(
-                    onPressed: _isSaving ? null : _saveHotelToTrip,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.brandPrimary,
-                      shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
-                      elevation: 0,
-                    ),
-                    child: _isSaving
-                        ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text('Save to Trip', style: theme.textTheme.titleMedium!.copyWith(color: Colors.white)),
-                  ),
+                  child: widget.trip != null
+                    ? ElevatedButton(
+                        onPressed: _isSaving ? null : _saveHotelToTrip,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.brandPrimary,
+                          shape: RoundedRectangleBorder(borderRadius: AppRadius.borderLg),
+                          elevation: 0,
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                            : Text('Save to Trip', style: theme.textTheme.titleMedium!.copyWith(color: Colors.white)),
+                      )
+                    : const SizedBox.shrink(),
                 ),
               ),
             ],
