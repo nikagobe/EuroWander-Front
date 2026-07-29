@@ -242,11 +242,15 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
             children: template.tags.map((t) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.brandPrimary.withOpacity(0.08),
+                color: AppColors.brandPrimary.withOpacity(0.06),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: AppColors.brandPrimary.withOpacity(0.2)),
+                border: Border.all(color: AppColors.brandPrimary.withOpacity(0.12)),
               ),
-              child: Text(t, style: TextStyle(fontSize: 12, color: AppColors.brandPrimary, fontWeight: FontWeight.w500)),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(width: 5, height: 5, decoration: BoxDecoration(color: AppColors.brandPrimary.withOpacity(0.5), shape: BoxShape.circle)),
+                const SizedBox(width: 6),
+                Text('#$t', style: const TextStyle(fontSize: 12, color: AppColors.brandPrimary, fontWeight: FontWeight.w500)),
+              ]),
             )).toList(),
           ),
           const SizedBox(height: 24),
@@ -284,54 +288,45 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
 
   Widget _buildStatsRow(TemplateResponse template) {
     final ew = context.ew;
-    return Column(children: [
-      // Social engagement row
-      Row(children: [
-        _socialChip(Icons.fork_right_rounded, '${template.forkCount}', 'Forks'),
-        const SizedBox(width: 10),
-        _socialChip(Icons.favorite_rounded, '${template.likeCount}', 'Likes'),
-      ]),
-      const SizedBox(height: 10),
-      // Trip info row
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.brandPrimary.withOpacity(0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.brandPrimary.withOpacity(0.12)),
-        ),
-        child: Row(children: [
-          Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.brandPrimary),
-          const SizedBox(width: 6),
-          Text('${template.totalDays} days', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ew.textPrimary)),
-          Container(
-            width: 4, height: 4,
-            margin: const EdgeInsets.symmetric(horizontal: 10),
-            decoration: BoxDecoration(color: ew.textSecondary.withOpacity(0.4), shape: BoxShape.circle),
-          ),
-          Icon(Icons.location_on_rounded, size: 16, color: AppColors.brandPrimary),
-          const SizedBox(width: 6),
-          Text('${template.legs.length} cities', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ew.textPrimary)),
-        ]),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: ew.cardColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ew.borderSubtle),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
       ),
-    ]);
+      child: Row(
+        children: [
+          _statPill(Icons.calendar_today_rounded, '${template.totalDays}', 'days', AppColors.brandAmber),
+          const SizedBox(width: 8),
+          _statPill(Icons.location_on_rounded, '${template.legs.length}', 'cities', AppColors.brandPrimary),
+          const SizedBox(width: 8),
+          _statPill(Icons.fork_right_rounded, '${template.forkCount}', 'forks', AppColors.info),
+          const SizedBox(width: 8),
+          _statPill(Icons.favorite_rounded, '${template.likeCount}', 'likes', Colors.red.shade400),
+        ],
+      ),
+    );
   }
 
-  Widget _socialChip(IconData icon, String value, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: context.ew.cardColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+  Widget _statPill(IconData icon, String value, String label, Color color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.06),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(height: 4),
+            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color)),
+            Text(label, style: TextStyle(fontSize: 10, color: context.ew.textTertiary)),
+          ],
+        ),
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 15, color: AppColors.brandPrimary),
-        const SizedBox(width: 5),
-        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-        const SizedBox(width: 3),
-        Text(label, style: TextStyle(fontSize: 12, color: context.ew.textSecondary)),
-      ]),
     );
   }
 
@@ -341,28 +336,33 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: context.ew.cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.withOpacity(0.12)),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppColors.success.withOpacity(0.06), AppColors.success.withOpacity(0.02)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.success.withOpacity(0.15)),
       ),
       child: Row(children: [
         Container(
-          padding: const EdgeInsets.all(10),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
+            color: AppColors.success.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.account_balance_wallet_rounded, size: 22, color: Color(0xFF4CAF50)),
+          child: const Icon(Icons.account_balance_wallet_rounded, size: 24, color: AppColors.success),
         ),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Estimated Budget', style: TextStyle(fontSize: 12, color: context.ew.textSecondary)),
-          const SizedBox(height: 2),
+          Text('Estimated Budget', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: context.ew.textSecondary)),
+          const SizedBox(height: 4),
           Text(
             '${template.currency} ${template.estimatedBudgetMin!.toInt()} – ${template.estimatedBudgetMax?.toInt() ?? ''}',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.success),
           ),
         ])),
+        const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.success),
       ]),
     );
   }
@@ -575,9 +575,10 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
 
   Widget _buildBottomCta(TemplateResponse template) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-      decoration: const BoxDecoration(
-        color: Colors.transparent,
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
+      decoration: BoxDecoration(
+        color: context.ew.cardColor,
+        border: Border(top: BorderSide(color: context.ew.borderSubtle)),
       ),
       child: SafeArea(
         child: SizedBox(

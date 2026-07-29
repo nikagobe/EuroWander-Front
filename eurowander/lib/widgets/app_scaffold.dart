@@ -1,5 +1,17 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
+
+/// Scroll behavior that enables mouse-drag scrolling (needed for web).
+class _WebDragScrollBehavior extends MaterialScrollBehavior {
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.trackpad,
+  };
+}
 
 /// Replaces the repeated pattern of:
 /// ```dart
@@ -38,12 +50,28 @@ class AppScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final ew = context.ew;
 
+    Widget content = child;
+
+    // Place FAB inside the constrained area so it aligns with content
+    if (floatingActionButton != null) {
+      content = Stack(
+        children: [
+          child,
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: floatingActionButton!,
+          ),
+        ],
+      );
+    }
+
     Widget body = Container(
       decoration: BoxDecoration(gradient: ew.surfaceGradient),
       child: Center(
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth),
-          child: child,
+          child: content,
         ),
       ),
     );
@@ -55,18 +83,20 @@ class AppScaffold extends StatelessWidget {
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              child: child,
+              child: content,
             ),
           ),
         ),
       );
     }
 
-    return Scaffold(
-      body: body,
-      floatingActionButton: floatingActionButton,
-      bottomNavigationBar: bottomNavigationBar,
-      backgroundColor: Colors.transparent,
+    return ScrollConfiguration(
+      behavior: _WebDragScrollBehavior(),
+      child: Scaffold(
+        body: body,
+        bottomNavigationBar: bottomNavigationBar,
+        backgroundColor: Colors.transparent,
+      ),
     );
   }
 }
