@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Scroll behavior that enables mouse-drag scrolling (needed for web).
-class _WebDragScrollBehavior extends MaterialScrollBehavior {
+class EWScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
     PointerDeviceKind.touch,
@@ -91,11 +91,42 @@ class AppScaffold extends StatelessWidget {
     }
 
     return ScrollConfiguration(
-      behavior: _WebDragScrollBehavior(),
+      behavior: EWScrollBehavior(),
       child: Scaffold(
         body: body,
         bottomNavigationBar: bottomNavigationBar,
         backgroundColor: Colors.transparent,
+      ),
+    );
+  }
+}
+
+/// For screens that need to use Scaffold directly (e.g. with SliverAppBar)
+/// but still want consistent width constraints and scroll behavior.
+/// Wrap the Scaffold's body in this.
+class EWConstrainedBody extends StatelessWidget {
+  const EWConstrainedBody({
+    super.key,
+    required this.child,
+    this.maxWidth = 480,
+  });
+
+  final Widget child;
+  final double maxWidth;
+
+  @override
+  Widget build(BuildContext context) {
+    final ew = context.ew;
+    return ScrollConfiguration(
+      behavior: EWScrollBehavior(),
+      child: Container(
+        decoration: BoxDecoration(gradient: ew.surfaceGradient),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: child,
+          ),
+        ),
       ),
     );
   }

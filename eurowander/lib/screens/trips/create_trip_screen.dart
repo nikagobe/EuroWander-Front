@@ -90,20 +90,21 @@ class _CreateTripScreenState extends State<CreateTripScreen> {
     final dateFormat = DateFormat('MMM dd, yyyy');
     final ew = context.ew;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Trip'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Trip Title
-              TextFormField(
-                controller: _titleController,
+    return AppScaffold(
+      child: Column(
+        children: [
+          const EWAppBar(title: 'Create Trip'),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Trip Title
+                    TextFormField(
+                      controller: _titleController,
                 decoration: const InputDecoration(
                   labelText: 'Trip Name',
                   hintText: 'e.g. Summer in Paris',

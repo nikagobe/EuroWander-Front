@@ -154,7 +154,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
         Expanded(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -607,7 +607,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
       ),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 480),
           child: Row(
             children: [
               Column(

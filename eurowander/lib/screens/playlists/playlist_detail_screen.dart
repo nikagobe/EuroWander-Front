@@ -48,8 +48,10 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Consumer<PlaylistProvider>(
+    return ScrollConfiguration(
+      behavior: EWScrollBehavior(),
+      child: Scaffold(
+        body: Consumer<PlaylistProvider>(
         builder: (context, provider, _) {
           if (provider.isLoadingDetail) {
             return Container(
@@ -70,7 +72,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
+                constraints: const BoxConstraints(maxWidth: 480),
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
                   slivers: [
@@ -87,6 +89,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
             ),
           );
         },
+      ),
       ),
     );
   }
@@ -572,9 +575,12 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                       ],
                     ),
                     const SizedBox(height: 3),
-                    Row(
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        if (item.category.isNotEmpty) ...[
+                        if (item.category.isNotEmpty)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
@@ -583,14 +589,15 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             ),
                             child: Text(item.category, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500, color: itemColor)),
                           ),
-                          const SizedBox(width: 6),
-                        ],
-                        if (item.rating > 0) ...[
-                          const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800)),
-                          const SizedBox(width: 2),
-                          Text('${item.rating}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
-                          const SizedBox(width: 6),
-                        ],
+                        if (item.rating > 0)
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800)),
+                              const SizedBox(width: 2),
+                              Text('${item.rating}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
+                            ],
+                          ),
                         if (item.priceIndicator.isNotEmpty)
                           Text(item.priceIndicator, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.success)),
                       ],

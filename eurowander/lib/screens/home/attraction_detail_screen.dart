@@ -272,7 +272,7 @@ class _AttractionDetailScreenState extends State<AttractionDetailScreen> {
         Expanded(
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
+              constraints: const BoxConstraints(maxWidth: 480),
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

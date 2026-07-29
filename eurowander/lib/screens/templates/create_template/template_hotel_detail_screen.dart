@@ -99,7 +99,7 @@ class _TemplateHotelDetailScreenState extends State<TemplateHotelDetailScreen> {
       Expanded(
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600),
+            constraints: const BoxConstraints(maxWidth: 480),
             child: SingleChildScrollView(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               _buildPhotoGallery(hotel),
               Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -239,7 +239,7 @@ class _TemplateHotelDetailScreenState extends State<TemplateHotelDetailScreen> {
       decoration: BoxDecoration(color: Colors.white, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, -4))]),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
+          constraints: const BoxConstraints(maxWidth: 480),
           child: Row(children: [
             Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
               Text('â‚¬${hotel.priceTotal.toStringAsFixed(2)}', style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.brandPrimary)),

@@ -47,7 +47,9 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ScrollConfiguration(
+      behavior: EWScrollBehavior(),
+      child: Scaffold(
       body: Consumer<TemplateProvider>(
         builder: (context, provider, _) {
           if (provider.isLoadingDetail) {
@@ -74,7 +76,7 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
             decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
+                constraints: const BoxConstraints(maxWidth: 480),
                 child: Column(children: [
                   Expanded(
                     child: CustomScrollView(
@@ -97,6 +99,7 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
             ),
           );
         },
+      ),
       ),
     );
   }

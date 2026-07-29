@@ -15,9 +15,8 @@ class TripsScreen extends StatelessWidget {
     final tripProvider = context.watch<TripProvider>();
     final trips = tripProvider.trips;
 
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
+    return AppScaffold(
+      child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
