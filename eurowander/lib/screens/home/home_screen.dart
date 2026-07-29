@@ -11,6 +11,11 @@ import '../../services/playlist_service.dart';
 import '../../services/template_service.dart';
 import '../../utils/page_transitions.dart';
 import '../../widgets/widgets.dart';
+import '../../widgets/home/travel_stats_strip.dart';
+import '../../widgets/home/smart_nudge.dart';
+import '../../widgets/home/destination_spotlight.dart';
+import '../../widgets/home/hero_banner.dart';
+import '../../widgets/home/travel_separator.dart';
 import '../plan/city_selection_screen.dart';
 import '../playlists/playlist_builder_screen.dart';
 import '../playlists/playlist_detail_screen.dart';
@@ -116,22 +121,58 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       child: NestedScrollView(
         headerSliverBuilder: (context, innerBoxIsScrolled) {
           return [
+            // Hero Banner — immersive greeting with rotating imagery + pulsating CTA
             SliverToBoxAdapter(
               child: Padding(
-                padding: AppSpacing.paddingHorizontalXl,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: AppSpacing.xl),
-                    _buildHeader(context),
-                    const SizedBox(height: AppSpacing.lg),
-                    _buildPlanButton(context),
-                    const SizedBox(height: AppSpacing.lg),
-                    if (!_isLoading) _buildFeaturedTrip(),
-                    if (!_isLoading && _featuredTrip != null) const SizedBox(height: AppSpacing.lg),
-                  ],
+                padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.md, AppSpacing.xl, 0),
+                child: _buildHeroBanner(context),
+              ),
+            ),
+            // Smart nudges (trip reminders)
+            if (!_isLoading && _trips.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.sm),
+                  child: SmartNudges(
+                    trips: _trips,
+                    onTripTap: (trip) async {
+                      await Navigator.of(context).push(EWPageRoute(page: TripDetailScreen(trip: trip)));
+                      _loadTrips();
+                    },
+                  ),
                 ),
               ),
+            // Featured trip card
+            if (!_isLoading && _featuredTrip != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.sm, AppSpacing.xl, 0),
+                  child: _buildFeaturedTrip(),
+                ),
+              ),
+            // Destination spotlight — dreamy inspiration
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.lg, bottom: AppSpacing.lg),
+                child: DestinationSpotlight.seasonal(),
+              ),
+            ),
+            // Travel stats
+            if (!_isLoading && _trips.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.md),
+                  child: TravelStatsStrip(
+                    totalTrips: _trips.length,
+                    totalCountries: _countUniqueDestinations(),
+                    totalPlaces: _trips.fold<int>(0, (sum, t) => sum + t.attractions.length + t.restaurants.length),
+                    totalNights: _countTotalNights(),
+                  ),
+                ),
+              ),
+            // Visual breath between personal and discovery sections
+            const SliverToBoxAdapter(
+              child: TravelSeparator(),
             ),
             // Popular Templates carousel
             SliverToBoxAdapter(child: _buildTemplatesCarousel()),
@@ -162,6 +203,36 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final featured = _featuredTrip;
     if (featured == null) return _upcomingTrips;
     return _upcomingTrips.where((t) => t != featured).toList();
+  }
+
+  int _countUniqueDestinations() {
+    final cities = <String>{};
+    for (final trip in _trips) {
+      // Try outbound flight top-level field
+      String dest = trip.outboundFlight?.arrivalCityName ?? '';
+      // Fallback to last leg's arrival city
+      if (dest.isEmpty && trip.outboundFlight?.legs.isNotEmpty == true) {
+        dest = trip.outboundFlight!.legs.last.arrivalCityName;
+      }
+      // Fallback to hotel city
+      if (dest.isEmpty && trip.hotels.isNotEmpty) {
+        dest = trip.hotels.first.city;
+      }
+      if (dest.isNotEmpty) cities.add(dest);
+    }
+    return cities.length;
+  }
+
+  int _countTotalNights() {
+    int total = 0;
+    for (final trip in _trips) {
+      final dep = _getDepartureDate(trip);
+      final ret = _getReturnDate(trip);
+      if (dep != null && ret != null) {
+        total += ret.difference(dep).inDays;
+      }
+    }
+    return total;
   }
 
   Widget _buildFeaturedTrip() {
@@ -490,19 +561,35 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   // ────────────────────────────────────────────────────────────
-  // CTA Button
+  // Hero Banner (replaces old header + Plan button)
   // ────────────────────────────────────────────────────────────
 
-  Widget _buildPlanButton(BuildContext context) {
-    return GradientButton(
-      label: 'Plan New Trip',
-      icon: Icons.add_circle_outline_rounded,
-      onTap: () async {
+  Widget _buildHeroBanner(BuildContext context) {
+    final user = context.watch<AuthProvider>().user;
+    final firstName = user?.firstName ?? '';
+    final initials = '${user?.firstName.isNotEmpty == true ? user!.firstName[0] : ''}${user?.lastName.isNotEmpty == true ? user!.lastName[0] : ''}';
+
+    // Use destination photos from user's trips for the background carousel
+    final photos = _trips
+        .where((t) => t.destinationPhotoUrl != null && t.destinationPhotoUrl!.isNotEmpty)
+        .map((t) => t.destinationPhotoUrl!)
+        .take(5)
+        .toList();
+
+    return HeroBanner(
+      greeting: _getGreeting(),
+      userName: firstName,
+      profileInitials: initials,
+      destinationPhotos: photos,
+      onPlanTrip: () async {
         await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const CitySelectionScreen()),
         );
         _loadTrips();
       },
+      onProfileTap: () => Navigator.of(context).push(
+        EWPageRoute(page: const ProfileScreen()),
+      ),
     );
   }
 
@@ -589,7 +676,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 190,
+          height: 230,
           child: _isLoadingPopular
               ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary)))
               : _popularTemplates.isEmpty
@@ -610,60 +697,103 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildTemplateTile(TemplateListItem t) {
-    final ew = context.ew;
     return GestureDetector(
       onTap: () => Navigator.push(context, EWPageRoute(page: TemplateDetailScreen(templateId: t.id))),
       child: Container(
-        width: 200,
-        margin: const EdgeInsets.only(right: 12),
+        width: 220,
+        margin: const EdgeInsets.only(right: 14),
         decoration: BoxDecoration(
-          color: ew.cardColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3))],
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.12), blurRadius: 16, offset: const Offset(0, 6)),
+          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // Cover
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
-              child: t.coverPhotoUrl.isNotEmpty
-                  ? Image.network(t.coverPhotoUrl, height: 90, width: 200, fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _templateTilePlaceholder(t))
-                  : _templateTilePlaceholder(t),
+            // Full background image
+            t.coverPhotoUrl.isNotEmpty
+                ? Image.network(t.coverPhotoUrl, fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _templateTileGradient(t))
+                : _templateTileGradient(t),
+            // Cinematic gradient overlay
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.0),
+                    Colors.black.withOpacity(0.1),
+                    Colors.black.withOpacity(0.75),
+                  ],
+                  stops: const [0.0, 0.35, 1.0],
+                ),
+              ),
             ),
-            // Content
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+            // Days badge (top-left)
+            Positioned(
+              top: 10, left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.schedule_rounded, size: 10, color: Colors.white),
+                  const SizedBox(width: 4),
+                  Text('${t.totalDays} days', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
+                ]),
+              ),
+            ),
+            // Likes badge (top-right)
+            Positioned(
+              top: 10, right: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.4),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.favorite_rounded, size: 11, color: Colors.red.shade300),
+                  const SizedBox(width: 3),
+                  Text('${t.likeCount}', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
+                ]),
+              ),
+            ),
+            // Content overlay (bottom)
+            Positioned(
+              left: 14, right: 14, bottom: 14,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(t.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  const SizedBox(height: 3),
                   Text(
-                    t.legCities.join(' → '),
-                    style: TextStyle(fontSize: 11, color: ew.textSecondary),
-                    maxLines: 1, overflow: TextOverflow.ellipsis,
+                    t.title,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white, height: 1.2),
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 6),
                   Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.brandPrimary.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(6),
+                    Icon(Icons.route_rounded, size: 12, color: Colors.white.withOpacity(0.8)),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        t.legCities.join(' → '),
+                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w500),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
                       ),
-                      child: Text('${t.totalDays}d', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.brandPrimary)),
                     ),
-                    const SizedBox(width: 6),
-                    Icon(Icons.fork_right_rounded, size: 13, color: ew.textSecondary),
-                    const SizedBox(width: 2),
-                    Text('${t.forkCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
-                    const SizedBox(width: 6),
-                    Icon(Icons.favorite_rounded, size: 12, color: Colors.red.shade300),
-                    const SizedBox(width: 2),
-                    Text('${t.likeCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
+                  ]),
+                  const SizedBox(height: 6),
+                  Row(children: [
+                    Icon(Icons.fork_right_rounded, size: 12, color: Colors.white.withOpacity(0.6)),
+                    const SizedBox(width: 3),
+                    Text('${t.forkCount} used', style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.6))),
                   ]),
                 ],
               ),
@@ -674,17 +804,17 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     );
   }
 
-  Widget _templateTilePlaceholder(TemplateListItem t) {
+  Widget _templateTileGradient(TemplateListItem t) {
     return Container(
-      height: 90, width: 200,
       decoration: const BoxDecoration(
-        gradient: LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary]),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF6C3CE0), AppColors.brandPrimary, AppColors.brandSecondary],
+        ),
       ),
       child: Center(
-        child: Text(
-          t.legCities.isNotEmpty ? t.legCities.first : 'Trip',
-          style: TextStyle(fontSize: 18, color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.w700),
-        ),
+        child: Icon(Icons.map_rounded, size: 48, color: Colors.white.withOpacity(0.2)),
       ),
     );
   }
@@ -718,7 +848,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 150,
+          height: 185,
           child: _isLoadingPopular
               ? const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary)))
               : _popularPlaylists.isEmpty
@@ -739,76 +869,123 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
   Widget _buildPlaylistTile(PlaylistSummary p) {
-    final ew = context.ew;
+    final vibeCol = _vibeColor(p.vibe);
     return GestureDetector(
       onTap: () => Navigator.push(context, EWPageRoute(page: PlaylistDetailScreen(playlistId: p.id))),
       child: Container(
-        width: 180,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(12),
+        width: 200,
+        margin: const EdgeInsets.only(right: 14),
         decoration: BoxDecoration(
-          color: ew.cardColor,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3))],
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: [
+            BoxShadow(color: vibeCol.withOpacity(0.18), blurRadius: 14, offset: const Offset(0, 5)),
+          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          fit: StackFit.expand,
           children: [
-            // City + cover icon
-            Row(children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: p.coverPhotoUrl.isNotEmpty
-                    ? Image.network(p.coverPhotoUrl, width: 40, height: 40, fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _playlistTileIcon(p))
-                    : _playlistTileIcon(p),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(p.city, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(p.country, style: TextStyle(fontSize: 10, color: ew.textSecondary)),
-                ]),
-              ),
-            ]),
-            const SizedBox(height: 10),
-            Text(p.title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 2, overflow: TextOverflow.ellipsis),
-            const Spacer(),
-            Row(children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _vibeColor(p.vibe).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
+            // Background image or gradient
+            p.coverPhotoUrl.isNotEmpty
+                ? Image.network(p.coverPhotoUrl, fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _playlistTileGradient(p))
+                : _playlistTileGradient(p),
+            // Vibe-tinted gradient overlay
+            DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    vibeCol.withOpacity(0.0),
+                    vibeCol.withOpacity(0.15),
+                    Colors.black.withOpacity(0.8),
+                  ],
+                  stops: const [0.0, 0.3, 1.0],
                 ),
-                child: Text(p.vibe, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _vibeColor(p.vibe))),
               ),
-              const Spacer(),
-              if (p.averageRating > 0) ...[
-                const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800)),
-                const SizedBox(width: 2),
-                Text(p.averageRating.toStringAsFixed(1), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: ew.textSecondary)),
-              ],
-              const SizedBox(width: 6),
-              Icon(Icons.people_alt_rounded, size: 12, color: ew.textSecondary),
-              const SizedBox(width: 2),
-              Text('${p.importCount}', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
-            ]),
+            ),
+            // Vibe badge (top-left)
+            Positioned(
+              top: 10, left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: vibeCol.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(p.vibe, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.3)),
+              ),
+            ),
+            // Rating (top-right)
+            if (p.averageRating > 0)
+              Positioned(
+                top: 10, right: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.star_rounded, size: 11, color: Color(0xFFFFD700)),
+                    const SizedBox(width: 3),
+                    Text(p.averageRating.toStringAsFixed(1), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
+                  ]),
+                ),
+              ),
+            // Content overlay (bottom)
+            Positioned(
+              left: 14, right: 14, bottom: 14,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    p.title,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white, height: 1.2),
+                    maxLines: 2, overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 5),
+                  Row(children: [
+                    Icon(Icons.location_on_rounded, size: 12, color: Colors.white.withOpacity(0.8)),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        '${p.city}, ${p.country}',
+                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.8), fontWeight: FontWeight.w500),
+                        maxLines: 1, overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ]),
+                  const SizedBox(height: 5),
+                  Row(children: [
+                    Icon(Icons.people_alt_rounded, size: 11, color: Colors.white.withOpacity(0.6)),
+                    const SizedBox(width: 4),
+                    Text('${p.importCount} travelers', style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.6))),
+                  ]),
+                ],
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _playlistTileIcon(PlaylistSummary p) {
+  Widget _playlistTileGradient(PlaylistSummary p) {
+    final vibeCol = _vibeColor(p.vibe);
     return Container(
-      width: 40, height: 40,
       decoration: BoxDecoration(
-        color: AppColors.brandPrimary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [vibeCol, vibeCol.withOpacity(0.7), AppColors.brandPrimary],
+        ),
       ),
-      child: const Icon(Icons.queue_music_rounded, size: 20, color: AppColors.brandPrimary),
+      child: Center(
+        child: Icon(Icons.queue_music_rounded, size: 44, color: Colors.white.withOpacity(0.2)),
+      ),
     );
   }
 
@@ -1132,14 +1309,32 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                   )
                 else
                   Container(
-                    height: 4,
+                    height: 48,
                     decoration: BoxDecoration(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                       gradient: isActive
-                          ? const LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary])
+                          ? const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [AppColors.brandPrimary, AppColors.brandSecondary])
                           : isPast
-                              ? LinearGradient(colors: [Colors.grey.shade400, Colors.grey.shade300])
-                              : const LinearGradient(colors: [Color(0xFFFF9800), Color(0xFFFFC107)]),
+                              ? LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Colors.grey.shade400, Colors.grey.shade300])
+                              : const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFFFF9800), Color(0xFFFFC107)]),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      child: Row(children: [
+                        Icon(
+                          isActive ? Icons.flight_takeoff_rounded : isPast ? Icons.photo_album_rounded : Icons.explore_rounded,
+                          size: 18, color: Colors.white.withOpacity(0.6),
+                        ),
+                        const SizedBox(width: 8),
+                        if (destination.isNotEmpty)
+                          Expanded(
+                            child: Text(
+                              destination,
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white.withOpacity(0.9)),
+                              maxLines: 1, overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                      ]),
                     ),
                   ),
                 Padding(
@@ -1205,6 +1400,11 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
                         const SizedBox(height: 10),
                         _buildCountdown(depDate, retDate, isActive, isPast),
                       ],
+                      // Planned items indicators
+                      if (_hasPlanItems(trip)) ...[
+                        const SizedBox(height: 10),
+                        _buildPlannedItems(trip),
+                      ],
                     ],
                   ),
                 ),
@@ -1242,6 +1442,41 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
   }
 
 
+
+  bool _hasPlanItems(SavedTrip trip) {
+    return trip.restaurants.isNotEmpty || trip.attractions.isNotEmpty;
+  }
+
+  Widget _buildPlannedItems(SavedTrip trip) {
+    final ew = context.ew;
+    return Row(children: [
+      if (trip.outboundFlight != null)
+        _buildPlanChip(Icons.flight_rounded, ew.flightColor, null),
+      if (trip.restaurants.isNotEmpty)
+        _buildPlanChip(Icons.restaurant_rounded, ew.restaurantColor, trip.restaurants.length),
+      if (trip.attractions.isNotEmpty)
+        _buildPlanChip(Icons.place_rounded, ew.attractionColor, trip.attractions.length),
+    ]);
+  }
+
+  Widget _buildPlanChip(IconData icon, Color color, int? count) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.15)),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 12, color: color),
+        if (count != null) ...[
+          const SizedBox(width: 3),
+          Text('$count', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+        ],
+      ]),
+    );
+  }
 
   Widget _buildCountdown(DateTime depDate, DateTime? retDate, bool isActive, bool isPast) {
     final now = DateTime.now();

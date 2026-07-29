@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/template_provider.dart';
 import '../../services/playlist_service.dart';
 import '../../services/profile_service.dart';
+import '../../utils/city_photos.dart';
 import '../../widgets/widgets.dart';
 import '../../widgets/templates/author_tip_box.dart';
 import '../../utils/page_transitions.dart';
@@ -75,7 +76,14 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
           if (provider.isLoadingDetail) {
             return Container(
               decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
-              child: const Center(child: ShimmerList()),
+              child: SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: const ShimmerList(),
+                  ),
+                ),
+              ),
             );
           }
           final template = provider.currentTemplate;
@@ -97,7 +105,7 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
             decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
+                constraints: const BoxConstraints(maxWidth: 480),
                 child: Column(children: [
                   Expanded(
                     child: CustomScrollView(
@@ -314,6 +322,7 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
     final profile = _authorProfile;
     final hasPhoto = profile != null && profile.profilePhotoUrl.isNotEmpty;
     final name = profile?.fullName ?? '';
+    final displayName = name.isNotEmpty ? name : 'Traveler';
     final initials = profile != null
         ? '${profile.firstName.isNotEmpty ? profile.firstName[0] : ''}${profile.lastName.isNotEmpty ? profile.lastName[0] : ''}'.toUpperCase()
         : '';
@@ -330,10 +339,10 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
             Container(
               width: 38, height: 38,
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.15),
+                gradient: const LinearGradient(colors: [AppColors.brandPrimary, AppColors.brandSecondary]),
                 shape: BoxShape.circle,
               ),
-              child: const Center(child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.brandPrimary))),
+              child: const Center(child: Icon(Icons.person_rounded, size: 18, color: Colors.white)),
             )
           else if (hasPhoto)
             ClipOval(
@@ -351,7 +360,7 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name.isNotEmpty ? name : 'Loading...',
+                  displayName,
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ew.textPrimary),
                 ),
                 Text('Template Author', style: TextStyle(fontSize: 11, color: ew.textSecondary)),
@@ -519,14 +528,20 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
             Expanded(
               child: Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: ew.cardColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey.withOpacity(0.1)),
                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4))],
                 ),
+                clipBehavior: Clip.antiAlias,
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  // City photo header
+                  _buildLegPhoto(leg),
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   // City header
                   Row(children: [
                     Expanded(
@@ -560,6 +575,8 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
                     AuthorTipBox(tip: leg.authorNotes),
                   ],
                 ]),
+                  ),
+                ]),
               ),
             ),
           ],
@@ -576,6 +593,78 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
       const Spacer(),
       Text(subtitle, style: TextStyle(fontSize: 11, color: context.ew.textSecondary)),
     ]);
+  }
+
+  Widget _buildLegPhoto(TemplateLeg leg) {
+    final photoUrl = CityPhotos.getPhotoUrl(leg.city);
+    if (photoUrl != null) {
+      return Stack(
+        children: [
+          Image.network(
+            photoUrl,
+            height: 100,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return _buildLegPhotoPlaceholder(leg);
+            },
+            errorBuilder: (_, _, _) => _buildLegPhotoPlaceholder(leg),
+          ),
+          // Gradient scrim
+          Positioned(
+            bottom: 0, left: 0, right: 0,
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
+                ),
+              ),
+            ),
+          ),
+          // Country flag-like label
+          Positioned(
+            top: 8, right: 8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                leg.country,
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return _buildLegPhotoPlaceholder(leg);
+  }
+
+  Widget _buildLegPhotoPlaceholder(TemplateLeg leg) {
+    final colors = CityPhotos.getFallbackGradient(leg.city);
+    return Container(
+      height: 100,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: colors,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          leg.city,
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white.withOpacity(0.4)),
+        ),
+      ),
+    );
   }
 
   // ─── Expandable Hotels ────────────────────────────────────────────
@@ -648,7 +737,7 @@ class _TemplateDetailScreenState extends State<TemplateDetailScreen> with Single
             Row(children: [
               Flexible(child: Text(pick.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis)),
               const SizedBox(width: 4),
-              ...List.generate(pick.stars, (_) => const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800))),
+              ...List.generate(pick.stars.clamp(0, 5), (_) => const Icon(Icons.star_rounded, size: 12, color: Color(0xFFFF9800))),
             ]),
             if (pick.authorReview.isNotEmpty)
               Padding(
@@ -882,7 +971,7 @@ class _PlaylistPreviewSectionState extends State<_PlaylistPreviewSection> {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(item.name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500), maxLines: 1, overflow: TextOverflow.ellipsis),
           Row(children: [
-            if (item.category.isNotEmpty) Text(item.category, style: TextStyle(fontSize: 10, color: ew.textSecondary)),
+            if (item.category.isNotEmpty) Flexible(child: Text(item.category, style: TextStyle(fontSize: 10, color: ew.textSecondary), maxLines: 1, overflow: TextOverflow.ellipsis)),
             if (item.category.isNotEmpty && item.rating > 0) Text(' \u2022 ', style: TextStyle(fontSize: 10, color: ew.textSecondary)),
             if (item.rating > 0) ...[
               const Icon(Icons.star_rounded, size: 11, color: Color(0xFFFF9800)),

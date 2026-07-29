@@ -72,6 +72,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 provider.activityFeed,
               );
 
+              // Resolve name: prefer profile, fall back to auth user
+              final authUser = context.read<AuthProvider>().user;
+              final displayName = profile.profile.fullName.isNotEmpty
+                  ? profile.profile.fullName
+                  : '${authUser?.firstName ?? ''} ${authUser?.lastName ?? ''}'.trim();
+              final initials = _getInitials(
+                profile.profile,
+                authUser?.firstName,
+                authUser?.lastName,
+              );
+
               return RefreshIndicator(
                 color: AppColors.brandPrimary,
                 onRefresh: _loadProfile,
@@ -82,7 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   slivers: [
                     // Cover photo with overlaid back/edit buttons
                     SliverToBoxAdapter(
-                      child: _buildCoverSection(profile, provider),
+                      child: _buildCoverSection(profile, provider, initials),
                     ),
 
                     // Profile info section
@@ -96,8 +107,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           children: [
                             // Name
                             Text(
-                              profile.profile.fullName.isNotEmpty
-                                  ? profile.profile.fullName
+                              displayName.isNotEmpty
+                                  ? displayName
                                   : 'Traveler',
                               style: Theme.of(context)
                                   .textTheme
@@ -242,7 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildCoverSection(FullProfile profile, ProfileProvider provider) {
+  Widget _buildCoverSection(FullProfile profile, ProfileProvider provider, String initials) {
     final coverUrl = provider.coverPhotoUrl ?? profile.profile.coverPhotoUrl;
     final profileUrl =
         provider.profilePhotoUrl ?? profile.profile.profilePhotoUrl;
@@ -342,7 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       profileUrl.isNotEmpty ? NetworkImage(profileUrl) : null,
                   child: profileUrl.isEmpty
                       ? Text(
-                          _getInitials(profile.profile),
+                          initials,
                           style: const TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w600,
@@ -399,9 +410,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  String _getInitials(UserProfile profile) {
-    final first = profile.firstName.isNotEmpty ? profile.firstName[0] : '';
-    final last = profile.lastName.isNotEmpty ? profile.lastName[0] : '';
+  String _getInitials(
+    UserProfile profile, [
+    String? authFirstName,
+    String? authLastName,
+  ]) {
+    final first = profile.firstName.isNotEmpty
+        ? profile.firstName[0]
+        : (authFirstName?.isNotEmpty == true ? authFirstName![0] : '');
+    final last = profile.lastName.isNotEmpty
+        ? profile.lastName[0]
+        : (authLastName?.isNotEmpty == true ? authLastName![0] : '');
     return '$first$last'.toUpperCase();
   }
 

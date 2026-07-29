@@ -78,7 +78,14 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
           if (provider.isLoadingDetail) {
             return Container(
               decoration: BoxDecoration(gradient: context.ew.surfaceGradient),
-              child: const Center(child: ShimmerList()),
+              child: SafeArea(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 480),
+                    child: const ShimmerList(),
+                  ),
+                ),
+              ),
             );
           }
           if (provider.detailError != null) {
@@ -333,7 +340,9 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${playlist.creatorFirstName} ${playlist.creatorLastName}',
+                      '${playlist.creatorFirstName} ${playlist.creatorLastName}'.trim().isNotEmpty
+                          ? '${playlist.creatorFirstName} ${playlist.creatorLastName}'.trim()
+                          : 'Traveler',
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: ew.textPrimary),
                     ),
                     Text('Creator', style: TextStyle(fontSize: 11, color: ew.textTertiary)),

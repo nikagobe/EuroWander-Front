@@ -29,6 +29,7 @@ class HeroBanner extends StatefulWidget {
 class _HeroBannerState extends State<HeroBanner> with TickerProviderStateMixin {
   late final PageController _pageController;
   late final AnimationController _shimmerController;
+  late final AnimationController _pulseController;
   Timer? _autoScrollTimer;
   int _currentPage = 0;
 
@@ -51,6 +52,10 @@ class _HeroBannerState extends State<HeroBanner> with TickerProviderStateMixin {
       vsync: this,
       duration: const Duration(milliseconds: 2000),
     )..repeat();
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
     _startAutoScroll();
   }
 
@@ -71,6 +76,7 @@ class _HeroBannerState extends State<HeroBanner> with TickerProviderStateMixin {
     _autoScrollTimer?.cancel();
     _pageController.dispose();
     _shimmerController.dispose();
+    _pulseController.dispose();
     super.dispose();
   }
 
@@ -243,51 +249,79 @@ class _HeroBannerState extends State<HeroBanner> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: widget.onPlanTrip,
       child: AnimatedBuilder(
-        animation: _shimmerController,
+        animation: Listenable.merge([_shimmerController, _pulseController]),
         builder: (context, child) {
-          return Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              color: Colors.white.withOpacity(0.2),
-              border: Border.all(color: Colors.white.withOpacity(0.3)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ShaderMask(
-                  shaderCallback: (bounds) {
-                    return LinearGradient(
-                      colors: [
-                        Colors.white,
-                        Colors.white.withOpacity(0.5),
-                        Colors.white,
-                      ],
-                      stops: [
-                        (_shimmerController.value - 0.3).clamp(0.0, 1.0),
-                        _shimmerController.value.clamp(0.0, 1.0),
-                        (_shimmerController.value + 0.3).clamp(0.0, 1.0),
-                      ],
-                    ).createShader(bounds);
-                  },
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_rounded, color: Colors.white, size: 20),
-                      SizedBox(width: 8),
-                      Text(
-                        'Plan New Trip',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+          final pulseValue = Curves.easeInOut.transform(_pulseController.value);
+          final scale = 1.0 + (0.025 * pulseValue);
+          final glowOpacity = 0.1 + (0.2 * pulseValue);
+          final glowBlur = 8.0 + (8.0 * pulseValue);
+
+          return Transform.scale(
+            scale: scale,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.white.withOpacity(0.2 + (0.08 * pulseValue)),
+                    Colors.white.withOpacity(0.12 + (0.05 * pulseValue)),
+                  ],
                 ),
-              ],
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.35 + (0.15 * pulseValue)),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.white.withOpacity(glowOpacity),
+                    blurRadius: glowBlur,
+                    spreadRadius: 1,
+                  ),
+                  BoxShadow(
+                    color: AppColors.brandPrimary.withOpacity(glowOpacity * 0.5),
+                    blurRadius: glowBlur * 1.5,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ShaderMask(
+                    shaderCallback: (bounds) {
+                      return LinearGradient(
+                        colors: [
+                          Colors.white,
+                          Colors.white.withOpacity(0.5),
+                          Colors.white,
+                        ],
+                        stops: [
+                          (_shimmerController.value - 0.3).clamp(0.0, 1.0),
+                          _shimmerController.value.clamp(0.0, 1.0),
+                          (_shimmerController.value + 0.3).clamp(0.0, 1.0),
+                        ],
+                      ).createShader(bounds);
+                    },
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_rounded, color: Colors.white, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          'Plan New Trip',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
